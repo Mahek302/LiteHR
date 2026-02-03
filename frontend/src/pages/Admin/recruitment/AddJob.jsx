@@ -347,7 +347,6 @@ const AddJob = () => {
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:ring-2 focus:ring-cyan-500/30"
             />
           </div>
-
           {/* ===================== REQUIREMENTS ===================== */}
           <div className="bg-slate-900 rounded-2xl p-6 border border-slate-700/50 shadow-lg">
             <h3 className="text-lg font-semibold text-white mb-4">Requirements *</h3>

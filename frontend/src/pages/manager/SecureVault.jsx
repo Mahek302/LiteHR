@@ -98,6 +98,29 @@ export default function SecureVault() {
     }
   };
 
+  const handleDownload = async (doc) => {
+    try {
+      toast.loading("Downloading...");
+      const response = await axios.get(doc.fileUrl, {
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', doc.name || 'document');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.dismiss();
+      toast.success("Document downloaded");
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.dismiss();
+      toast.error("Download failed");
+    }
+  };
+
   const filteredDocs = documents.filter(
     (d) =>
       (d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -291,15 +314,15 @@ export default function SecureVault() {
 
                   <td className="px-4">
                     <div className="flex gap-2">
-                      <button onClick={() => window.open(doc.fileUrl)}>
+                      <button onClick={() => window.open(doc.fileUrl, "_blank")}>
                         <Eye size={16} style={{ color: themeColors.accent }} />
                       </button>
-                      <a href={doc.fileUrl} download>
+                      <button onClick={() => handleDownload(doc)}>
                         <Download
                           size={16}
                           style={{ color: themeColors.secondary }}
                         />
-                      </a>
+                      </button>
                       <button onClick={() => handleDelete(doc.id)}>
                         <Trash2
                           size={16}

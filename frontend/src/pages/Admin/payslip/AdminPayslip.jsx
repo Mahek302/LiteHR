@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import { FiDownload, FiCheckCircle, FiPlus, FiSearch, FiFilter, FiX } from "react-icons/fi";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const AdminPayslip = () => {
     const [payslips, setPayslips] = useState([]);
@@ -100,6 +102,119 @@ const AdminPayslip = () => {
             fetchPayslips();
         } catch (error) {
             toast.error("Failed to publish payslip");
+        }
+    };
+
+    const handleDownload = (payslip) => {
+        try {
+            const doc = new jsPDF();
+
+            // Company Header
+            doc.setFontSize(22);
+            doc.setTextColor(40, 40, 40);
+            doc.text("LITE HR", 105, 20, { align: "center" });
+
+            doc.setFontSize(14);
+            doc.setTextColor(100, 100, 100);
+            doc.text("Payslip for the month of " + new Date(0, payslip.month - 1).toLocaleString('default', { month: 'long' }) + " " + payslip.year, 105, 30, { align: "center" });
+
+            // Employee Details Box
+            doc.setDrawColor(200, 200, 200);
+            doc.setFillColor(250, 250, 250);
+            doc.roundedRect(14, 40, 182, 45, 3, 3, 'FD');
+
+            doc.setFontSize(11);
+            doc.setTextColor(60, 60, 60);
+
+            // Left Column
+            doc.setFont("helvetica", "bold");
+            doc.text("Employee Name:", 20, 50);
+            doc.setFont("helvetica", "normal");
+            doc.text(payslip.employee?.fullName || "N/A", 60, 50);
+
+            doc.setFont("helvetica", "bold");
+            doc.text("Employee Code:", 20, 60);
+            doc.setFont("helvetica", "normal");
+            doc.text(payslip.employee?.employeeCode || "N/A", 60, 60);
+
+            doc.setFont("helvetica", "bold");
+            doc.text("Designation:", 20, 70);
+            doc.setFont("helvetica", "normal");
+            doc.text(payslip.employee?.designation || "N/A", 60, 70); // Field might be missing if not joined, check API
+
+            // Right Column
+            doc.setFont("helvetica", "bold");
+            doc.text("Department:", 110, 50);
+            doc.setFont("helvetica", "normal");
+            doc.text(payslip.employee?.department || "N/A", 150, 50);
+
+            doc.setFont("helvetica", "bold");
+            doc.text("Working Days:", 110, 60);
+            doc.setFont("helvetica", "normal");
+            doc.text(String(payslip.workingDays || 0), 150, 60);
+
+            doc.setFont("helvetica", "bold");
+            doc.text("Present Days:", 110, 70);
+            doc.setFont("helvetica", "normal");
+            doc.text(String(payslip.presentDays || 0), 150, 70);
+
+            doc.setFont("helvetica", "bold");
+            doc.text("LOP Days:", 110, 80);
+            doc.setFont("helvetica", "normal");
+            doc.text(String(payslip.unpaidLeaves || 0), 150, 80);
+
+            // Salary Details Table
+            const columns = ["Earnings", "Amount (Rs.)", "Deductions", "Amount (Rs.)"];
+            const basicSalary = parseFloat(payslip.basicSalary || 0);
+            const deduction = parseFloat(payslip.deduction || 0);
+            const netSalary = parseFloat(payslip.netSalary || 0);
+
+            const data = [
+                ["Basic Salary", basicSalary.toFixed(2), "Unpaid Leave Deduction", deduction.toFixed(2)],
+                ["House Rent Allowance", "0.00", "Provident Fund", "0.00"], // Placeholders
+                ["Special Allowance", "0.00", "Professional Tax", "0.00"], // Placeholders
+                ["", "", "", ""],
+                ["Total Earnings", basicSalary.toFixed(2), "Total Deductions", deduction.toFixed(2)],
+            ];
+
+            autoTable(doc, {
+                startY: 95,
+                head: [columns],
+                body: data,
+                theme: 'grid',
+                headStyles: { fillColor: [139, 92, 246] }, // Purple
+                styles: { fontSize: 10 },
+                columnStyles: {
+                    0: { fontStyle: 'bold' },
+                    2: { fontStyle: 'bold' },
+                    1: { halign: 'right' },
+                    3: { halign: 'right' }
+                }
+            });
+
+            // Net Salary Section
+            const finalY = doc.lastAutoTable.finalY + 10;
+
+            doc.setFillColor(240, 240, 240);
+            doc.rect(14, finalY, 182, 15, 'F');
+
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text("NET SALARY PAYABLE:", 20, finalY + 10);
+            doc.text("Rs. " + netSalary.toLocaleString('en-IN', { minimumFractionDigits: 2 }), 190, finalY + 10, { align: "right" });
+
+            // Footer
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text("This is a computer-generated document and does not require a signature.", 105, 280, { align: "center" });
+
+            // Save
+            doc.save(`Payslip_${payslip.employee?.fullName}_${payslip.month}_${payslip.year}.pdf`);
+            toast.success("Payslip downloaded successfully");
+
+        } catch (error) {
+            console.error("PDF Generation Error:", error);
+            toast.error("Failed to generate PDF");
         }
     };
 
@@ -208,6 +323,7 @@ const AdminPayslip = () => {
                                                 </button>
                                             )}
                                             <button
+                                                onClick={() => handleDownload(payslip)}
                                                 className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300"
                                                 title="Download PDF"
                                             >

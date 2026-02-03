@@ -216,7 +216,7 @@ const AddEmployee = () => {
         qualifications: formData.qualifications,
         experience: formData.experience,
         skills: formData.skills,
-        profileImage: formData.profileImage, // Handle file upload separately if needed
+        profileImage: null, // Don't send file object here, handle separately
       };
 
       const token = localStorage.getItem("token");
@@ -225,6 +225,26 @@ const AddEmployee = () => {
           Authorization: `Bearer ${token}`,
         },
       });
+
+      const newEmployeeId = response.data.employee.id;
+
+      // Handle Profile Image Upload if exists
+      if (formData.profileImage && formData.profileImage instanceof File) {
+        try {
+          const imageFormData = new FormData();
+          imageFormData.append("profile", formData.profileImage);
+
+          await axios.post(`/api/admin/employees/${newEmployeeId}/upload-profile`, imageFormData, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "multipart/form-data",
+            },
+          });
+        } catch (uploadError) {
+          console.error("Error uploading profile image:", uploadError);
+          alert("Employee created, but profile image upload failed. You can try uploading it again from the edit page.");
+        }
+      }
 
       // Show success message
       const emailAddresses = response.data.credentialsSentTo || [formData.email];

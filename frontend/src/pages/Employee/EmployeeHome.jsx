@@ -2,6 +2,7 @@ import { useOutletContext, useNavigate, useLocation } from "react-router-dom";
 import employeeService from "../../services/employeeService";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import axios from "axios";
 import {
   Home,
   Clock,
@@ -64,6 +65,8 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const EmployeeDashboard = () => {
   // Theme state
@@ -1657,6 +1660,151 @@ const EmployeeDashboard = () => {
     </div>
   );
 
+  // Handle Payslip Download
+  const handleDownloadPayslip = (payslip) => {
+    try {
+      const doc = new jsPDF();
+
+      // Company Header
+      doc.setFontSize(22);
+      doc.setTextColor(40, 40, 40);
+      doc.text("LITE HR", 105, 20, { align: "center" });
+
+      doc.setFontSize(14);
+      doc.setTextColor(100, 100, 100);
+      doc.text("Payslip for the month of " + new Date(0, payslip.month - 1).toLocaleString('default', { month: 'long' }) + " " + payslip.year, 105, 30, { align: "center" });
+
+      // Employee Details Box
+      doc.setDrawColor(200, 200, 200);
+      doc.setFillColor(250, 250, 250);
+      doc.roundedRect(14, 40, 182, 45, 3, 3, 'FD');
+
+      doc.setFontSize(11);
+      doc.setTextColor(60, 60, 60);
+
+      // Left Column
+      doc.setFont("helvetica", "bold");
+      doc.text("Employee Name:", 20, 50);
+      doc.setFont("helvetica", "normal");
+      doc.text(userData.fullName || "N/A", 60, 50);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Employee Code:", 20, 60);
+      doc.setFont("helvetica", "normal");
+      doc.text(userData.employeeCode || "N/A", 60, 60);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Designation:", 20, 70);
+      doc.setFont("helvetica", "normal");
+      doc.text(userData.designation || "N/A", 60, 70);
+
+      // Right Column
+      doc.setFont("helvetica", "bold");
+      doc.text("Department:", 110, 50);
+      doc.setFont("helvetica", "normal");
+      doc.text(userData.department || "N/A", 150, 50);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Working Days:", 110, 60);
+      doc.setFont("helvetica", "normal");
+      doc.text(String(payslip.workingDays || 0), 150, 60);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Present Days:", 110, 70);
+      doc.setFont("helvetica", "normal");
+      doc.text(String(payslip.presentDays || 0), 150, 70);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("LOP Days:", 110, 80);
+      doc.setFont("helvetica", "normal");
+      doc.text(String(payslip.unpaidLeaves || 0), 150, 80);
+
+      // Salary Details Table
+      const columns = ["Earnings", "Amount (Rs.)", "Deductions", "Amount (Rs.)"];
+      const basicSalary = parseFloat(payslip.basicSalary || 0);
+      const deduction = parseFloat(payslip.deduction || 0);
+      const netSalary = parseFloat(payslip.netSalary || 0);
+
+      const data = [
+        ["Basic Salary", basicSalary.toFixed(2), "Unpaid Leave Deduction", deduction.toFixed(2)],
+        ["House Rent Allowance", "0.00", "Provident Fund", "0.00"], // Placeholders
+        ["Special Allowance", "0.00", "Professional Tax", "0.00"], // Placeholders
+        ["", "", "", ""],
+        ["Total Earnings", basicSalary.toFixed(2), "Total Deductions", deduction.toFixed(2)],
+      ];
+
+      autoTable(doc, {
+        startY: 95,
+        head: [columns],
+        body: data,
+        theme: 'grid',
+        headStyles: { fillColor: [139, 92, 246] }, // Purple
+        styles: { fontSize: 10 },
+        columnStyles: {
+          0: { fontStyle: 'bold' },
+          2: { fontStyle: 'bold' },
+          1: { halign: 'right' },
+          3: { halign: 'right' }
+        }
+      });
+
+      // Net Salary Section
+      const finalY = doc.lastAutoTable.finalY + 10;
+
+      doc.setFillColor(240, 240, 240);
+      doc.rect(14, finalY, 182, 15, 'F');
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("NET SALARY PAYABLE:", 20, finalY + 10);
+      doc.text("Rs. " + netSalary.toLocaleString('en-IN', { minimumFractionDigits: 2 }), 190, finalY + 10, { align: "right" });
+
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text("This is a computer-generated document and does not require a signature.", 105, 280, { align: "center" });
+
+      // Save
+      doc.save(`Payslip_${userData.fullName}_${payslip.month}_${payslip.year}.pdf`);
+      toast.success("Payslip downloaded successfully");
+
+    } catch (error) {
+      console.error("PDF Generation Error:", error);
+      toast.error("Failed to generate PDF");
+    }
+  };
+
+  // Handle Document Actions
+  const handleViewDocument = (doc) => {
+    if (!doc.fileUrl) return;
+    const fileUrl = `http://localhost:5000${doc.fileUrl}`;
+    window.open(fileUrl, "_blank");
+  };
+
+  const handleDownloadDocument = async (doc) => {
+    if (!doc.fileUrl) return;
+    try {
+      toast.loading("Downloading...");
+      const response = await axios.get(`http://localhost:5000${doc.fileUrl}`, {
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', doc.name || 'document');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.dismiss();
+      toast.success("Document downloaded");
+    } catch (error) {
+      console.error("Download failed", error);
+      toast.dismiss();
+      toast.error("Failed to download document");
+    }
+  };
+
   // Today's Summary Component
   const TodaysSummary = () => {
     // Parse todayHours (e.g., "8h 30m") to calculate overtime
@@ -1849,7 +1997,7 @@ const EmployeeDashboard = () => {
                     <Eye size={18} style={{ color: themeColors.primary }} />
                   </button>
                   <button
-                    onClick={() => toast.success("Downloading payslip...")}
+                    onClick={() => handleDownloadPayslip(payslip)}
                     className="p-2 rounded-full hover:bg-opacity-20 transition-colors"
                     style={{ backgroundColor: themeColors.primaryLight }}
                     title="Download PDF"
@@ -2026,12 +2174,14 @@ const EmployeeDashboard = () => {
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button
+                        onClick={() => handleViewDocument(doc)}
                         className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         title="View"
                       >
                         <Eye size={18} style={{ color: themeColors.info }} />
                       </button>
                       <button
+                        onClick={() => handleDownloadDocument(doc)}
                         className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         title="Download"
                       >
