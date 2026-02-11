@@ -82,6 +82,12 @@ const CompanySettings = () => {
     // Reset settings to original if needed
   };
 
+  const handleLogoView = () => {
+    if (!isEditing && settings.general.logo) {
+      window.open(settings.general.logo, '_blank'); // Opens in new tab
+    }
+  };
+
   const handleChange = (category, field, value) => {
     setSettings({
       ...settings,
@@ -206,7 +212,10 @@ const CompanySettings = () => {
                 Company Logo
               </label>
               <div className="flex items-center gap-6">
-                <div className={`w-32 h-32 rounded-lg border-2 border-dashed ${getBorderColor()} flex items-center justify-center overflow-hidden ${getInputBg()}`}>
+                <div
+                  onClick={handleLogoView}
+                  className={`w-32 h-32 rounded-lg border-2 border-dashed ${getBorderColor()} flex items-center justify-center overflow-hidden ${getInputBg()} ${!isEditing && settings.general.logo ? 'cursor-pointer hover:border-purple-500 hover:opacity-90 transition-all' : ''}`}
+                >
                   {settings.general.logo ? (
                     <img
                       src={settings.general.logo}
@@ -216,17 +225,17 @@ const CompanySettings = () => {
                   ) : (
                     <div className="text-center">
                       <FiUpload className="w-8 h-8 text-gray-500 mx-auto mb-2" />
-                      <span className={`text-sm ${getSecondaryTextColor()}`}>Upload Logo</span>
+                      <p className="text-xs text-gray-500">No logo</p>
                     </div>
                   )}
                 </div>
                 <div className="flex-1">
                   <label className={`inline-flex items-center gap-2 px-4 py-3 rounded-lg cursor-pointer ${isEditing
                     ? `${getInputBg()} border ${getBorderColor()} ${getSecondaryTextColor()} hover:border-purple-500 hover:text-purple-600`
-                    : `${getInputBg()}/50 border ${getBorderColor()} text-gray-500 cursor-not-allowed`
+                    : 'opacity-50 cursor-not-allowed border border-gray-300 bg-gray-100 text-gray-500'
                     } transition-colors`}>
                     <FiUpload className="w-5 h-5" />
-                    {isEditing ? "Change Logo" : "View Logo"}
+                    Upload Logo
                     <input
                       type="file"
                       accept="image/*"

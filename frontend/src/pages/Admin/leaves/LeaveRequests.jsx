@@ -8,6 +8,8 @@ const LeaveRequests = () => {
   const darkMode = useTheme();
   const theme = getThemeClasses(darkMode);
   const [filter, setFilter] = useState("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [selectedRequests, setSelectedRequests] = useState([]);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -82,8 +84,21 @@ const LeaveRequests = () => {
   }, []);
 
   const filteredRequests = leaveRequests.filter(req => {
-    if (filter === "all") return true;
-    return req.status === filter;
+    let matchesStatus = true;
+    let matchesDate = true;
+
+    if (filter !== "all") {
+      matchesStatus = req.status === filter;
+    }
+
+    if (fromDate) {
+      matchesDate = matchesDate && new Date(req.fromDate) >= new Date(fromDate);
+    }
+    if (toDate) {
+      matchesDate = matchesDate && new Date(req.fromDate) <= new Date(toDate);
+    }
+
+    return matchesStatus && matchesDate;
   });
 
   const stats = {
@@ -321,7 +336,7 @@ const LeaveRequests = () => {
           </div>
         </div>
 
-       
+
 
         {/* Monthly Trends */}
         <div className={`${cardBg} rounded-xl p-6 border ${cardBorder}`}>
@@ -447,6 +462,8 @@ const LeaveRequests = () => {
               </label>
               <input
                 type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
                 className={`w-full px-4 py-2 ${inputBg} border ${inputBorder} ${textPrimary} rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500`}
               />
             </div>
@@ -456,6 +473,8 @@ const LeaveRequests = () => {
               </label>
               <input
                 type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
                 className={`w-full px-4 py-2 ${inputBg} border ${inputBorder} ${textPrimary} rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500`}
               />
             </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { FiUsers, FiCalendar, FiDollarSign, FiTrendingUp, FiTrendingDown, FiBarChart2, FiPieChart, FiActivity, FiDownload } from "react-icons/fi";
+import { FiUsers, FiCalendar, FiTrendingUp, FiTrendingDown, FiBarChart2, FiPieChart, FiActivity, FiDownload } from "react-icons/fi";
+import { FaRupeeSign } from "react-icons/fa";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area
@@ -451,7 +452,7 @@ const AdminAnalytics = () => {
             </p>
           </div>
           <div className="flex gap-3">
-            {/* <select
+            {/* <select 
               className={`px-4 py-2.5 ${inputBg} border ${inputBorder} ${textPrimary} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value)}

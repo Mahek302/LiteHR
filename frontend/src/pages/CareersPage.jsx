@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Search, MapPin, Briefcase, DollarSign,
+  Search, MapPin, Briefcase,
   Heart, Globe, Award, Users as UsersIcon,
   ArrowRight, Upload, Mail, Phone, FileText,
   CheckCircle, Clock, Home, Linkedin, Github,
   ExternalLink, Menu, X, LogIn, Users, TrendingUp, Shield,
-  Zap, ChevronRight, BarChart3, Calendar, X as XIcon
+  Zap, ChevronRight, BarChart3, Calendar, X as XIcon, IndianRupee
 } from 'lucide-react';
 import LiteHRLogo from '../images/LiteHR_logo.png';
 import { toast } from 'react-hot-toast';
@@ -80,7 +80,7 @@ export default function CareersPage() {
   };
 
   const benefits = [
-    { icon: <DollarSign size={24} />, title: "Competitive Salary", description: "Above industry average compensation with regular reviews" },
+    { icon: <IndianRupee size={24} />, title: "Competitive Salary", description: "Above industry average compensation with regular reviews" },
     { icon: <Heart size={24} />, title: "Health & Wellness", description: "Comprehensive medical, dental, vision insurance for you and family" },
     { icon: <Globe size={24} />, title: "Remote Friendly", description: "Work from anywhere with flexible hours" },
     { icon: <Award size={24} />, title: "Career Growth", description: "Regular promotions, learning budget, and conference allowances" },
@@ -434,7 +434,10 @@ export default function CareersPage() {
                         <span className="truncate">{job.location}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-[#D1D5DB]">
-                        <DollarSign size={16} className="text-[#9CA3AF] flex-shrink-0" />
+
+
+                        <IndianRupee size={16} className="text-[#9CA3AF] flex-shrink-0" />
+
                         <span className="truncate">{formatSalary(job)}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-[#D1D5DB]">
@@ -592,7 +595,7 @@ export default function CareersPage() {
                 <div className="flex flex-wrap gap-4 text-[#D1D5DB] text-sm mt-4">
                   <span className="flex items-center gap-1.5"><Briefcase size={16} className="text-[#8B5CF6]" /> {viewJob.department}</span>
                   <span className="flex items-center gap-1.5"><MapPin size={16} className="text-[#8B5CF6]" /> {viewJob.location}</span>
-                  <span className="flex items-center gap-1.5"><DollarSign size={16} className="text-[#8B5CF6]" /> {formatSalary(viewJob)}</span>
+                  <span className="flex items-center gap-1.5"><IndianRupee size={16} className="text-[#8B5CF6]" /> {formatSalary(viewJob)}</span>
                   <span className="flex items-center gap-1.5"><Clock size={16} className="text-[#8B5CF6]" /> {formatExperience(viewJob)}</span>
                 </div>
               </div>

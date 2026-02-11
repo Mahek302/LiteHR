@@ -3,7 +3,6 @@ import axios from "axios";
 import {
   FiUsers,
   FiCalendar,
-  FiDollarSign,
   FiTrendingUp,
   FiClock,
   FiBriefcase,
@@ -13,8 +12,9 @@ import {
   FiClipboard,
   FiActivity,
   FiPieChart,
-  FiBarChart2,
+  FiBarChart2
 } from "react-icons/fi";
+import { FaRupeeSign } from "react-icons/fa";
 import { HiOutlineOfficeBuilding } from "react-icons/hi";
 import {
   BarChart,
@@ -662,7 +662,7 @@ const AdminHome = () => {
       case "meeting":
         return <FiUsers className="w-5 h-5" />;
       case "payroll":
-        return <FiDollarSign className="w-5 h-5" />;
+        return <FaRupeeSign className="w-5 h-5" />;
       case "review":
         return <FiTrendingUp className="w-5 h-5" />;
       case "holiday":
@@ -714,10 +714,10 @@ const AdminHome = () => {
                   {getTrendIcon(stat.trend)}
                   <span
                     className={`text-sm font-medium ${stat.trend === "up"
-                        ? "text-emerald-500 dark:text-emerald-400"
-                        : stat.trend === "down"
-                          ? "text-rose-500 dark:text-rose-400"
-                          : theme.text.muted
+                      ? "text-emerald-500 dark:text-emerald-400"
+                      : stat.trend === "down"
+                        ? "text-rose-500 dark:text-rose-400"
+                        : theme.text.muted
                       }`}
                   >
                     {stat.change}
@@ -1191,10 +1191,10 @@ const AdminHome = () => {
                 </div>
                 <div
                   className={`text-xs px-2 py-1 rounded-full ${activity.status === "success"
-                      ? `${darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-emerald-100 text-emerald-700"}`
-                      : activity.status === "warning"
-                        ? `${darkMode ? "bg-amber-500/20 text-amber-400" : "bg-amber-100 text-amber-700"}`
-                        : `${darkMode ? "bg-purple-500/20 text-purple-400" : "bg-purple-100 text-purple-700"}`
+                    ? `${darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-emerald-100 text-emerald-700"}`
+                    : activity.status === "warning"
+                      ? `${darkMode ? "bg-amber-500/20 text-amber-400" : "bg-amber-100 text-amber-700"}`
+                      : `${darkMode ? "bg-purple-500/20 text-purple-400" : "bg-purple-100 text-purple-700"}`
                     }`}
                 >
                   {activity.status}

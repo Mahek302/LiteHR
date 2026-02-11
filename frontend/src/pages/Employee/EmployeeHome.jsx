@@ -693,10 +693,15 @@ const EmployeeDashboard = () => {
   // Filtered documents
   const filteredDocuments = personalDocuments.filter((doc) => {
     const matchesCategory =
-      selectedCategory === "all" || doc.category === selectedCategory;
+      selectedCategory === "all" ||
+      selectedCategory === "All Categories" ||
+      doc.category === selectedCategory;
+
     const matchesSearch =
+      searchQuery === "" ||
       doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.type.toLowerCase().includes(searchQuery.toLowerCase());
+      doc.description?.toLowerCase().includes(searchQuery.toLowerCase());
+
     return matchesCategory && matchesSearch;
   });
 
@@ -2128,7 +2133,7 @@ const EmployeeDashboard = () => {
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
-          {['all', 'identification', 'education', 'contract', 'other'].map(category => (
+          {['all', 'Employment', 'Payroll', 'Legal', 'HR', 'Verification', 'Personal'].map(category => (
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
@@ -2138,9 +2143,10 @@ const EmployeeDashboard = () => {
                 }`}
               style={selectedCategory === category ? { backgroundColor: themeColors.primary } : {}}
             >
-              {category.charAt(0).toUpperCase() + category.slice(1)}
+              {category === 'all' ? 'All Categories' : category}
             </button>
           ))}
+
         </div>
       </div>
 

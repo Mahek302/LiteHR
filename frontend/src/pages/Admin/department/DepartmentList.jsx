@@ -109,7 +109,7 @@ const DepartmentList = () => {
               <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
                 Departments
               </h1>
-              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              <p className={`text-sm ${darkMode ? 'text-white-400' : 'text-white-600'}`}>
                 Manage and organize your organization's departments
               </p>
             </div>
@@ -125,13 +125,13 @@ const DepartmentList = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border p-6 shadow-sm hover:shadow-md transition-shadow duration-200`}>
+          <div className={`${darkMode ? 'bg-white-800 border-white-700' : 'bg-white border-white-200'} rounded-xl border p-6 shadow-sm hover:shadow-md transition-shadow duration-200`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
+                <p className={`text-sm font-medium ${darkMode ? 'text-white-400' : 'text-white-600'} mb-1`}>
                   Total Departments
                 </p>
-                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-white-900'}`}>
                   {departments.length}
                 </p>
               </div>
@@ -141,13 +141,13 @@ const DepartmentList = () => {
             </div>
           </div>
 
-          <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border p-6 shadow-sm hover:shadow-md transition-shadow duration-200`}>
+          <div className={`${darkMode ? 'bg-white-800 border-white-700' : 'bg-white border-white-200'} rounded-xl border p-6 shadow-sm hover:shadow-md transition-shadow duration-200`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
+                <p className={`text-sm font-medium ${darkMode ? 'text-white-400' : 'text-white-600'} mb-1`}>
                   Total Employees
                 </p>
-                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-white-900'}`}>
                   {departments.reduce((sum, d) => sum + (d.employeeCount || 0), 0)}
                 </p>
               </div>
@@ -157,13 +157,13 @@ const DepartmentList = () => {
             </div>
           </div>
 
-          <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border p-6 shadow-sm hover:shadow-md transition-shadow duration-200`}>
+          <div className={`${darkMode ? 'bg-white-800 border-white-700' : 'bg-white border-white-200'} rounded-xl border p-6 shadow-sm hover:shadow-md transition-shadow duration-200`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
+                <p className={`text-sm font-medium ${darkMode ? 'text-white-400' : 'text-white-600'} mb-1`}>
                   Active Departments
                 </p>
-                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-white-900'}`}>
                   {departments.filter((d) => d.isActive).length}
                 </p>
               </div>
@@ -175,7 +175,7 @@ const DepartmentList = () => {
         </div>
 
         {/* Search and View Toggle */}
-        <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border p-5 mb-6 shadow-sm`}>
+        <div className={`${darkMode ? 'bg-white-800 border-white-700' : 'bg-white border-white-200'} rounded-xl border p-5 mb-6 shadow-sm`}>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="relative flex-1 max-w-md">
               <SearchIcon className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
@@ -185,18 +185,18 @@ const DepartmentList = () => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className={`w-full pl-12 pr-4 py-2.5 rounded-lg border ${darkMode
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                  : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
+                  ? 'bg-white-700 border-white-600 text-white placeholder-white-400'
+                  : 'bg-white-50 border-white-300 text-white-900 placeholder-white-500'
                   } focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200`}
               />
             </div>
 
-            <div className={`flex items-center gap-2 p-1 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+            <div className={`flex items-center gap-2 p-1 rounded-lg ${darkMode ? 'bg-white-700' : 'bg-white-100'}`}>
               <button
                 onClick={() => setViewMode("grid")}
                 className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${viewMode === "grid"
                   ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md"
-                  : darkMode ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900"
+                  : darkMode ? "text-white-400 hover:text-white" : "text-white-600 hover:text-white-900"
                   }`}
               >
                 <GridIcon />
@@ -206,7 +206,7 @@ const DepartmentList = () => {
                 onClick={() => setViewMode("list")}
                 className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${viewMode === "list"
                   ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md"
-                  : darkMode ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900"
+                  : darkMode ? "text-white-400 hover:text-white" : "text-white-600 hover:text-white-900"
                   }`}
               >
                 <ListIcon />
@@ -222,7 +222,7 @@ const DepartmentList = () => {
             {filteredDepartments.map((dept) => (
               <div
                 key={dept.id}
-                className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border p-6 shadow-sm hover:shadow-lg transition-all duration-200 group`}
+                className={`${darkMode ? 'bg-white-800 border-white-700' : 'bg-white border-white-200'} rounded-xl border p-6 shadow-sm hover:shadow-lg transition-all duration-200 group`}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
@@ -243,13 +243,13 @@ const DepartmentList = () => {
                 </h3>
 
                 <div className="space-y-2 mb-5">
-                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <p className={`text-sm ${darkMode ? 'text-white-400' : 'text-white-600'}`}>
                     <span className="font-medium">Code:</span> {dept.code || "N/A"}
                   </p>
-                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <p className={`text-sm ${darkMode ? 'text-white-400' : 'text-white-600'}`}>
                     <span className="font-medium">Head:</span> {dept.head?.fullName || "Not Assigned"}
                   </p>
-                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <p className={`text-sm ${darkMode ? 'text-white-400' : 'text-white-600'}`}>
                     <span className="font-medium">Employees:</span> {dept.employeeCount}
                   </p>
                 </div>
@@ -268,31 +268,31 @@ const DepartmentList = () => {
 
         {/* List View */}
         {viewMode === "list" && (
-          <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border shadow-sm overflow-hidden`}>
+          <div className={`${darkMode ? 'bg-white-800 border-white-700' : 'bg-white border-white-200'} rounded-xl border shadow-sm overflow-hidden`}>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                <thead className={`${darkMode ? 'bg-white-700' : 'bg-white-50'}`}>
                   <tr>
-                    <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-white-300' : 'text-white-700'}`}>
                       Department
                     </th>
-                    <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-white-300' : 'text-white-700'}`}>
                       Head
                     </th>
-                    <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-white-300' : 'text-white-700'}`}>
                       Employees
                     </th>
-                    <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-white-300' : 'text-white-700'}`}>
                       Status
                     </th>
-                    <th className={`px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    <th className={`px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-white-300' : 'text-white-700'}`}>
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className={`${darkMode ? 'divide-gray-700' : 'divide-gray-200'} divide-y`}>
+                <tbody className={`${darkMode ? 'divide-white-700' : 'divide-white-200'} divide-y`}>
                   {filteredDepartments.map((dept) => (
-                    <tr key={dept.id} className={`${darkMode ? 'hover:bg-gray-750' : 'hover:bg-gray-50'} transition-colors duration-150`}>
+                    <tr key={dept.id} className={`${darkMode ? 'hover:bg-white-750' : 'hover:bg-white-50'} transition-colors duration-150`}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
@@ -302,16 +302,16 @@ const DepartmentList = () => {
                             <div className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                               {dept.name}
                             </div>
-                            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            <div className={`text-xs ${darkMode ? 'text-white-400' : 'text-white-500'}`}>
                               {dept.code || "N/A"}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-white-300' : 'text-white-700'}`}>
                         {dept.head?.fullName || "Not Assigned"}
                       </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-white-300' : 'text-white-700'}`}>
                         {dept.employeeCount}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

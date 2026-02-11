@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { FiUsers, FiMail, FiUser, FiEdit2, FiActivity, FiCalendar, FiTrendingUp, FiClock, FiBriefcase, FiMapPin, FiDollarSign, FiCheckCircle, FiXCircle, FiAlertCircle } from "react-icons/fi";
+import { FiUsers, FiMail, FiUser, FiEdit2, FiActivity, FiCalendar, FiTrendingUp, FiClock, FiBriefcase, FiMapPin, FiCheckCircle, FiXCircle, FiAlertCircle } from "react-icons/fi";
+import { FaRupeeSign } from "react-icons/fa";
 import { HiOutlineOfficeBuilding, HiOutlineUserGroup } from "react-icons/hi";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -112,30 +113,30 @@ const DepartmentDetails = () => {
   ];
 
   const badgeColors = {
-    blue: { 
-      bg: darkMode ? "bg-blue-500/20" : "bg-blue-500/20", 
-      text: "text-blue-400", 
-      border: darkMode ? "border-blue-500/30" : "border-blue-500/40" 
+    blue: {
+      bg: darkMode ? "bg-blue-500/20" : "bg-blue-500/20",
+      text: "text-blue-400",
+      border: darkMode ? "border-blue-500/30" : "border-blue-500/40"
     },
-    green: { 
-      bg: darkMode ? "bg-emerald-500/20" : "bg-emerald-500/20", 
-      text: "text-emerald-400", 
-      border: darkMode ? "border-emerald-500/30" : "border-emerald-500/40" 
+    green: {
+      bg: darkMode ? "bg-emerald-500/20" : "bg-emerald-500/20",
+      text: "text-emerald-400",
+      border: darkMode ? "border-emerald-500/30" : "border-emerald-500/40"
     },
-    pink: { 
-      bg: darkMode ? "bg-pink-500/20" : "bg-pink-500/20", 
-      text: "text-pink-400", 
-      border: darkMode ? "border-pink-500/30" : "border-pink-500/40" 
+    pink: {
+      bg: darkMode ? "bg-pink-500/20" : "bg-pink-500/20",
+      text: "text-pink-400",
+      border: darkMode ? "border-pink-500/30" : "border-pink-500/40"
     },
-    yellow: { 
-      bg: darkMode ? "bg-amber-500/20" : "bg-amber-500/20", 
-      text: "text-amber-400", 
-      border: darkMode ? "border-amber-500/30" : "border-amber-500/40" 
+    yellow: {
+      bg: darkMode ? "bg-amber-500/20" : "bg-amber-500/20",
+      text: "text-amber-400",
+      border: darkMode ? "border-amber-500/30" : "border-amber-500/40"
     },
-    indigo: { 
-      bg: darkMode ? "bg-indigo-500/20" : "bg-indigo-500/20", 
-      text: "text-indigo-400", 
-      border: darkMode ? "border-indigo-500/30" : "border-indigo-500/40" 
+    indigo: {
+      bg: darkMode ? "bg-indigo-500/20" : "bg-indigo-500/20",
+      text: "text-indigo-400",
+      border: darkMode ? "border-indigo-500/30" : "border-indigo-500/40"
     },
   };
 
@@ -196,7 +197,7 @@ const DepartmentDetails = () => {
                 <div className="mt-4">
                   <div className="flex items-center gap-2">
                     <div className={`flex-1 ${darkMode ? "bg-gray-700" : "bg-gray-300"} rounded-full h-2`}>
-                      <div 
+                      <div
                         className="bg-gradient-to-r from-emerald-500 to-green-500 h-2 rounded-full"
                         style={{ width: `${analytics.monthlyAttendance}%` }}
                       ></div>
@@ -236,7 +237,7 @@ const DepartmentDetails = () => {
                 <div className="mt-4">
                   <div className="flex items-center gap-2">
                     <div className={`flex-1 ${darkMode ? "bg-gray-700" : "bg-gray-300"} rounded-full h-2`}>
-                      <div 
+                      <div
                         className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full"
                         style={{ width: `${analytics.productivity}%` }}
                       ></div>
@@ -261,7 +262,7 @@ const DepartmentDetails = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className={`rounded-xl p-5 border border-blue-500/30 ${darkMode ? "bg-gray-900/50" : "bg-blue-50/50"}`}>
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
@@ -273,7 +274,7 @@ const DepartmentDetails = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className={`rounded-xl p-5 border border-red-500/30 ${darkMode ? "bg-gray-900/50" : "bg-red-50/50"}`}>
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center">
@@ -285,7 +286,7 @@ const DepartmentDetails = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className={`rounded-xl p-5 border border-amber-500/30 ${darkMode ? "bg-gray-900/50" : "bg-amber-50/50"}`}>
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
@@ -314,7 +315,7 @@ const DepartmentDetails = () => {
                       </div>
                       <div className="flex items-center gap-3">
                         <div className={`flex-1 h-2 ${darkMode ? "bg-gray-700" : "bg-gray-300"} rounded-full overflow-hidden`}>
-                          <div 
+                          <div
                             className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
                             style={{ width: `${project.progress}%` }}
                           ></div>
@@ -369,7 +370,7 @@ const DepartmentDetails = () => {
                   <FiUsers className="w-8 h-8 text-purple-400" />
                 </div>
               </div>
-              
+
               <div className={`rounded-xl p-6 border ${themeClasses.border.primary} ${themeClasses.bg.secondary}`}>
                 <div className="flex items-center justify-between">
                   <div>
@@ -381,7 +382,7 @@ const DepartmentDetails = () => {
                   <FiTrendingUp className="w-8 h-8 text-emerald-400" />
                 </div>
               </div>
-              
+
               <div className={`rounded-xl p-6 border ${themeClasses.border.primary} ${themeClasses.bg.secondary}`}>
                 <div className="flex items-center justify-between">
                   <div>
@@ -393,7 +394,7 @@ const DepartmentDetails = () => {
                   <FiCheckCircle className="w-8 h-8 text-blue-400" />
                 </div>
               </div>
-              
+
               <div className={`rounded-xl p-6 border ${themeClasses.border.primary} ${themeClasses.bg.secondary}`}>
                 <div className="flex items-center justify-between">
                   <div>
@@ -444,7 +445,7 @@ const DepartmentDetails = () => {
                   </button>
                 </div>
               </div>
-              
+
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className={darkMode ? "bg-gray-900/50" : "bg-gray-100/50"}>
@@ -509,11 +510,10 @@ const DepartmentDetails = () => {
                           </span>
                         </td>
                         <td className="p-4">
-                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                            emp.status === "Active" 
-                              ? "bg-emerald-500/20 text-emerald-400" 
-                              : "bg-gray-500/20 text-gray-400"
-                          }`}>
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${emp.status === "Active"
+                            ? "bg-emerald-500/20 text-emerald-400"
+                            : "bg-gray-500/20 text-gray-400"
+                            }`}>
                             {emp.status}
                           </span>
                         </td>
@@ -565,7 +565,7 @@ const DepartmentDetails = () => {
                           <span className={themeClasses.text.primary}>{team.completion}%</span>
                         </div>
                         <div className={`h-2 ${darkMode ? "bg-gray-700" : "bg-gray-300"} rounded-full overflow-hidden`}>
-                          <div 
+                          <div
                             className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
                             style={{ width: `${team.completion}%` }}
                           ></div>
@@ -594,14 +594,14 @@ const DepartmentDetails = () => {
                 </div>
                 <div className="mt-4">
                   <div className={`h-2 ${darkMode ? "bg-gray-700" : "bg-gray-300"} rounded-full overflow-hidden`}>
-                    <div 
+                    <div
                       className="h-full bg-gradient-to-r from-emerald-500 to-green-500"
                       style={{ width: `${analytics.productivity}%` }}
                     ></div>
                   </div>
                 </div>
               </div>
-              
+
               <div className={`rounded-xl p-6 border ${themeClasses.border.primary} ${themeClasses.bg.secondary}`}>
                 <div className="flex items-center justify-between">
                   <div>
@@ -612,32 +612,32 @@ const DepartmentDetails = () => {
                 </div>
                 <div className="mt-4">
                   <div className={`h-2 ${darkMode ? "bg-gray-700" : "bg-gray-300"} rounded-full overflow-hidden`}>
-                    <div 
+                    <div
                       className="h-full bg-gradient-to-r from-blue-500 to-cyan-500"
                       style={{ width: `${analytics.monthlyAttendance}%` }}
                     ></div>
                   </div>
                 </div>
               </div>
-              
+
               <div className={`rounded-xl p-6 border ${themeClasses.border.primary} ${themeClasses.bg.secondary}`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className={`text-sm ${themeClasses.text.muted}`}>Budget Utilization</p>
                     <h3 className={`text-2xl font-bold ${themeClasses.text.primary} mt-1`}>{analytics.budgetUtilization}%</h3>
                   </div>
-                  <FiDollarSign className="w-8 h-8 text-amber-400" />
+                  <FaRupeeSign className="w-8 h-8 text-amber-400" />
                 </div>
                 <div className="mt-4">
                   <div className={`h-2 ${darkMode ? "bg-gray-700" : "bg-gray-300"} rounded-full overflow-hidden`}>
-                    <div 
+                    <div
                       className="h-full bg-gradient-to-r from-amber-500 to-orange-500"
                       style={{ width: `${analytics.budgetUtilization}%` }}
                     ></div>
                   </div>
                 </div>
               </div>
-              
+
               <div className={`rounded-xl p-6 border ${themeClasses.border.primary} ${themeClasses.bg.secondary}`}>
                 <div className="flex items-center justify-between">
                   <div>
@@ -648,7 +648,7 @@ const DepartmentDetails = () => {
                 </div>
                 <div className="mt-4">
                   <div className={`h-2 ${darkMode ? "bg-gray-700" : "bg-gray-300"} rounded-full overflow-hidden`}>
-                    <div 
+                    <div
                       className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
                       style={{ width: `${analytics.projectCompletion}%` }}
                     ></div>
@@ -1003,11 +1003,10 @@ const DepartmentDetails = () => {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`relative px-6 py-3 rounded-lg text-sm font-medium capitalize transition-all ${
-                  activeTab === tab
-                    ? "bg-purple-600 text-white"
-                    : `${themeClasses.text.muted} hover:${themeClasses.text.primary} ${darkMode ? "hover:bg-gray-800" : "hover:bg-gray-200"}`
-                }`}
+                className={`relative px-6 py-3 rounded-lg text-sm font-medium capitalize transition-all ${activeTab === tab
+                  ? "bg-purple-600 text-white"
+                  : `${themeClasses.text.muted} hover:${themeClasses.text.primary} ${darkMode ? "hover:bg-gray-800" : "hover:bg-gray-200"}`
+                  }`}
               >
                 <span className="relative z-10">{tab}</span>
               </button>

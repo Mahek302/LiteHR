@@ -1,6 +1,6 @@
 // src/services/manager.service.js
 import { Op } from "sequelize";
-import { Employee, Attendance, User } from "../models/index.js";
+import { Employee, Attendance, User, Notification } from "../models/index.js";
 
 export const getTeamAttendanceService = async (user, date = null) => {
   const searchDate = date || new Date().toISOString().slice(0, 10);
@@ -269,4 +269,29 @@ export const getTeamMonthlyAttendanceService = async (user, month, year) => {
       }))
     };
   });
+};
+
+export const sendReminderService = async (employeeId, managerUser) => {
+  const employee = await Employee.findByPk(employeeId, {
+    include: [{ model: User, as: "user" }]
+  });
+
+  if (!employee) {
+    throw new Error("Employee not found");
+  }
+
+  if (!employee.user) {
+    throw new Error("Employee does not have a linked user account to receive notifications");
+  }
+
+  // Create notification
+  await Notification.create({
+    userId: employee.user.id,
+    title: "Attendance Reminder",
+    message: "You have not marked your attendance for today. Please check in if you are present.",
+    type: "SYSTEM",
+    isRead: false
+  });
+
+  return { success: true };
 };

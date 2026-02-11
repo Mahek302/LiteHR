@@ -35,6 +35,8 @@ import {
   PieChart
 } from 'lucide-react';
 import { notificationService } from '../../services/notificationService';
+
+// Import your actual logo file
 import LiteHRLogo from '../../images/LiteHR_logo.png';
 
 export default function MainLayout({ logout }) {
@@ -56,6 +58,11 @@ export default function MainLayout({ logout }) {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Function to handle logo click
+  const handleLogoClick = () => {
+    navigate('/manager/dashboard');
+  };
 
   // Fetch notifications
   const fetchNotifications = async () => {
@@ -198,27 +205,6 @@ export default function MainLayout({ logout }) {
         },
       ]
     },
-
-    // {
-    //   id: 'roles',
-    //   title: 'Roles & Permissions',
-    //   hasDropdown: true,
-    //   icon: <Shield size={20} />,
-    //   items: [
-    //     {
-    //       id: 'role-list',
-    //       label: 'Role List',
-    //       icon: <Shield size={16} />,
-    //       path: '/manager/roles'
-    //     },
-    //     {
-    //       id: 'add-role',
-    //       label: 'Add Role',
-    //       icon: <Shield size={16} />,
-    //       path: '/manager/roles/add'
-    //     },
-    //   ]
-    // },
     {
       id: 'tasks',
       title: 'Task Management',
@@ -502,15 +488,29 @@ export default function MainLayout({ logout }) {
               {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
 
+            {/* Logo Section with your actual image */}
             <div
-              onClick={() => navigate('/manager/dashboard')}
+              onClick={handleLogoClick}
               className="flex items-center gap-3 cursor-pointer group"
             >
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-2 shadow-sm">
+              <div className="w-[140px] h-auto flex items-center justify-start">
                 <img
                   src={LiteHRLogo}
-                  alt="LiteHR"
-                  className="h-8 w-auto object-contain"
+                  alt="LiteHR Logo"
+                  className="w-[100px] h-auto object-contain hover:opacity-80 transition-opacity"
+                  style={{
+                    filter: darkMode
+                      ? 'invert(0)'  // Keep original logo colors in dark mode
+                      : 'invert(58%) sepia(81%) saturate(2878%) hue-rotate(246deg) brightness(97%) contrast(94%)' // Purple in light mode
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                    e.target.parentElement.innerHTML =
+                      `<div class="flex flex-col">
+            <span class="${darkMode ? 'text-white' : 'text-gray-800'} text-xl font-bold">LITEHR</span>
+            <span class="${darkMode ? 'text-gray-400' : 'text-slate-500'} text-xs font-semibold uppercase tracking-wider">Manager Portal</span>
+          </div>`;
+                  }}
                 />
               </div>
               <div className="hidden md:block">

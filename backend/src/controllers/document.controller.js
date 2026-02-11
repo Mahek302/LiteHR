@@ -1,6 +1,7 @@
 import { Document, Employee } from "../models/index.js";
 import path from "path";
 import fs from "fs";
+import { Op } from "sequelize"; // Add this import
 
 // Helper to format file size
 const formatFileSize = (bytes) => {
@@ -69,19 +70,35 @@ export const uploadDocument = async (req, res) => {
 export const getAllDocuments = async (req, res) => {
     try {
         const { search, category, type } = req.query;
+
         // Build where clause
         const where = {};
-        if (category && category !== "All") where.category = category;
-        if (type) where.type = type;
 
-        // Note: Searching by employee name requires a join (include Employee)
+        // Category filtering - only add if category exists and is not "all" or empty
+        if (category && category !== "all" && category !== "All Categories") {
+            where.category = category;
+        }
+
+        // Type filtering
+        if (type && type !== "all") {
+            where.type = type;
+        }
+
+        // Search functionality - search in document name, description, or employee name
+        if (search) {
+            where[Op.or] = [
+                { name: { [Op.iLike]: `%${search}%` } }, // For PostgreSQL
+                // For MySQL/SQLite use: { name: { [Op.like]: `%${search}%` } },
+                { description: { [Op.iLike]: `%${search}%` } }
+            ];
+        }
 
         const documents = await Document.findAll({
             where,
             include: [{
                 model: Employee,
                 as: 'employee',
-                attributes: ['id', 'fullName', 'employeeCode', 'department'], // Updated attributes
+                attributes: ['id', 'fullName', 'employeeCode', 'department'],
             }],
             order: [["createdAt", "DESC"]]
         });
@@ -95,22 +112,31 @@ export const getAllDocuments = async (req, res) => {
 
 export const getMyDocuments = async (req, res) => {
     try {
-        const employeeId = req.user.employeeId; // Assuming auth middleware populates this
+        const employeeId = req.user.employeeId;
 
         if (!employeeId) {
-            // If user is ADMIN, they might not have an employee ID, so just return empty docs or handle gracefully
             if (req.user.role === "ADMIN") {
                 return res.json({ success: true, documents: [] });
             }
-            console.error("getMyDocuments: Missing employeeId for user", req.user.id);
-            return res.status(400).json({ message: "Employee ID not found for user. Please contact admin to link your account." });
+            return res.status(400).json({ message: "Employee ID not found for user." });
         }
 
         const { search, category } = req.query;
 
         const where = { employeeId };
-        if (category && category !== "all") where.category = category;
-        // Search logic could be added here if needed, but frontend does client-side search currently.
+
+        // Category filtering
+        if (category && category !== "all" && category !== "All Categories") {
+            where.category = category;
+        }
+
+        // Search functionality
+        if (search) {
+            where[Op.or] = [
+                { name: { [Op.iLike]: `%${search}%` } },
+                { description: { [Op.iLike]: `%${search}%` } }
+            ];
+        }
 
         const documents = await Document.findAll({
             where,

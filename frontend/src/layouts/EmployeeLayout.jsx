@@ -13,11 +13,12 @@ import {
   FiSettings,
   FiSun,
   FiMoon,
-  FiFileText,
-  FiDollarSign,
+  FiFileText
 } from "react-icons/fi";
+import { FaRupeeSign } from "react-icons/fa";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { notificationService } from "../services/notificationService";
+
 
 const EmployeeLayout = ({ logout }) => {
   const location = useLocation();
@@ -99,7 +100,7 @@ const EmployeeLayout = ({ logout }) => {
     { label: "Leave Requests", icon: <FiCalendar />, path: "/employee/leaves" },
     { label: "Worklogs", icon: <FiClipboard />, path: "/employee/worklogs" },
     { label: "Personal Documents", icon: <FiFileText />, path: "/employee/documents" },
-    { label: "Salary Payslips", icon: <FiDollarSign />, path: "/employee/payslips" },
+    { label: "Salary Payslips", icon: <FaRupeeSign />, path: "/employee/payslips" },
     { label: "My Profile", icon: <FiUser />, path: "/employee/profile" },
   ];
 

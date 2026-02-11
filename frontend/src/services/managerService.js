@@ -107,6 +107,7 @@ export const managerService = {
             // Today's Attendance List (Formatted)
             const todayAtt = attendance.map((record, index) => ({
                 id: record.id || index,
+                employeeDbId: record.employeeId, // Actual database ID for API calls
                 // Backend returns flat fields: fullName, employeeCode, markIn
                 name: record.fullName || record.employee?.fullName || 'Unknown',
                 status: record.status ? (record.status.charAt(0).toUpperCase() + record.status.slice(1).toLowerCase().replace('_', ' ')) : 'Absent',
@@ -170,6 +171,11 @@ export const managerService = {
 
     getEmployeeAttendance: async (employeeId) => {
         const response = await api.get(`/attendance/${employeeId}`);
+        return response.data;
+    },
+
+    sendReminder: async (employeeId) => {
+        const response = await api.post(`/manager/attendance/remind`, { employeeId });
         return response.data;
     },
 

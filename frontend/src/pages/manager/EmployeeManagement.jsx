@@ -15,6 +15,9 @@ const EmployeeManagement = () => {
 
   const { isDarkMode = true } = useOutletContext() || {};
 
+  const [departmentFilter, setDepartmentFilter] = useState("All Departments");
+  const [statusFilter, setStatusFilter] = useState("All Status");
+
   // Theme colors synchronized with Dashboard.jsx
   const themeColors = isDarkMode ? {
     primary: '#8b5cf6',      // Purple
@@ -75,11 +78,18 @@ const EmployeeManagement = () => {
     }
   };
 
-  const filteredEmployees = employees.filter(employee =>
-    employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.role.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const uniqueDepartments = ["All Departments", ...new Set(employees.map(e => e.department).filter(d => d !== 'N/A'))];
+
+  const filteredEmployees = employees.filter(employee => {
+    const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.role.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesDepartment = departmentFilter === "All Departments" || employee.department === departmentFilter;
+    const matchesStatus = statusFilter === "All Status" || employee.status.toLowerCase() === statusFilter.toLowerCase();
+
+    return matchesSearch && matchesDepartment && matchesStatus;
+  });
 
   const handleViewEmployee = (employee) => {
     setSelectedEmployee(employee);
@@ -126,6 +136,8 @@ const EmployeeManagement = () => {
             <div className="relative">
               <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors duration-300" size={18} style={{ color: themeColors.muted }} />
               <select
+                value={departmentFilter}
+                onChange={(e) => setDepartmentFilter(e.target.value)}
                 className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 appearance-none transition-colors duration-300"
                 style={{
                   backgroundColor: themeColors.inputBg,
@@ -134,16 +146,17 @@ const EmployeeManagement = () => {
                   '--tw-ring-color': themeColors.primary
                 }}
               >
-                <option>All Departments</option>
-                <option>Engineering</option>
-                <option>Marketing</option>
-                <option>Sales</option>
-                <option>HR</option>
+                {uniqueDepartments.map(dept => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
               </select>
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" size={14} style={{ color: themeColors.muted }} />
             </div>
             <div className="relative">
               <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors duration-300" size={18} style={{ color: themeColors.muted }} />
               <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
                 className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 appearance-none transition-colors duration-300"
                 style={{
                   backgroundColor: themeColors.inputBg,
@@ -152,10 +165,11 @@ const EmployeeManagement = () => {
                   '--tw-ring-color': themeColors.primary
                 }}
               >
-                <option>All Status</option>
-                <option>Active</option>
-                <option>Inactive</option>
+                <option value="All Status">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
               </select>
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" size={14} style={{ color: themeColors.muted }} />
             </div>
           </div>
         </div>

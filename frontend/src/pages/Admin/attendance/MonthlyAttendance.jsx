@@ -245,6 +245,30 @@ const MonthlyAttendance = () => {
     return <div className="p-8 text-center text-gray-500">Loading attendance data...</div>;
   }
 
+  const handleExport = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const monthParam = currentMonth.getMonth() + 1;
+      const yearParam = currentMonth.getFullYear();
+
+      const response = await axios.get(`http://localhost:5000/api/attendance/export?month=${monthParam}&year=${yearParam}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob', // Important for file download
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `attendance_${monthParam}_${yearParam}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Failed to export attendance data.");
+    }
+  };
+
   return (
     <div className="w-full">
       {/* Header */}
@@ -260,7 +284,10 @@ const MonthlyAttendance = () => {
           </div>
 
           <div className="flex gap-3">
-            <button className={`flex items-center gap-2 px-4 py-2.5 ${themeClasses.bg.secondary} border ${themeClasses.border.primary} ${themeClasses.text.primary} rounded-lg hover:${darkMode ? 'bg-gray-700' : 'bg-gray-300'} font-medium`}>
+            <button
+              onClick={handleExport}
+              className={`flex items-center gap-2 px-4 py-2.5 ${themeClasses.bg.secondary} border ${themeClasses.border.primary} ${themeClasses.text.primary} rounded-lg hover:${darkMode ? 'bg-gray-700' : 'bg-gray-300'} font-medium`}
+            >
               <FiDownload className="w-4 h-4" />
               Export Excel
             </button>

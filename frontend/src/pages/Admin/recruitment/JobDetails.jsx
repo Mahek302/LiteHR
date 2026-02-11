@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { FiUsers, FiArrowLeft, FiEdit2, FiBriefcase, FiMapPin, FiClock, FiDollarSign, FiCalendar, FiCheckCircle } from "react-icons/fi";
+import { FiUsers, FiArrowLeft, FiEdit2, FiBriefcase, FiMapPin, FiClock, FiCalendar, FiCheckCircle } from "react-icons/fi";
+import { FaRupeeSign } from "react-icons/fa";
 import jobService from "../../../services/jobService";
 import { toast } from "react-hot-toast";
 import { useTheme, useThemeClasses } from "../../../contexts/ThemeContext";
@@ -168,7 +169,7 @@ const JobDetails = () => {
                         <div className="space-y-4">
                             <div className={`flex items-start gap-3 p-3 rounded-lg ${darkMode ? 'bg-gray-900/50' : 'bg-gray-50'} border ${getBorderColor()}`}>
                                 <div className={`p-2 rounded-lg ${darkMode ? 'bg-emerald-500/10' : 'bg-emerald-100'} ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                                    <FiDollarSign className="w-5 h-5" />
+                                    <FaRupeeSign className="w-5 h-5" />
                                 </div>
                                 <div>
                                     <p className={`text-sm ${getSecondaryTextColor()}`}>Salary Range</p>

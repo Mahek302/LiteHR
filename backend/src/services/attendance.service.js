@@ -82,3 +82,44 @@ export const getMyAttendanceService = async (employeeId) => {
     order: [["date", "DESC"]],
   });
 };
+
+export const exportAttendanceService = async ({ month, year }) => {
+  const where = {};
+
+  if (month && year) {
+    const startDate = new Date(Date.UTC(year, month - 1, 1));
+    const endDate = new Date(Date.UTC(year, month, 0));
+    const startStr = startDate.toISOString().split('T')[0];
+    const endStr = endDate.toISOString().split('T')[0];
+
+    where.date = {
+      [Op.between]: [startStr, endStr],
+    };
+  }
+
+  const attendanceRecords = await Attendance.findAll({
+    where,
+    include: [
+      {
+        model: Employee,
+        as: "employee",
+        attributes: ["id", "employeeCode", "fullName", "department"],
+      },
+    ],
+    order: [["date", "ASC"], ["employeeId", "ASC"]],
+  });
+
+  // Format for CSV
+  const data = attendanceRecords.map(record => ({
+    "Employee ID": record.employee?.employeeCode || record.employeeId,
+    "Employee Name": record.employee?.fullName || 'Unknown',
+    "Department": record.employee?.department || 'N/A',
+    "Date": record.date,
+    "Status": record.markIn ? 'Present' : 'Absent',
+    "Check In": record.markIn ? new Date(record.markIn).toLocaleTimeString() : "-",
+    "Check Out": record.markOut ? new Date(record.markOut).toLocaleTimeString() : "-",
+    // "Work Hours": "TBD" 
+  }));
+
+  return data;
+};

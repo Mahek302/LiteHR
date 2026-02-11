@@ -306,7 +306,13 @@ const ApplicationDetails = () => {
                     <FiX className="w-5 h-5" />
                     <span className="text-sm">Reject</span>
                   </button>
-                  <button className={`flex flex-col items-center gap-2 px-4 py-4 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'} border ${darkMode ? 'border-gray-700' : 'border-gray-200'} ${darkMode ? 'text-gray-400' : 'text-gray-700'} rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 font-medium`}>
+                  <button
+                    onClick={() => {
+                      const subject = encodeURIComponent(`Update regarding your application for ${application.job?.title || 'position'}`);
+                      window.location.href = `mailto:${application.email}?subject=${subject}`;
+                    }}
+                    className={`flex flex-col items-center gap-2 px-4 py-4 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'} border ${darkMode ? 'border-gray-700' : 'border-gray-200'} ${darkMode ? 'text-gray-400' : 'text-gray-700'} rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 font-medium`}
+                  >
                     <FiMessageSquare className="w-5 h-5" />
                     <span className="text-sm">Contact</span>
                   </button>

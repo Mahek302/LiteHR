@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { FiArrowLeft, FiSave, FiBriefcase, FiUsers, FiDollarSign, FiMapPin, FiCalendar } from "react-icons/fi";
+import { FiArrowLeft, FiSave, FiBriefcase, FiUsers, FiMapPin, FiCalendar } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import jobService from "../../../services/jobService";

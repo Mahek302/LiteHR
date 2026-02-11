@@ -353,18 +353,30 @@ export const uploadEmployeeProfileImageService = async (employeeId, fileBuffer, 
   return { employee, uploaded: res };
 };
 
-export const uploadEmployeeResumeService = async (employeeId, fileBuffer, filename) => {
+export const uploadEmployeeResumeService = async (employeeId, file) => {
   const employee = await Employee.findByPk(employeeId);
   if (!employee) throw new Error("Employee not found");
 
-  const { uploadBuffer } = await import("./cloudinary.service.js");
+  let resumeUrl;
 
-  const folder = process.env.CLOUDINARY_FOLDER ? `${process.env.CLOUDINARY_FOLDER}/resumes` : "litehr/resumes";
-  const res = await uploadBuffer(fileBuffer, { resource_type: "auto", folder, public_id: `${employee.employeeCode || 'emp'}_resume_${Date.now()}` });
+  // Check if file is from disk storage or memory
+  if (file.path && file.filename) {
+    // Local storage
+    // Generate URL: /uploads/vault/<filename>
+    resumeUrl = `/uploads/vault/${file.filename}`;
+  } else if (file.buffer) {
+    // Memory storage -> Cloudinary (Fallback if route uses memory storage)
+    const { uploadBuffer } = await import("./cloudinary.service.js");
+    const folder = process.env.CLOUDINARY_FOLDER ? `${process.env.CLOUDINARY_FOLDER}/resumes` : "litehr/resumes";
+    const res = await uploadBuffer(file.buffer, { resource_type: "auto", folder, public_id: `${employee.employeeCode || 'emp'}_resume_${Date.now()}` });
+    resumeUrl = res.secure_url;
+  } else {
+    throw new Error("Invalid file upload");
+  }
 
   // Save resume URL
-  employee.resumeUrl = res.secure_url;
+  employee.resumeUrl = resumeUrl;
   await employee.save();
 
-  return { employee, uploaded: res };
+  return { employee, uploaded: true };
 };

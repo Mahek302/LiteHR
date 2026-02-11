@@ -121,10 +121,16 @@ const Dashboard = () => {
   };
 
   // Action handlers
-  const handleSendReminder = (employeeName) => {
+  const handleSendReminder = async (employeeId, employeeName) => {
     const confirmed = window.confirm(`Send attendance reminder to ${employeeName}?`);
     if (confirmed) {
-      alert(`Reminder sent to ${employeeName}`);
+      try {
+        await managerService.sendReminder(employeeId);
+        alert(`Reminder sent to ${employeeName}`);
+      } catch (error) {
+        console.error("Failed to send reminder:", error);
+        alert(`Failed to send reminder to ${employeeName}`);
+      }
     }
   };
 
@@ -146,7 +152,7 @@ const Dashboard = () => {
             <h2 className="text-xl font-semibold mb-1 transition-colors duration-300" style={{ color: themeColors.text }}>Welcome back, Manager!</h2>
             <p className="transition-colors duration-300" style={{ color: themeColors.muted }}>Here's what's happening with your organization today.</p>
           </div>
-          <div className="flex items-center space-x-2 mt-4 md:mt-0">
+          {/* <div className="flex items-center space-x-2 mt-4 md:mt-0">
             <button
               onClick={() => handleNavigation('/manager/analytics')}
               className="px-4 py-2 rounded-lg font-medium transition-colors duration-300 hover:opacity-90"
@@ -161,7 +167,7 @@ const Dashboard = () => {
             >
               Settings
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -470,7 +476,7 @@ const Dashboard = () => {
                 </div>
                 {employee.status === 'Absent' && (
                   <button
-                    onClick={() => handleSendReminder(employee.name)}
+                    onClick={() => handleSendReminder(employee.employeeDbId, employee.name)}
                     className="mt-3 w-full text-xs py-1.5 rounded font-medium transition-colors duration-300 hover:opacity-90"
                     style={{ backgroundColor: themeColors.danger, color: 'white' }}
                   >

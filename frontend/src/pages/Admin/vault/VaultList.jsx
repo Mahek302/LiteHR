@@ -293,16 +293,30 @@ const VaultList = () => {
                       >
                         <FiEye className="w-4 h-4" />
                       </button>
-                      <a
-                        href={doc.fileUrl}
-                        download
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={async () => {
+                          try {
+                            const response = await axios.get(doc.fileUrl, {
+                              responseType: 'blob',
+                              headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+                            });
+                            const url = window.URL.createObjectURL(new Blob([response.data]));
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.setAttribute('download', doc.name || `document-${doc.id}.${doc.type?.toLowerCase() || 'pdf'}`);
+                            document.body.appendChild(link);
+                            link.click();
+                            link.parentNode.removeChild(link);
+                          } catch (error) {
+                            console.error("Download failed:", error);
+                            toast.error("Failed to download document");
+                          }
+                        }}
                         className={`p-2 rounded-lg ${getInputBg()} border ${getBorderColor()} text-purple-400 hover:text-purple-300 hover:border-purple-500/50 transition-colors flex items-center justify-center`}
                         title="Download"
                       >
                         <FiDownload className="w-4 h-4" />
-                      </a>
+                      </button>
                       <button
                         onClick={() => handleDelete(doc.id)}
                         className={`p-2 rounded-lg ${getInputBg()} border ${getBorderColor()} text-rose-400 hover:text-rose-300 hover:border-rose-500/50 transition-colors`}

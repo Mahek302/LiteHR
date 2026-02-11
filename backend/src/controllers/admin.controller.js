@@ -147,7 +147,10 @@ export const uploadResumeController = async (req, res) => {
     const file = req.file;
     if (!file) return res.status(400).json({ message: "No file uploaded" });
 
-    const result = await uploadEmployeeResumeService(id, file.buffer, file.originalname);
+    // If file is on disk (local storage), it has .path, .filename
+    // If in memory, it has .buffer
+    // We pass the whole file object now to support both/either
+    const result = await uploadEmployeeResumeService(id, file);
     res.json({ message: "Resume uploaded", resumeUrl: result.employee.resumeUrl, uploaded: result.uploaded });
   } catch (err) {
     console.error("Upload resume error:", err.message);

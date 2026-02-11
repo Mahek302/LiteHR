@@ -6,7 +6,8 @@ import {
   getTeamAttendanceController,
   markAttendanceController,
   getTeamAttendanceAnalyticsController,
-  getTeamMonthlyAttendanceController
+  getTeamMonthlyAttendanceController,
+  sendReminderController
 } from "../controllers/manager.controller.js";
 
 const router = Router();
@@ -50,6 +51,13 @@ router.get(
   authMiddleware,
   checkRole(["MANAGER", "ADMIN"]),
   getTeamAttendanceAnalyticsController
+);
+
+router.post(
+  "/attendance/remind",
+  authMiddleware,
+  checkRole(["MANAGER", "ADMIN"]),
+  sendReminderController
 );
 
 export default router;

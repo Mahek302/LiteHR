@@ -355,10 +355,9 @@ const EmployeeProfile = () => {
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
-  const handleProfileUpload = async () => {
-    const input = document.getElementById('profile-upload');
-    const file = input?.files?.[0];
-    if (!file) return alert('Please choose an image first');
+  const handleProfileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
     const fd = new FormData();
     fd.append('profile', file);
@@ -375,8 +374,7 @@ const EmployeeProfile = () => {
       const data = await res.json();
       if (res.ok) {
         setEmployee((prev) => ({ ...prev, avatar: data.profileImage }));
-        const preview = document.getElementById('profile-preview');
-        if (preview) preview.src = data.profileImage;
+        // Update preview if needed, though react state should handle it
         alert('Profile uploaded successfully!');
       } else {
         alert(data.message || 'Upload failed');
@@ -387,10 +385,9 @@ const EmployeeProfile = () => {
     }
   };
 
-  const handleResumeUpload = async () => {
-    const input = document.getElementById('resume-upload');
-    const file = input?.files?.[0];
-    if (!file) return alert('Please choose a file first');
+  const handleResumeUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
     const fd = new FormData();
     fd.append('resume', file);
@@ -399,6 +396,7 @@ const EmployeeProfile = () => {
     if (!token) return alert('You must be logged in to upload');
 
     try {
+      // Show loading state if desired
       const res = await fetch(`${API_BASE_URL}/api/admin/employees/${employee.id}/upload-resume`, {
         method: 'POST',
         body: fd,
@@ -407,8 +405,6 @@ const EmployeeProfile = () => {
       const data = await res.json();
       if (res.ok) {
         setEmployee((prev) => ({ ...prev, resumeUrl: data.resumeUrl }));
-        const status = document.getElementById('resume-status');
-        if (status) status.innerText = 'Resume uploaded — ' + data.resumeUrl;
         alert('Resume uploaded successfully!');
       } else {
         alert(data.message || 'Upload failed');
@@ -417,14 +413,11 @@ const EmployeeProfile = () => {
       console.error(err);
       alert('Upload failed');
     }
+    // Reset input
+    e.target.value = '';
   };
 
-  useEffect(() => {
-    const pbtn = document.getElementById('profile-upload-btn');
-    if (pbtn) pbtn.onclick = handleProfileUpload;
-    const rbtn = document.getElementById('resume-upload-btn');
-    if (rbtn) rbtn.onclick = handleResumeUpload;
-  }, [employee]);
+
 
   if (!employee) {
     return (
@@ -467,6 +460,7 @@ const EmployeeProfile = () => {
                 id="profile-upload"
                 accept="image/*"
                 className="hidden"
+                onChange={handleProfileUpload}
               />
             </div>
             <div>
@@ -491,7 +485,7 @@ const EmployeeProfile = () => {
             </div>
           </div>
           <button
-            id="profile-upload-btn"
+            onClick={() => document.getElementById('profile-upload').click()}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors shadow-sm"
           >
             Upload Profile
@@ -658,35 +652,31 @@ const EmployeeProfile = () => {
                             id="resume-upload"
                             accept=".pdf,.doc,.docx"
                             className="hidden"
+                            onChange={handleResumeUpload}
                           />
-                          <label
-                            htmlFor="resume-upload"
-                            className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 cursor-pointer hover:underline"
-                          >
-                            Choose File
-                          </label>
                           <button
-                            id="resume-upload-btn"
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm transition-colors"
+                            onClick={() => document.getElementById('resume-upload').click()}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm transition-colors shadow-sm"
                           >
-                            Upload Resume
+                            {employee.resumeUrl ? "Update Resume" : "Upload Resume"}
                           </button>
                         </div>
                         {employee.resumeUrl && (
                           <a
-                            href={employee.resumeUrl}
+                            href={employee.resumeUrl.startsWith('http') ? employee.resumeUrl : `${API_BASE_URL}${employee.resumeUrl}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center space-x-1 text-green-600 hover:text-green-800 dark:text-green-400"
+                            className="flex items-center space-x-1 text-green-600 hover:text-green-800 dark:text-green-400 border border-green-200 dark:border-green-800 px-3 py-1.5 rounded bg-green-50 dark:bg-green-900/20"
                           >
                             <FiDownload />
-                            <span className="text-sm">Download</span>
+                            <span className="text-sm font-medium">Download</span>
                           </a>
                         )}
                       </div>
                     </div>
                     <p id="resume-status" className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                      {employee.resumeUrl ? `Resume available: ${employee.resumeUrl}` : 'No resume uploaded'}
+                      {/* Status updated via alert now, but keeping container for spacing if needed */}
+                      {employee.resumeUrl ? "Resume available" : "No resume uploaded"}
                     </p>
                   </div>
                 </div>

@@ -3,7 +3,8 @@ import {
   getTeamAttendanceService,
   markTeamAttendanceService,
   getTeamAttendanceAnalyticsService,
-  getTeamMonthlyAttendanceService
+  getTeamMonthlyAttendanceService,
+  sendReminderService
 } from "../services/manager.service.js";
 
 // ...Existing controllers...
@@ -42,8 +43,21 @@ export const markAttendanceController = async (req, res) => {
 
 export const getTeamAttendanceAnalyticsController = async (req, res) => {
   try {
-    const data = await getTeamAttendanceAnalyticsService(req.user);
+    const data = await getTeamAttendanceAnalyticsController(req.user);
     res.json(data);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+export const sendReminderController = async (req, res) => {
+  try {
+    const { employeeId } = req.body;
+    if (!employeeId) {
+      return res.status(400).json({ message: "Employee ID is required" });
+    }
+    await sendReminderService(employeeId, req.user); // Service now handles notification creation
+    res.json({ message: "Reminder sent successfully" });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
