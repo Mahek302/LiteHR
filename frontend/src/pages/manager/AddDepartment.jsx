@@ -129,7 +129,7 @@ const AddDepartment = () => {
               borderColor: themeColors.border,
               color: themeColors.muted
             }}
-            className="p-2 rounded-lg border hover:text-blue-600 hover:border-blue-500 transition-all shadow-sm"
+            className="p-2 rounded-lg border hover:text-blue-600 hover:border-blue-500 transition-all shadow-sm cursor-pointer"
           >
             <ArrowLeft size={20} />
           </Link>
@@ -236,7 +236,7 @@ const AddDepartment = () => {
                       borderColor: themeColors.border,
                       color: themeColors.text
                     }}
-                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none"
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer"
                   >
                     <option value="">Select Department Head (Optional)</option>
                     {employees.map(emp => {
@@ -270,7 +270,7 @@ const AddDepartment = () => {
                       borderColor: themeColors.border,
                       color: themeColors.muted
                     }}
-                    className={`flex-1 py-2 px-4 rounded-lg border text-sm font-medium transition-all ${formData.isActive
+                    className={`flex-1 py-2 px-4 rounded-lg border text-sm font-medium transition-all cursor-pointer ${formData.isActive
                       ? 'ring-2 ring-green-500/20'
                       : 'hover:border-green-500'
                       }`}
@@ -289,7 +289,7 @@ const AddDepartment = () => {
                       borderColor: themeColors.border,
                       color: themeColors.muted
                     }}
-                    className={`flex-1 py-2 px-4 rounded-lg border text-sm font-medium transition-all ${!formData.isActive
+                    className={`flex-1 py-2 px-4 rounded-lg border text-sm font-medium transition-all cursor-pointer ${!formData.isActive
                       ? 'ring-2 ring-red-500/20'
                       : 'hover:border-red-500'
                       }`}
@@ -329,14 +329,14 @@ const AddDepartment = () => {
                   borderColor: themeColors.border,
                   color: themeColors.muted
                 }}
-                className="px-6 py-2 border rounded-lg font-medium hover:bg-slate-50 transition-all"
+                className="px-6 py-2 border rounded-lg font-medium hover:bg-slate-50 transition-all cursor-pointer"
               >
                 Cancel
               </Link>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`px-8 py-2 bg-blue-600 text-white rounded-lg font-medium shadow-md hover:bg-blue-700 transition-all flex items-center gap-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+                className={`px-8 py-2 bg-blue-600 text-white rounded-lg font-medium shadow-md hover:bg-blue-700 transition-all flex items-center gap-2 cursor-pointer ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
                   }`}
               >
                 {isSubmitting ? (

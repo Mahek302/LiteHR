@@ -76,7 +76,7 @@ const DepartmentList = () => {
                 </div>
                 <Link
                     to="/manager/departments/add"
-                    className="flex items-center gap-2 px-4 py-2 text-white rounded-lg shadow-sm font-medium hover:opacity-90 transition-colors duration-300"
+                    className="flex items-center gap-2 px-4 py-2 text-white rounded-lg shadow-sm font-medium hover:opacity-90 transition-colors duration-300 cursor-pointer"
                     style={{ backgroundColor: themeColors.primary }}
                 >
                     <Plus size={18} />
@@ -150,7 +150,7 @@ const DepartmentList = () => {
                     <div className="flex items-center gap-1 p-1 rounded-lg transition-colors duration-300" style={{ backgroundColor: isDarkMode ? themeColors.background : '#f1f5f9' }}>
                         <button
                             onClick={() => setViewMode("grid")}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-sm font-medium`}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-sm font-medium cursor-pointer`}
                             style={{
                                 backgroundColor: viewMode === "grid" ? themeColors.primary : 'transparent',
                                 color: viewMode === "grid" ? '#ffffff' : themeColors.muted,
@@ -162,7 +162,7 @@ const DepartmentList = () => {
                         </button>
                         <button
                             onClick={() => setViewMode("list")}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-sm font-medium`}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-sm font-medium cursor-pointer`}
                             style={{
                                 backgroundColor: viewMode === "list" ? themeColors.primary : 'transparent',
                                 color: viewMode === "list" ? '#ffffff' : themeColors.muted,

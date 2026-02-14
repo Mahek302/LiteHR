@@ -92,7 +92,7 @@ const LeavePolicy = () => {
       noticePeriod: '30 days',
       approvalRequired: true,
       documentation: 'Medical certificate required',
-      rules: ['Available after 1 year of service', 'Can be extended with medical advice', 'Paid leave']
+      rules: ['Available from day 1 of employment', 'Can be taken anytime during pregnancy', 'Fully paid leave', 'Additional 30 days can be requested for medical complications']
     },
     {
       id: 5,
@@ -195,7 +195,7 @@ const LeavePolicy = () => {
                 borderColor: themeColors.border,
                 color: themeColors.muted
               }}
-              className="p-2 border rounded-lg hover:text-blue-600 transition-colors"
+              className="p-2 border rounded-lg hover:text-blue-600 transition-colors cursor-pointer"
             >
               <ArrowLeft size={20} />
             </button>
@@ -211,13 +211,13 @@ const LeavePolicy = () => {
                 <button
                   onClick={() => setIsEditing(false)}
                   style={{ borderColor: themeColors.border, color: themeColors.text }}
-                  className="px-4 py-2 border rounded-lg hover:opacity-80"
+                  className="px-4 py-2 border rounded-lg hover:opacity-80 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 cursor-pointer"
                 >
                   <Save size={18} />
                   <span>Save Changes</span>
@@ -226,7 +226,7 @@ const LeavePolicy = () => {
             ) : (
               <button
                 onClick={() => setIsEditing(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 cursor-pointer"
               >
                 <Edit2 size={18} />
                 <span>Edit Policies</span>
@@ -314,7 +314,7 @@ const LeavePolicy = () => {
                       value={policy.carryForward}
                       onChange={(e) => handlePolicyChange(policy.id, 'carryForward', e.target.value)}
                       style={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border, color: themeColors.text }}
-                      className="w-20 px-2 py-1 border rounded text-right"
+                      className="w-20 px-2 py-1 border rounded text-right cursor-pointer"
                     />
                   ) : (
                     <span style={{ color: themeColors.text }} className="font-medium">{policy.carryForward} days</span>
@@ -329,7 +329,7 @@ const LeavePolicy = () => {
                       value={policy.noticePeriod}
                       onChange={(e) => handlePolicyChange(policy.id, 'noticePeriod', e.target.value)}
                       style={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border, color: themeColors.text }}
-                      className="w-24 px-2 py-1 border rounded text-right"
+                      className="w-24 px-2 py-1 border rounded text-right cursor-pointer"
                     />
                   ) : (
                     <span style={{ color: themeColors.text }} className="font-medium">{policy.noticePeriod}</span>
@@ -343,7 +343,7 @@ const LeavePolicy = () => {
                       value={policy.approvalRequired}
                       onChange={(e) => handlePolicyChange(policy.id, 'approvalRequired', e.target.value === 'true')}
                       style={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border, color: themeColors.text }}
-                      className="px-2 py-1 border rounded"
+                      className="px-2 py-1 border rounded cursor-pointer"
                     >
                       <option value="true">Yes</option>
                       <option value="false">No</option>
@@ -363,7 +363,7 @@ const LeavePolicy = () => {
                       value={policy.documentation}
                       onChange={(e) => handlePolicyChange(policy.id, 'documentation', e.target.value)}
                       style={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border, color: themeColors.text }}
-                      className="w-32 px-2 py-1 border rounded text-right"
+                      className="w-32 px-2 py-1 border rounded text-right cursor-pointer"
                     />
                   ) : (
                     <span style={{ color: themeColors.text }} className="font-medium">{policy.documentation}</span>
@@ -381,7 +381,7 @@ const LeavePolicy = () => {
                       {isEditing && (
                         <button
                           onClick={() => handleRemoveRule(policy.id, index)}
-                          className="p-1 hover:bg-red-50 rounded"
+                          className="p-1 hover:bg-red-50 rounded cursor-pointer"
                         >
                           <X size={14} className="text-red-500" />
                         </button>
@@ -398,11 +398,11 @@ const LeavePolicy = () => {
                       onChange={(e) => setNewRule(e.target.value)}
                       placeholder="Add new rule..."
                       style={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border, color: themeColors.text }}
-                      className="flex-1 px-3 py-1 border rounded text-sm"
+                      className="flex-1 px-3 py-1 border rounded text-sm cursor-pointer"
                     />
                     <button
                       onClick={() => handleAddRule(policy.id)}
-                      className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                      className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 cursor-pointer"
                     >
                       Add
                     </button>
@@ -415,7 +415,7 @@ const LeavePolicy = () => {
               <div style={{ backgroundColor: isDarkMode ? 'rgba(30, 41, 59, 0.5)' : '#f8fafc', borderColor: themeColors.border }} className="px-6 py-4 border-t">
                 <button
                   onClick={() => setPolicies(policies.filter(p => p.id !== policy.id))}
-                  className="w-full py-2 text-red-600 hover:text-red-700 text-sm font-medium"
+                  className="w-full py-2 text-red-600 hover:text-red-700 text-sm font-medium cursor-pointer"
                 >
                   Remove Policy
                 </button>
@@ -438,7 +438,7 @@ const LeavePolicy = () => {
                 value={newPolicy.type}
                 onChange={(e) => setNewPolicy({ ...newPolicy, type: e.target.value })}
                 style={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border, color: themeColors.text }}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 placeholder="e.g., Study Leave"
               />
             </div>
@@ -450,7 +450,7 @@ const LeavePolicy = () => {
                 value={newPolicy.daysPerYear}
                 onChange={(e) => setNewPolicy({ ...newPolicy, daysPerYear: e.target.value })}
                 style={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border, color: themeColors.text }}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 placeholder="15"
               />
             </div>
@@ -462,7 +462,7 @@ const LeavePolicy = () => {
                 value={newPolicy.carryForward}
                 onChange={(e) => setNewPolicy({ ...newPolicy, carryForward: e.target.value })}
                 style={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border, color: themeColors.text }}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 placeholder="5"
               />
             </div>
@@ -474,7 +474,7 @@ const LeavePolicy = () => {
                 value={newPolicy.noticePeriod}
                 onChange={(e) => setNewPolicy({ ...newPolicy, noticePeriod: e.target.value })}
                 style={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border, color: themeColors.text }}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 placeholder="e.g., 3 days"
               />
             </div>
@@ -486,7 +486,7 @@ const LeavePolicy = () => {
                 value={newPolicy.documentation}
                 onChange={(e) => setNewPolicy({ ...newPolicy, documentation: e.target.value })}
                 style={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border, color: themeColors.text }}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 placeholder="e.g., Certificate required"
               />
             </div>
@@ -498,7 +498,7 @@ const LeavePolicy = () => {
                 value={newPolicy.description}
                 onChange={(e) => setNewPolicy({ ...newPolicy, description: e.target.value })}
                 style={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border, color: themeColors.text }}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 placeholder="Brief description"
               />
             </div>
@@ -518,7 +518,7 @@ const LeavePolicy = () => {
                       setNewPolicy({ ...newPolicy, rules: newRules });
                     }}
                     style={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border, color: themeColors.text }}
-                    className="flex-1 px-4 py-2 border rounded-lg"
+                    className="flex-1 px-4 py-2 border rounded-lg cursor-pointer"
                     placeholder="Enter a rule"
                   />
                   <button
@@ -527,7 +527,7 @@ const LeavePolicy = () => {
                       const newRules = newPolicy.rules.filter((_, i) => i !== index);
                       setNewPolicy({ ...newPolicy, rules: newRules });
                     }}
-                    className="px-3 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50"
+                    className="px-3 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 cursor-pointer"
                   >
                     <X size={16} />
                   </button>
@@ -538,7 +538,7 @@ const LeavePolicy = () => {
                 type="button"
                 onClick={() => setNewPolicy({ ...newPolicy, rules: [...newPolicy.rules, ''] })}
                 style={{ borderColor: themeColors.border, color: themeColors.text }}
-                className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:opacity-80"
+                className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:opacity-80 cursor-pointer"
               >
                 <Plus size={16} />
                 <span>Add Rule</span>
@@ -553,7 +553,7 @@ const LeavePolicy = () => {
                 id="approvalRequired"
                 checked={newPolicy.approvalRequired}
                 onChange={(e) => setNewPolicy({ ...newPolicy, approvalRequired: e.target.checked })}
-                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
               />
               <label htmlFor="approvalRequired" style={{ color: themeColors.text }} className="text-sm">
                 Approval Required
@@ -563,7 +563,7 @@ const LeavePolicy = () => {
             <button
               type="button"
               onClick={handleAddPolicy}
-              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 cursor-pointer"
             >
               <Plus size={18} />
               <span>Add Policy</span>
@@ -597,7 +597,7 @@ const LeavePolicy = () => {
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-0.5">•</span>
-                <span>Minimum 1 year service required for maternity leave</span>
+                <span>Maternity leave is available from day 1 of employment</span>
               </li>
             </ul>
           </div>

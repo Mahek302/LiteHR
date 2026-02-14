@@ -146,7 +146,7 @@ export default function SecureVault() {
 
         <Link
           to="/manager/documents/upload"
-          className="flex items-center gap-2 px-4 py-2 rounded-lg"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer"
           style={{
             backgroundColor: themeColors.primary,
             color: "#fff",
@@ -193,7 +193,7 @@ export default function SecureVault() {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="pl-10 pr-4 py-2 rounded-lg"
+            className="pl-10 pr-4 py-2 rounded-lg cursor-pointer"
             style={{
               backgroundColor: themeColors.background,
               color: themeColors.text,
@@ -313,16 +313,25 @@ export default function SecureVault() {
 
                   <td className="px-4">
                     <div className="flex gap-2">
-                      <button onClick={() => window.open(doc.fileUrl, "_blank")}>
+                      <button 
+                        onClick={() => window.open(doc.fileUrl, "_blank")}
+                        className="cursor-pointer hover:opacity-80 transition-opacity"
+                      >
                         <Eye size={16} style={{ color: themeColors.accent }} />
                       </button>
-                      <button onClick={() => handleDownload(doc)}>
+                      <button 
+                        onClick={() => handleDownload(doc)}
+                        className="cursor-pointer hover:opacity-80 transition-opacity"
+                      >
                         <Download
                           size={16}
                           style={{ color: themeColors.secondary }}
                         />
                       </button>
-                      <button onClick={() => handleDelete(doc.id)}>
+                      <button 
+                        onClick={() => handleDelete(doc.id)}
+                        className="cursor-pointer hover:opacity-80 transition-opacity"
+                      >
                         <Trash2
                           size={16}
                           style={{ color: themeColors.danger }}

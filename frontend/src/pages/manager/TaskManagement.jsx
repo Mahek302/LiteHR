@@ -153,7 +153,7 @@ const TaskManagement = () => {
                 </div>
                 <button
                     onClick={() => setShowModal(true)}
-                    className="flex items-center px-4 py-2 text-white rounded-lg shadow-sm hover:opacity-90 transition-colors duration-300"
+                    className="flex items-center px-4 py-2 text-white rounded-lg shadow-sm hover:opacity-90 transition-colors duration-300 cursor-pointer"
                     style={{ backgroundColor: themeColors.primary }}
                 >
                     <Plus size={20} className="mr-2" />
@@ -181,7 +181,7 @@ const TaskManagement = () => {
                 </div>
                 <div className="flex items-center gap-4">
                     <select
-                        className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors duration-300"
+                        className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors duration-300 cursor-pointer"
                         style={{
                             backgroundColor: themeColors.inputBg,
                             borderColor: themeColors.border,
@@ -199,7 +199,7 @@ const TaskManagement = () => {
                     <div className="flex border rounded-lg overflow-hidden transition-colors duration-300" style={{ borderColor: themeColors.border }}>
                         <button
                             onClick={() => setViewMode("list")}
-                            className={`p-2 transition-colors duration-300`}
+                            className={`p-2 transition-colors duration-300 cursor-pointer`}
                             style={{
                                 backgroundColor: viewMode === "list" ? `${themeColors.primary}20` : themeColors.card,
                                 color: viewMode === "list" ? themeColors.primary : themeColors.muted
@@ -209,7 +209,7 @@ const TaskManagement = () => {
                         </button>
                         <button
                             onClick={() => setViewMode("grid")}
-                            className={`p-2 transition-colors duration-300`}
+                            className={`p-2 transition-colors duration-300 cursor-pointer`}
                             style={{
                                 backgroundColor: viewMode === "grid" ? `${themeColors.primary}20` : themeColors.card,
                                 color: viewMode === "grid" ? themeColors.primary : themeColors.muted
@@ -347,7 +347,11 @@ const TaskManagement = () => {
                     <div className="rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 transition-colors duration-300" style={{ backgroundColor: themeColors.card }}>
                         <div className="flex justify-between items-center p-6 border-b transition-colors duration-300" style={{ borderColor: themeColors.border }}>
                             <h3 className="text-xl font-bold transition-colors duration-300" style={{ color: themeColors.text }}>Assign New Task</h3>
-                            <button onClick={() => setShowModal(false)} className="hover:opacity-80 transition-colors duration-300" style={{ color: themeColors.muted }}>
+                            <button 
+                                onClick={() => setShowModal(false)} 
+                                className="hover:opacity-80 transition-colors duration-300 cursor-pointer" 
+                                style={{ color: themeColors.muted }}
+                            >
                                 <X size={24} />
                             </button>
                         </div>
@@ -392,7 +396,7 @@ const TaskManagement = () => {
                                     <label className="block text-sm font-medium mb-1 transition-colors duration-300" style={{ color: themeColors.text }}>Assign To <span style={{ color: themeColors.danger }}>*</span></label>
                                     <select
                                         required
-                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors duration-300"
+                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors duration-300 cursor-pointer"
                                         style={{
                                             backgroundColor: themeColors.inputBg,
                                             borderColor: themeColors.border,
@@ -414,7 +418,7 @@ const TaskManagement = () => {
                                     <label className="block text-sm font-medium mb-1 transition-colors duration-300" style={{ color: themeColors.text }}>Due Date</label>
                                     <input
                                         type="date"
-                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors duration-300"
+                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors duration-300 cursor-pointer"
                                         style={{
                                             backgroundColor: themeColors.inputBg,
                                             borderColor: themeColors.border,
@@ -438,7 +442,7 @@ const TaskManagement = () => {
                                                 value={p}
                                                 checked={formData.priority === p}
                                                 onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                                                className="h-4 w-4 focus:ring-2 transition-colors duration-300"
+                                                className="h-4 w-4 focus:ring-2 transition-colors duration-300 cursor-pointer"
                                                 style={{ color: themeColors.primary, '--tw-ring-color': themeColors.primary }}
                                             />
                                             <span className="ml-2 text-sm capitalize transition-colors duration-300" style={{ color: themeColors.text }}>{p.toLowerCase()}</span>
@@ -451,14 +455,14 @@ const TaskManagement = () => {
                                 <button
                                     type="button"
                                     onClick={() => setShowModal(false)}
-                                    className="px-4 py-2 border rounded-lg hover:opacity-80 transition-colors duration-300"
+                                    className="px-4 py-2 border rounded-lg hover:opacity-80 transition-colors duration-300 cursor-pointer"
                                     style={{ borderColor: themeColors.border, color: themeColors.text }}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 text-white rounded-lg shadow-md hover:opacity-90 transition-all duration-300"
+                                    className="px-4 py-2 text-white rounded-lg shadow-md hover:opacity-90 transition-all duration-300 cursor-pointer"
                                     style={{ backgroundColor: themeColors.primary }}
                                 >
                                     Assign Task

@@ -211,7 +211,7 @@ const LeaveApproval = () => {
 
   const filters = [
     { value: 'all', label: 'All Requests', count: leaveRequests.length },
-    { value: 'pending', label: 'Pending', count: leaveRequests.filter(r => r.status === 'pending').length },
+    { value: 'pending', label: 'Pending Requests', count: leaveRequests.filter(r => r.status === 'pending').length },
     { value: 'approved', label: 'Approved', count: leaveRequests.filter(r => r.status === 'approved').length },
     { value: 'rejected', label: 'Rejected', count: leaveRequests.filter(r => r.status === 'rejected').length },
   ];
@@ -426,43 +426,44 @@ const LeaveApproval = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={handleAddNewRequest}
-            className="flex items-center gap-2 px-5 py-2.5 text-white rounded-xl font-medium shadow-sm hover:opacity-90 transition-colors duration-300"
+            className="flex items-center gap-2 px-5 py-2.5 text-white rounded-xl font-medium shadow-sm hover:opacity-90 transition-colors duration-300 cursor-pointer"
             style={{ backgroundColor: themeColors.primary }}
           >
             <Plus size={18} />
             New Request
           </button>
 
-          <div className="relative">
-            <button
-              onClick={() => setShowExportOptions(!showExportOptions)}
-              className="flex items-center gap-2 px-5 py-2.5 border rounded-xl font-medium hover:opacity-80 transition-colors duration-300"
-              style={{ backgroundColor: themeColors.card, borderColor: themeColors.border, color: themeColors.text }}
-            >
-              <Download size={18} />
-              Export
-              <ChevronDown size={16} className="transition-colors duration-300" style={{ color: themeColors.muted }} />
-            </button>
 
-            {showExportOptions && (
-              <div className="absolute right-0 top-14 w-48 rounded-xl shadow-lg border z-50 overflow-hidden transition-colors duration-300" style={{ backgroundColor: themeColors.card, borderColor: themeColors.border }}>
-                <button
-                  onClick={() => handleExportData('csv')}
-                  className="w-full text-left px-5 py-3 hover:opacity-80 text-sm font-medium transition-colors duration-300 border-b"
-                  style={{ color: themeColors.text, borderColor: themeColors.border }}
-                >
-                  Export as CSV
-                </button>
-                <button
-                  onClick={() => handleExportData('json')}
-                  className="w-full text-left px-5 py-3 hover:opacity-80 text-sm font-medium transition-colors duration-300"
-                  style={{ color: themeColors.text }}
-                >
-                  Export as JSON
-                </button>
-              </div>
-            )}
-          </div>
+<div className="relative">
+  <button
+    onClick={() => setShowExportOptions(!showExportOptions)}
+    className="flex items-center gap-2 px-5 py-2.5 border rounded-xl font-medium hover:opacity-80 transition-colors duration-300 cursor-pointer"
+    style={{ backgroundColor: themeColors.card, borderColor: themeColors.border, color: themeColors.text }}
+  >
+    <Download size={18} />
+    Export
+    <ChevronDown size={16} className="transition-colors duration-300" style={{ color: themeColors.muted }} />
+  </button>
+
+  {showExportOptions && (
+    <div className="absolute right-0 top-14 w-48 rounded-xl shadow-lg border z-50 overflow-hidden transition-colors duration-300" style={{ backgroundColor: themeColors.card, borderColor: themeColors.border }}>
+      <button
+        onClick={() => handleExportData('pdf')}
+        className="w-full text-left px-5 py-3 hover:opacity-80 text-sm font-medium transition-colors duration-300 border-b cursor-pointer"
+        style={{ color: themeColors.text, borderColor: themeColors.border }}
+      >
+        Export as PDF
+      </button>
+      <button
+        onClick={() => handleExportData('csv')}
+        className="w-full text-left px-5 py-3 hover:opacity-80 text-sm font-medium transition-colors duration-300 cursor-pointer"
+        style={{ color: themeColors.text }}
+      >
+        Export as CSV
+      </button>
+    </div>
+  )}
+</div>
         </div>
       </div>
 
@@ -519,7 +520,7 @@ const LeaveApproval = () => {
                   <button
                     key={item.value}
                     onClick={() => setFilter(item.value)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300 ${filter === item.value
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300 cursor-pointer ${filter === item.value
                       ? "shadow-sm"
                       : "hover:opacity-80"
                       }`}
@@ -626,7 +627,7 @@ const LeaveApproval = () => {
                             <>
                               <button
                                 onClick={() => openActionModal('approve', request.id)}
-                                className="p-2 rounded-lg transition-colors duration-300 hover:opacity-80"
+                                className="p-2 rounded-lg transition-colors duration-300 hover:opacity-80 cursor-pointer"
                                 style={{ color: themeColors.secondary, backgroundColor: `${themeColors.secondary}10` }}
                                 title="Approve"
                               >
@@ -634,7 +635,7 @@ const LeaveApproval = () => {
                               </button>
                               <button
                                 onClick={() => openActionModal('reject', request.id)}
-                                className="p-2 rounded-lg transition-colors duration-300 hover:opacity-80"
+                                className="p-2 rounded-lg transition-colors duration-300 hover:opacity-80 cursor-pointer"
                                 style={{ color: themeColors.danger, backgroundColor: `${themeColors.danger}10` }}
                                 title="Reject"
                               >
@@ -677,7 +678,7 @@ const LeaveApproval = () => {
               <h3 className="text-lg font-bold transition-colors duration-300" style={{ color: themeColors.text }}>New Leave Request</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="transition-colors duration-300 hover:opacity-80"
+                className="transition-colors duration-300 hover:opacity-80 cursor-pointer"
                 style={{ color: themeColors.muted }}
               >
                 <X size={20} />
@@ -690,7 +691,7 @@ const LeaveApproval = () => {
                 <select
                   value={newRequest.leaveType}
                   onChange={(e) => setNewRequest({ ...newRequest, leaveType: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl outline-none focus:ring-2 transition-colors duration-300"
+                  className="w-full px-4 py-2.5 rounded-xl outline-none focus:ring-2 transition-colors duration-300 cursor-pointer"
                   style={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border, color: themeColors.text, border: `1px solid ${themeColors.border}` }}
                 >
                   <option value="CL">Casual Leave (CL)</option>
@@ -706,7 +707,7 @@ const LeaveApproval = () => {
                     type="date"
                     value={newRequest.fromDate}
                     onChange={(e) => setNewRequest({ ...newRequest, fromDate: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl outline-none focus:ring-2 transition-colors duration-300"
+                    className="w-full px-4 py-2.5 rounded-xl outline-none focus:ring-2 transition-colors duration-300 cursor-pointer"
                     style={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border, color: themeColors.text, border: `1px solid ${themeColors.border}` }}
                     required
                   />
@@ -717,7 +718,7 @@ const LeaveApproval = () => {
                     type="date"
                     value={newRequest.toDate}
                     onChange={(e) => setNewRequest({ ...newRequest, toDate: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl outline-none focus:ring-2 transition-colors duration-300"
+                    className="w-full px-4 py-2.5 rounded-xl outline-none focus:ring-2 transition-colors duration-300 cursor-pointer"
                     style={{ backgroundColor: themeColors.inputBg, borderColor: themeColors.border, color: themeColors.text, border: `1px solid ${themeColors.border}` }}
                     required
                   />
@@ -741,7 +742,7 @@ const LeaveApproval = () => {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2.5 border font-medium rounded-xl hover:opacity-80 transition-colors duration-300"
+                  className="flex-1 px-4 py-2.5 border font-medium rounded-xl hover:opacity-80 transition-colors duration-300 cursor-pointer"
                   style={{ borderColor: themeColors.border, color: themeColors.text }}
                 >
                   Cancel
@@ -749,7 +750,7 @@ const LeaveApproval = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 px-4 py-2.5 text-white font-medium rounded-xl hover:opacity-90 transition-colors duration-300 shadow-sm disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 text-white font-medium rounded-xl hover:opacity-90 transition-colors duration-300 shadow-sm disabled:opacity-50 cursor-pointer"
                   style={{ backgroundColor: themeColors.primary }}
                 >
                   {loading ? 'Submitting...' : 'Submit Request'}
@@ -793,14 +794,14 @@ const LeaveApproval = () => {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowActionModal(false)}
-                  className="flex-1 px-4 py-2.5 border font-medium rounded-xl hover:opacity-80 transition-colors duration-300"
+                  className="flex-1 px-4 py-2.5 border font-medium rounded-xl hover:opacity-80 transition-colors duration-300 cursor-pointer"
                   style={{ borderColor: themeColors.border, color: themeColors.text }}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmAction}
-                  className="flex-1 px-4 py-2.5 text-white font-medium rounded-xl shadow-sm transition-colors duration-300 hover:opacity-90"
+                  className="flex-1 px-4 py-2.5 text-white font-medium rounded-xl shadow-sm transition-colors duration-300 hover:opacity-90 cursor-pointer"
                   style={{ backgroundColor: actionType === 'approve' ? themeColors.secondary : themeColors.danger }}
                 >
                   Confirm

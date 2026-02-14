@@ -182,7 +182,7 @@ const UploadDocument = () => {
       <div className="flex items-center gap-3 mb-8">
         <button
           onClick={() => navigate("/manager/vault")}
-          className="p-2 rounded-lg"
+          className="p-2 rounded-lg cursor-pointer"
           style={{ color: themeColors.text }}
         >
           <ArrowLeft size={20} />
@@ -217,7 +217,7 @@ const UploadDocument = () => {
                   name="employeeId"
                   value={formData.employeeId}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 rounded-lg"
+                  className="w-full px-4 py-2 rounded-lg cursor-pointer"
                   style={{
                     backgroundColor: themeColors.background,
                     color: themeColors.text,
@@ -239,7 +239,7 @@ const UploadDocument = () => {
                   name="documentType"
                   value={formData.documentType}
                   onChange={handleInputChange}
-                  className="px-4 py-2 rounded-lg"
+                  className="px-4 py-2 rounded-lg cursor-pointer"
                   style={{
                     backgroundColor: themeColors.background,
                     color: themeColors.text,
@@ -256,7 +256,7 @@ const UploadDocument = () => {
                   name="category"
                   value={formData.category}
                   onChange={handleInputChange}
-                  className="px-4 py-2 rounded-lg"
+                  className="px-4 py-2 rounded-lg cursor-pointer"
                   style={{
                     backgroundColor: themeColors.background,
                     color: themeColors.text,
@@ -291,7 +291,7 @@ const UploadDocument = () => {
                   name="confidentialLevel"
                   value={formData.confidentialLevel}
                   onChange={handleInputChange}
-                  className="px-4 py-2 rounded-lg"
+                  className="px-4 py-2 rounded-lg cursor-pointer"
                   style={{
                     backgroundColor: themeColors.background,
                     color: themeColors.text,
@@ -308,7 +308,7 @@ const UploadDocument = () => {
                   name="expiryDate"
                   value={formData.expiryDate}
                   onChange={handleInputChange}
-                  className="px-4 py-2 rounded-lg"
+                  className="px-4 py-2 rounded-lg cursor-pointer"
                   style={{
                     backgroundColor: themeColors.background,
                     color: themeColors.text,
@@ -349,7 +349,10 @@ const UploadDocument = () => {
                     </p>
                   </div>
                   {!loading && (
-                    <button onClick={removeFile}>
+                    <button 
+                      onClick={removeFile}
+                      className="cursor-pointer hover:opacity-80 transition-opacity"
+                    >
                       <X size={16} style={{ color: themeColors.danger }} />
                     </button>
                   )}
@@ -374,7 +377,7 @@ const UploadDocument = () => {
             <button
               onClick={handleSubmit}
               disabled={loading || !file}
-              className="w-full mt-4 py-3 rounded-lg font-medium"
+              className="w-full mt-4 py-3 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 backgroundColor: loading ? themeColors.border : themeColors.primary,
                 color: "#fff",

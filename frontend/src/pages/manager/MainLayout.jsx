@@ -32,7 +32,8 @@ import {
   Target,
   TrendingUp,
   Activity,
-  PieChart
+  PieChart,
+  User
 } from 'lucide-react';
 import { notificationService } from '../../services/notificationService';
 
@@ -54,6 +55,25 @@ export default function MainLayout({ logout }) {
   });
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Scroll to top when route changes
+  useEffect(() => {
+    // Scroll the main content container to top
+    const mainContent = document.querySelector('.main-content-container');
+    if (mainContent) {
+      mainContent.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'instant'
+      });
+    }
+    // Also scroll window to top as a fallback
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'instant'
+    });
+  }, [location.pathname]);
 
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -309,15 +329,15 @@ export default function MainLayout({ logout }) {
     },
     {
       id: 'settings',
-      title: 'Settings',
+      title: 'Profile',
       hasDropdown: false,
-      icon: <Settings size={20} />,
+      icon: <User size={20} />,
       items: [
         {
-          id: 'general-settings',
-          label: 'General Settings',
-          icon: <Settings size={16} />,
-          path: '/manager/settings'
+          id: 'profile-settings',
+          label: 'My Profile',
+          icon: <User size={16} />,
+          path: '/manager/profile'
         },
       ]
     },
@@ -422,6 +442,7 @@ export default function MainLayout({ logout }) {
       .main-content-container {
         max-height: calc(100vh - 64px);
         overflow-y: auto;
+        scroll-behavior: smooth;
       }
       
       /* Sidebar container with fixed height */
@@ -480,7 +501,7 @@ export default function MainLayout({ logout }) {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className={`p-2 rounded-lg lg:hidden transition-colors ${darkMode
+              className={`p-2 rounded-lg lg:hidden transition-colors cursor-pointer ${darkMode
                 ? 'text-gray-300 hover:text-white hover:bg-gray-700'
                 : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'
                 }`}
@@ -541,7 +562,7 @@ export default function MainLayout({ logout }) {
             {/* Dark Mode Toggle Button */}
             <button
               onClick={toggleDarkMode}
-              className={`p-2 rounded-lg transition-colors ${darkMode
+              className={`p-2 rounded-lg transition-colors cursor-pointer ${darkMode
                 ? 'text-yellow-400 hover:text-yellow-300 hover:bg-gray-700'
                 : 'text-indigo-600 hover:text-indigo-700 hover:bg-slate-100'
                 }`}
@@ -554,7 +575,7 @@ export default function MainLayout({ logout }) {
             <div className="relative">
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className={`p-2 rounded-lg relative transition-colors ${darkMode
+                className={`p-2 rounded-lg relative transition-colors cursor-pointer ${darkMode
                   ? 'text-gray-300 hover:text-white hover:bg-gray-700'
                   : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'
                   }`}>
@@ -576,7 +597,7 @@ export default function MainLayout({ logout }) {
                       {unreadCount > 0 && (
                         <button
                           onClick={handleMarkAllRead}
-                          className="text-xs text-blue-500 hover:text-blue-600 hover:underline"
+                          className="text-xs text-blue-500 hover:text-blue-600 hover:underline cursor-pointer"
                         >
                           Mark all read
                         </button>
@@ -584,7 +605,7 @@ export default function MainLayout({ logout }) {
                       {notifications.length > 0 && (
                         <button
                           onClick={handleClearAll}
-                          className="text-xs text-red-500 hover:text-red-600 hover:underline"
+                          className="text-xs text-red-500 hover:text-red-600 hover:underline cursor-pointer"
                         >
                           Clear all
                         </button>
@@ -633,7 +654,7 @@ export default function MainLayout({ logout }) {
                                 {!item.isRead && (
                                   <button
                                     onClick={() => handleMarkRead(item.id)}
-                                    className="text-[10px] text-blue-500 hover:text-blue-600 hover:underline"
+                                    className="text-[10px] text-blue-500 hover:text-blue-600 hover:underline cursor-pointer"
                                   >
                                     Mark read
                                   </button>
@@ -652,7 +673,7 @@ export default function MainLayout({ logout }) {
             <div className="flex items-center gap-3">
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm cursor-pointer bg-gradient-to-r from-blue-600 to-purple-600"
-                onClick={() => navigate('/manager/settings')}
+                onClick={() => navigate('/manager/profile')}
               >
                 <span className="text-white font-medium text-sm">
                   {user.name ? user.name.charAt(0).toUpperCase() : 'M'}
@@ -694,7 +715,7 @@ export default function MainLayout({ logout }) {
                   <button
                     onClick={() => handleDirectLink(section.items[0].path)}
                     className={`
-                      w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+                      w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer
                       ${isChildActive(section.items[0].path)
                         ? (darkMode
                           ? 'bg-blue-600 text-white'
@@ -714,7 +735,7 @@ export default function MainLayout({ logout }) {
                     <button
                       onClick={() => toggleSection(section.id)}
                       className={`
-                        w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+                        w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer
                         ${isItemActive(section)
                           ? (darkMode
                             ? 'bg-gray-700 text-blue-400'
@@ -747,7 +768,7 @@ export default function MainLayout({ logout }) {
                             key={item.id}
                             onClick={() => handleNavigation(item.path)}
                             className={`
-                              w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all
+                              w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer
                               ${isChildActive(item.path)
                                 ? (darkMode
                                   ? 'bg-blue-600 text-white'
@@ -778,7 +799,7 @@ export default function MainLayout({ logout }) {
                           key={item.id}
                           onClick={() => handleNavigation(item.path)}
                           className={`
-                            w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+                            w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer
                             ${isChildActive(item.path)
                               ? (darkMode
                                 ? 'bg-blue-600 text-white'
@@ -816,7 +837,7 @@ export default function MainLayout({ logout }) {
               </div>
               <button
                 onClick={handleLogout}
-                className={`p-2 rounded-lg transition-colors flex items-center gap-2 ${darkMode
+                className={`p-2 rounded-lg transition-colors flex items-center gap-2 cursor-pointer ${darkMode
                   ? 'text-red-400 hover:text-red-300 hover:bg-gray-800'
                   : 'text-red-600 hover:text-red-700 hover:bg-red-50'
                   }`}
@@ -832,7 +853,7 @@ export default function MainLayout({ logout }) {
         {/* Overlay for mobile */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+            className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden cursor-pointer"
             onClick={() => setSidebarOpen(false)}
           ></div>
         )}
@@ -865,7 +886,7 @@ export default function MainLayout({ logout }) {
               <div className="flex items-center gap-4">
                 <a
                   href="#"
-                  className={`text-sm hover:underline ${darkMode
+                  className={`text-sm hover:underline cursor-pointer ${darkMode
                     ? 'text-blue-400 hover:text-blue-300'
                     : 'text-blue-600 hover:text-blue-700'
                     }`}
@@ -874,7 +895,7 @@ export default function MainLayout({ logout }) {
                 </a>
                 <a
                   href="#"
-                  className={`text-sm hover:underline ${darkMode
+                  className={`text-sm hover:underline cursor-pointer ${darkMode
                     ? 'text-blue-400 hover:text-blue-300'
                     : 'text-blue-600 hover:text-blue-700'
                     }`}
@@ -883,7 +904,7 @@ export default function MainLayout({ logout }) {
                 </a>
                 <a
                   href="#"
-                  className={`text-sm hover:underline ${darkMode
+                  className={`text-sm hover:underline cursor-pointer ${darkMode
                     ? 'text-blue-400 hover:text-blue-300'
                     : 'text-blue-600 hover:text-blue-700'
                     }`}

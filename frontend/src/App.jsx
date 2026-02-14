@@ -26,21 +26,19 @@ import Dashboard from './pages/manager/Dashboard'; // Manager Dashboard
 import EmployeeManagement from './pages/manager/EmployeeManagement';
 import AttendanceTracking from './pages/manager/AttendanceTracking';
 import LeaveApproval from './pages/manager/LeaveApproval';
-import Roles from './pages/manager/Roles';
 import Recruitment from './pages/manager/Recruitment';
 import SecureVault from './pages/manager/SecureVault';
-import Settings from './pages/manager/Settings';
-import EmployeeHierarchy from './pages/manager/EmployeeHierarchy';
+import Profile from './pages/manager/Profile'; // Renamed from Settings to Profile
 
 // Manager Add/Edit Imports with Aliases to avoid conflict with Admin
 import ManagerDepartmentList from './pages/manager/DepartmentList';
 import ManagerAddDepartment from './pages/manager/AddDepartment';
-
-
-import ManagerAddRole from './pages/manager/AddRole';
 import ManagerLeavePolicy from './pages/manager/LeavePolicy';
 import ManagerUploadDocument from './pages/manager/UploadDocument';
 import TaskManagement from './pages/manager/TaskManagement';
+
+// Calendar import (renamed)
+import AttendanceCalendar from './pages/manager/AttendanceCalendar';
 
 /* Employees (Admin) */
 import EmployeeList from "./pages/Admin/employee/EmployeeList";
@@ -63,7 +61,6 @@ import AttendanceReports from "./pages/Admin/attendance/AttendanceReports";
 import LeaveRequests from "./pages/Admin/leaves/LeaveRequests";
 import AdminLeavePolicy from "./pages/Admin/leaves/LeavePolicy";
 
-
 /* Recruitment (Admin) */
 import JobList from "./pages/Admin/recruitment/JobList";
 import AddJob from "./pages/Admin/recruitment/AddJob";
@@ -71,7 +68,6 @@ import ApplicationsList from "./pages/Admin/recruitment/ApplicationsList";
 import ApplicationDetails from "./pages/Admin/recruitment/ApplicationDetails";
 import CvSummarizer from "./pages/Admin/recruitment/CvSummarizer";
 import JobDetails from "./pages/Admin/recruitment/JobDetails";
-
 
 /* Vault (Admin) */
 import VaultList from "./pages/Admin/vault/VaultList";
@@ -143,7 +139,6 @@ function App() {
     return children;
   };
 
-
   const ManagerRoute = ({ user, children }) => {
     const token = localStorage.getItem("token");
 
@@ -162,7 +157,6 @@ function App() {
     return children;
   };
 
-
   const EmployeeRoute = ({ user, children }) => {
     const token = localStorage.getItem("token");
 
@@ -180,7 +174,6 @@ function App() {
 
     return children;
   };
-
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -262,7 +255,6 @@ function App() {
           {/* Analytics */}
           <Route path="analytics" element={<AdminAnalytics />} />
 
-
           {/* Notifications */}
           <Route path="notifications" element={<Notifications />} />
 
@@ -287,9 +279,7 @@ function App() {
 
           {/* Employee Management */}
           <Route path="employees" element={<EmployeeManagement />} />
-          <Route path="employees/hierarchy" element={<EmployeeHierarchy />} />
-
-
+          {/* Employee Hierarchy route removed */}
 
           {/* Departments */}
           <Route path="departments" element={<ManagerDepartmentList />} />
@@ -298,12 +288,13 @@ function App() {
           {/* Task Management */}
           <Route path="tasks" element={<TaskManagement />} />
 
-          {/* Roles & Permissions */}
-          <Route path="roles" element={<Roles />} />
-          <Route path="roles/add" element={<ManagerAddRole />} />
+          {/* Roles & Permissions - REMOVED */}
+          {/* Roles and AddRole routes removed */}
 
-          {/* Attendance Tracking (direct link) */}
+          {/* Attendance Tracking */}
           <Route path="attendance" element={<AttendanceTracking />} />
+          {/* Calendar route added */}
+          <Route path="attendance/calendar" element={<AttendanceCalendar />} />
 
           {/* Leave Management */}
           <Route path="leave-approval" element={<LeaveApproval />} />
@@ -316,8 +307,8 @@ function App() {
           <Route path="documents" element={<SecureVault />} />
           <Route path="documents/upload" element={<ManagerUploadDocument />} />
 
-          {/* Settings (direct link) */}
-          <Route path="settings" element={<Settings />} />
+          {/* Profile (renamed from Settings) */}
+          <Route path="profile" element={<Profile />} />
 
           <Route path="*" element={<Navigate to="/manager/dashboard" replace />} />
         </Route>
