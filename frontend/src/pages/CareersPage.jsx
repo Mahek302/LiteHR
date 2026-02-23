@@ -11,6 +11,7 @@ import {
 import LiteHRLogo from '../images/LiteHR_logo.png';
 import { toast } from 'react-hot-toast';
 import jobService from '../services/jobService';
+import Chatbot from '../components/Chatbot';
 
 export default function CareersPage() {
   const navigate = useNavigate();
@@ -564,6 +565,14 @@ export default function CareersPage() {
           </div>
         </div>
       </footer>
+
+      {/* Public FAQ Chatbot */}
+      <Chatbot
+        endpoint="/api/chatbot/public-ask"
+        welcomeMessage={`👋 Welcome to LiteHR Careers!\nHave questions about our culture, benefits, or open roles?\nI’m here to help 😊`}
+        title="LiteHR Assistant"
+        subtitle="Careers & Hiring Support"
+      />
 
       {/* ============= JOB DETAILS MODAL ============= */}
       {showJobDetailsModal && viewJob && (

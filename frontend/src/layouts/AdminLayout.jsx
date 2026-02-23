@@ -1,3 +1,4 @@
+import { FaRegUser } from "react-icons/fa";
 import { ThemeWrapper } from '../contexts/ThemeContext';
 import React, { useState, useEffect } from "react";
 import Chatbot from "../components/Chatbot";
@@ -7,7 +8,6 @@ import {
   FiUsers,
   FiLayers,
   FiCalendar,
-  FiSettings,
   FiLogOut,
   FiBell,
   FiChevronDown,
@@ -20,16 +20,16 @@ import {
   FiPieChart,
   FiClipboard,
   FiSearch,
-  FiTrendingUp,
-  FiActivity,
   FiLock,
   FiSun,
   FiMoon,
 } from "react-icons/fi";
+import { VscGraph } from "react-icons/vsc";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { HiOutlineOfficeBuilding } from "react-icons/hi";
 import { AiOutlineAudit } from "react-icons/ai";
 import { notificationService } from '../services/notificationService';
+import demoRequestService from "../services/demoRequestService";
 
 const AdminLayout = ({ children, logout }) => {
   const location = useLocation();
@@ -40,10 +40,24 @@ const AdminLayout = ({ children, logout }) => {
   const [expandedMenus, setExpandedMenus] = useState({});
   const [darkMode, setDarkMode] = useState(true);
   const [user, setUser] = useState(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [showSeconds, setShowSeconds] = useState(false);
 
   // Notification state
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [approvingIds, setApprovingIds] = useState([]);
+  const [trialRolesByNotificationId, setTrialRolesByNotificationId] = useState({});
+
+  // Update time every second
+useEffect(() => {
+  const timer = setInterval(() => {
+    setCurrentTime(new Date());
+  }, 1000);
+
+  // Cleanup interval on component unmount
+  return () => clearInterval(timer);
+}, []);
 
   // Fetch user info
   useEffect(() => {
@@ -200,7 +214,7 @@ const AdminLayout = ({ children, logout }) => {
     // Analytics Module
     {
       label: "Analytics",
-      icon: <FiTrendingUp />,
+      icon: <VscGraph />,
       path: "/admin/analytics",
       subItems: [
         { label: "Dashboard", path: "/admin/analytics" },
@@ -217,8 +231,7 @@ const AdminLayout = ({ children, logout }) => {
       ]
     },
 
-    // Settings Module
-    { label: "Settings", icon: <FiSettings />, path: "/admin/settings" },
+    { label: "Profile", icon: <FaRegUser />, path: "/admin/profile" },
   ];
 
   // Helper for time formatting
@@ -230,6 +243,24 @@ const AdminLayout = ({ children, logout }) => {
     const hours = Math.floor(mins / 60);
     if (hours < 24) return `${hours} hr ago`;
     return `${Math.floor(hours / 24)} day ago`;
+  };
+
+  const extractDemoRequestId = (title) => {
+    const match = String(title || "").match(/(?:Demo Request|Request for Demo)\s*#(\d+)/i);
+    return match ? Number(match[1]) : null;
+  };
+
+  const isDemoTrialApproved = (notification) => {
+    return /status:\s*approved|trial approved/i.test(
+      `${notification?.message || ""}`
+    );
+  };
+
+  const getApprovedTrialRole = (notification) => {
+    const match = String(notification?.message || "").match(
+      /trial access:\s*(employee|manager|admin)/i
+    );
+    return (match?.[1] || "employee").toLowerCase();
   };
 
   const fetchNotifications = async () => {
@@ -284,6 +315,26 @@ const AdminLayout = ({ children, logout }) => {
     setNotificationsOpen(opening);
     if (opening && unreadCount > 0) {
       await handleMarkAllRead();
+    }
+  };
+
+  const handleApproveDemoFromDropdown = async (notification) => {
+    const requestId = extractDemoRequestId(notification.title);
+    if (!requestId) return;
+    const selectedRole =
+      trialRolesByNotificationId[notification.id] || "EMPLOYEE";
+
+    try {
+      setApprovingIds((prev) => [...prev, notification.id]);
+      await demoRequestService.approve(requestId, selectedRole);
+      await fetchNotifications();
+    } catch (err) {
+      const errorMessage =
+        err?.response?.data?.message || "Failed to approve demo request";
+      console.error("Approve demo request failed:", errorMessage);
+      alert(errorMessage);
+    } finally {
+      setApprovingIds((prev) => prev.filter((id) => id !== notification.id));
     }
   };
 
@@ -607,10 +658,43 @@ const AdminLayout = ({ children, logout }) => {
                     {notifications.length > 0 ? (
                       notifications.slice(0, 5).map(notif => (
                         <div key={notif.id} className={`px-4 py-3 ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors ${!notif.isRead ? (darkMode ? 'bg-purple-600/10' : 'bg-purple-50') : ''}`}>
-                          <p className={`text-sm ${sidebarText}`}>{notif.message || notif.title}</p>
+                          <p className={`text-sm font-semibold ${sidebarText}`}>{notif.title || "Notification"}</p>
+                          <p className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'} whitespace-pre-line mt-1`}>
+                            {notif.message || "-"}
+                          </p>
                           <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
                             {formatTimeAgo(notif.createdAt)}
                           </p>
+                          {extractDemoRequestId(notif.title) && !isDemoTrialApproved(notif) && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <select
+                                value={trialRolesByNotificationId[notif.id] || "EMPLOYEE"}
+                                onChange={(e) =>
+                                  setTrialRolesByNotificationId((prev) => ({
+                                    ...prev,
+                                    [notif.id]: e.target.value,
+                                  }))
+                                }
+                                className={`px-2 py-1 text-xs rounded-md border ${darkMode ? "bg-gray-700 border-gray-600 text-gray-100" : "bg-white border-gray-300 text-gray-800"}`}
+                              >
+                                <option value="EMPLOYEE">EMPLOYEE</option>
+                                <option value="MANAGER">MANAGER</option>
+                                <option value="ADMIN">ADMIN</option>
+                              </select>
+                              <button
+                                onClick={() => handleApproveDemoFromDropdown(notif)}
+                                disabled={approvingIds.includes(notif.id)}
+                                className="px-2 py-1 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded-md disabled:opacity-60 disabled:cursor-not-allowed"
+                              >
+                                {approvingIds.includes(notif.id) ? "Approving..." : "Approve 15-Day Trial"}
+                              </button>
+                            </div>
+                          )}
+                          {extractDemoRequestId(notif.title) && isDemoTrialApproved(notif) && (
+                            <span className="mt-2 inline-block px-2 py-1 text-xs bg-emerald-600 text-white rounded-md">
+                              {`Approved for ${getApprovedTrialRole(notif)}`}
+                            </span>
+                          )}
                         </div>
                       ))
                     ) : (
@@ -632,10 +716,18 @@ const AdminLayout = ({ children, logout }) => {
               )}
             </div>
 
-            {/* Clock */}
-            <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-100'} ${darkMode ? 'text-gray-300' : 'text-gray-600'} px-4 py-2 rounded-lg text-sm font-medium border ${darkMode ? 'border-gray-600' : 'border-gray-300'}`}>
-              {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </div>
+            {/* Clock - Click to toggle seconds */}
+<div 
+  onClick={() => setShowSeconds(!showSeconds)}
+  className={`${darkMode ? 'bg-gray-700' : 'bg-gray-100'} ${darkMode ? 'text-gray-300' : 'text-gray-600'} px-4 py-2 rounded-lg text-sm font-medium border ${darkMode ? 'border-gray-600' : 'border-gray-300'} cursor-pointer hover:opacity-80 transition-opacity`}
+  title={showSeconds ? "Click to hide seconds" : "Click to show seconds"}
+>
+  {currentTime.toLocaleTimeString([], { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    ...(showSeconds && { second: '2-digit' })
+  })}
+</div>
 
             {/* User Dropdown */}
             <div className="relative">
@@ -662,12 +754,12 @@ const AdminLayout = ({ children, logout }) => {
 
                   <button
                     onClick={() => {
-                      navigate('/admin/settings');
+                      navigate('/admin/profile');
                       setUserDropdown(false);
                     }}
                     className={`w-full text-left px-4 py-2 text-sm ${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'} transition-colors`}
                   >
-                    <FiSettings className="inline mr-2" /> Settings
+                    <FaRegUser className="inline mr-2" /> Profile
                   </button>
                   <div className={`border-t ${sidebarBorder} mt-2 pt-2`}>
                     <button
@@ -683,7 +775,7 @@ const AdminLayout = ({ children, logout }) => {
           </div>
         </header>
 
-        <main className={`flex-1 overflow-y-auto p-6 transition-colors duration-300`}>
+        <main id="app-scroll-container" className={`flex-1 overflow-y-auto p-6 transition-colors duration-300`}>
           <div className="w-full">
             <ThemeWrapper darkMode={darkMode}>
               <Outlet />

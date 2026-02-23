@@ -3,6 +3,9 @@ import { Search, Filter, Download, Mail, Phone, MapPin, Briefcase, Calendar, Fil
 import { managerService } from '../../services/managerService';
 import { toast } from 'react-hot-toast';
 import { useOutletContext } from 'react-router-dom';
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { addCorporatePdfHeader, addCorporatePdfFooters, escapeCsvValue } from "../../utils/corporatePdf";
 
 export default function Recruitment() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -11,6 +14,7 @@ export default function Recruitment() {
   const [expandedApplication, setExpandedApplication] = useState(null);
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showExportOptions, setShowExportOptions] = useState(false);
 
   const { isDarkMode = true } = useOutletContext() || {};
 
@@ -148,16 +152,92 @@ export default function Recruitment() {
   };
 
   // Export applications
-  const exportApplications = () => {
-    const dataStr = JSON.stringify(applications, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+  const handleExportData = async (format = 'csv') => {
+    let dataStr, fileName, mimeType;
 
-    const exportFileDefaultName = `litehr_applications_${new Date().toISOString().split('T')[0]}.json`;
+    if (format === 'pdf') {
+      try {
+        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+        let y = await addCorporatePdfHeader(pdf, {
+          title: "Recruitment Applications Report",
+          subtitle: `Filtered results: ${filteredApplications.length} applications`,
+        });
 
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
+        const summaryRows = [
+          ["Total Applications", String(filteredApplications.length)],
+          ["Pending/New", String(filteredApplications.filter(a => ['new', 'pending'].includes(a.status)).length)],
+          ["Under Review", String(filteredApplications.filter(a => ['reviewed', 'review'].includes(a.status)).length)],
+          ["Shortlisted/Interview", String(filteredApplications.filter(a => ['shortlisted', 'interview'].includes(a.status)).length)],
+          ["Hired", String(filteredApplications.filter(a => a.status === 'hired').length)],
+          ["Rejected", String(filteredApplications.filter(a => a.status === 'rejected').length)],
+        ];
+
+        autoTable(pdf, {
+          startY: y,
+          head: [["Metric", "Value"]],
+          body: summaryRows,
+          theme: "grid",
+          headStyles: { fillColor: [30, 58, 138] },
+          margin: { left: 14, right: 14 },
+        });
+
+        y = (pdf.lastAutoTable?.finalY || y) + 8;
+        autoTable(pdf, {
+          startY: y,
+          head: [["Name", "Email", "Phone", "Position", "Status", "Applied On"]],
+          body: filteredApplications.map((app) => ([
+            app.name || 'N/A',
+            app.email || 'N/A',
+            app.phone || 'N/A',
+            app.position || 'N/A',
+            getStatusText(app.status),
+            app.timestamp ? new Date(app.timestamp).toLocaleDateString() : 'N/A',
+          ])),
+          theme: "striped",
+          headStyles: { fillColor: [30, 58, 138] },
+          styles: { fontSize: 9, cellPadding: 2.2 },
+          margin: { left: 14, right: 14 },
+        });
+
+        addCorporatePdfFooters(pdf);
+        pdf.save(`recruitment-applications-${new Date().toISOString().split('T')[0]}.pdf`);
+        setShowExportOptions(false);
+        toast.success("Applications exported as PDF");
+        return;
+      } catch (error) {
+        console.error("PDF export failed:", error);
+        toast.error("Failed to export PDF");
+        return;
+      }
+    } else {
+      // CSV format
+      const headers = ['Name', 'Email', 'Phone', 'Position', 'Status', 'Applied On', 'Cover Letter'];
+      const rows = filteredApplications.map(app =>
+        [
+          escapeCsvValue(app.name || 'N/A'),
+          escapeCsvValue(app.email || 'N/A'),
+          escapeCsvValue(app.phone || 'N/A'),
+          escapeCsvValue(app.position || 'N/A'),
+          escapeCsvValue(getStatusText(app.status)),
+          escapeCsvValue(app.timestamp ? new Date(app.timestamp).toLocaleDateString() : 'N/A'),
+          escapeCsvValue((app.coverLetter || '').replace(/\n/g, ' '))
+        ].join(',')
+      );
+      dataStr = [headers.join(','), ...rows].join('\n');
+      fileName = `recruitment-applications-${new Date().toISOString().split('T')[0]}.csv`;
+      mimeType = 'text/csv';
+    }
+
+    const dataBlob = new Blob([dataStr], { type: mimeType });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    setShowExportOptions(false);
+    toast.success(`Applications exported as ${format.toUpperCase()}!`);
   };
 
   // Format date
@@ -200,17 +280,40 @@ export default function Recruitment() {
           </p>
         </div>
         <div className="flex space-x-3">
-          <button
-            onClick={exportApplications}
-            className="flex items-center space-x-2 px-4 py-2 border rounded-lg transition-colors duration-300 hover:opacity-80"
-            style={{ borderColor: themeColors.border, color: themeColors.text, backgroundColor: themeColors.card }}
-          >
-            <Download size={18} />
-            <span>Export JSON</span>
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowExportOptions(!showExportOptions)}
+              className="flex items-center space-x-2 px-4 py-2 border rounded-lg transition-colors duration-300 hover:opacity-80 cursor-pointer"
+              style={{ borderColor: themeColors.border, color: themeColors.text, backgroundColor: themeColors.card }}
+            >
+              <Download size={18} />
+              <span>Export</span>
+              <ChevronDown size={16} />
+            </button>
+            
+            {showExportOptions && (
+              <div className="absolute right-0 top-12 w-40 rounded-lg shadow-lg border z-10 overflow-hidden transition-colors duration-300" style={{ backgroundColor: themeColors.card, borderColor: themeColors.border }}>
+                <button
+                  onClick={() => handleExportData('pdf')}
+                  className="w-full text-left px-4 py-2 hover:opacity-80 text-sm transition-colors duration-300 border-b cursor-pointer"
+                  style={{ color: themeColors.text, borderColor: themeColors.border }}
+                >
+                  Export as PDF
+                </button>
+                <button
+                  onClick={() => handleExportData('csv')}
+                  className="w-full text-left px-4 py-2 hover:opacity-80 text-sm transition-colors duration-300 cursor-pointer"
+                  style={{ color: themeColors.text }}
+                >
+                  Export as CSV
+                </button>
+              </div>
+            )}
+          </div>
+          
           <button
             onClick={loadApplications}
-            className="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-300 hover:opacity-90 text-white"
+            className="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-300 hover:opacity-90 text-white cursor-pointer"
             style={{ backgroundColor: themeColors.primary }}
           >
             <span>Refresh</span>
@@ -300,7 +403,7 @@ export default function Recruitment() {
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="pl-10 pr-8 py-2 border rounded-lg focus:outline-none focus:ring-2 appearance-none transition-colors duration-300"
+                className="pl-10 pr-8 py-2 border rounded-lg focus:outline-none focus:ring-2 appearance-none transition-colors duration-300 cursor-pointer"
                 style={{
                   backgroundColor: themeColors.inputBg,
                   borderColor: themeColors.border,
@@ -322,7 +425,7 @@ export default function Recruitment() {
               <select
                 value={selectedJob}
                 onChange={(e) => setSelectedJob(e.target.value)}
-                className="pl-10 pr-8 py-2 border rounded-lg focus:outline-none focus:ring-2 appearance-none transition-colors duration-300"
+                className="pl-10 pr-8 py-2 border rounded-lg focus:outline-none focus:ring-2 appearance-none transition-colors duration-300 cursor-pointer"
                 style={{
                   backgroundColor: themeColors.inputBg,
                   borderColor: themeColors.border,
@@ -409,14 +512,14 @@ export default function Recruitment() {
                       <div className="flex space-x-2">
                         <button
                           onClick={() => toggleExpand(application.id)}
-                          className="px-3 py-1 text-sm rounded-lg transition-colors duration-300 hover:opacity-80"
+                          className="px-3 py-1 text-sm rounded-lg transition-colors duration-300 hover:opacity-80 cursor-pointer"
                           style={{ color: themeColors.accent, backgroundColor: `${themeColors.accent}10` }}
                         >
                           {expandedApplication === application.id ? 'Hide Details' : 'View Details'}
                         </button>
                         <button
                           onClick={() => viewResume(application)}
-                          className="px-3 py-1 text-sm rounded-lg transition-colors duration-300 hover:opacity-80"
+                          className="px-3 py-1 text-sm rounded-lg transition-colors duration-300 hover:opacity-80 cursor-pointer"
                           style={{ color: themeColors.secondary, backgroundColor: `${themeColors.secondary}10` }}
                         >
                           Resume
@@ -429,7 +532,7 @@ export default function Recruitment() {
                   <div className="flex flex-wrap gap-2 mt-4">
                     <button
                       onClick={() => updateApplicationStatus(application.id, 'review')}
-                      className={`px-3 py-1 rounded-lg text-sm transition-colors duration-300 hover:opacity-90`}
+                      className={`px-3 py-1 rounded-lg text-sm transition-colors duration-300 hover:opacity-90 cursor-pointer`}
                       style={{
                         backgroundColor: (application.status || 'pending') === 'reviewed' ? themeColors.accent : `${themeColors.accent}20`,
                         color: (application.status || 'pending') === 'reviewed' ? 'white' : themeColors.accent
@@ -439,7 +542,7 @@ export default function Recruitment() {
                     </button>
                     <button
                       onClick={() => updateApplicationStatus(application.id, 'shortlisted')}
-                      className={`px-3 py-1 rounded-lg text-sm transition-colors duration-300 hover:opacity-90`}
+                      className={`px-3 py-1 rounded-lg text-sm transition-colors duration-300 hover:opacity-90 cursor-pointer`}
                       style={{
                         backgroundColor: (application.status || 'pending') === 'shortlisted' ? themeColors.primary : `${themeColors.primary}20`,
                         color: (application.status || 'pending') === 'shortlisted' ? 'white' : themeColors.primary
@@ -449,7 +552,7 @@ export default function Recruitment() {
                     </button>
                     <button
                       onClick={() => updateApplicationStatus(application.id, 'hired')}
-                      className={`px-3 py-1 rounded-lg text-sm transition-colors duration-300 hover:opacity-90`}
+                      className={`px-3 py-1 rounded-lg text-sm transition-colors duration-300 hover:opacity-90 cursor-pointer`}
                       style={{
                         backgroundColor: (application.status || 'pending') === 'hired' ? themeColors.secondary : `${themeColors.secondary}20`,
                         color: (application.status || 'pending') === 'hired' ? 'white' : themeColors.secondary
@@ -459,7 +562,7 @@ export default function Recruitment() {
                     </button>
                     <button
                       onClick={() => updateApplicationStatus(application.id, 'rejected')}
-                      className={`px-3 py-1 rounded-lg text-sm transition-colors duration-300 hover:opacity-90`}
+                      className={`px-3 py-1 rounded-lg text-sm transition-colors duration-300 hover:opacity-90 cursor-pointer`}
                       style={{
                         backgroundColor: (application.status || 'pending') === 'rejected' ? themeColors.danger : `${themeColors.danger}20`,
                         color: (application.status || 'pending') === 'rejected' ? 'white' : themeColors.danger
@@ -496,7 +599,7 @@ export default function Recruitment() {
                                   href={application.linkedin}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="hover:underline flex items-center gap-1 transition-colors duration-300"
+                                  className="hover:underline flex items-center gap-1 transition-colors duration-300 cursor-pointer"
                                   style={{ color: themeColors.accent }}
                                 >
                                   {application.linkedin}
@@ -511,7 +614,7 @@ export default function Recruitment() {
                                   href={application.github}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="hover:underline flex items-center gap-1 transition-colors duration-300"
+                                  className="hover:underline flex items-center gap-1 transition-colors duration-300 cursor-pointer"
                                   style={{ color: themeColors.accent }}
                                 >
                                   {application.github}
@@ -568,7 +671,7 @@ export default function Recruitment() {
                               </div>
                               <button
                                 onClick={() => viewResume(application)}
-                                className="px-3 py-1 text-sm rounded-lg transition-colors duration-300 hover:opacity-80"
+                                className="px-3 py-1 text-sm rounded-lg transition-colors duration-300 hover:opacity-80 cursor-pointer"
                                 style={{ backgroundColor: `${themeColors.accent}20`, color: themeColors.accent }}
                               >
                                 View Details

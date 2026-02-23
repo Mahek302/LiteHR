@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 import { FiDownload, FiCheckCircle, FiPlus, FiSearch, FiFilter, FiX } from "react-icons/fi";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { addCorporatePdfHeader, addCorporatePdfFooters } from "../../../utils/corporatePdf";
 
 const AdminPayslip = () => {
     const [payslips, setPayslips] = useState([]);
@@ -105,63 +106,58 @@ const AdminPayslip = () => {
         }
     };
 
-    const handleDownload = (payslip) => {
+    const handleDownload = async (payslip) => {
         try {
             const doc = new jsPDF();
-
-            // Company Header
-            doc.setFontSize(22);
-            doc.setTextColor(40, 40, 40);
-            doc.text("LITE HR", 105, 20, { align: "center" });
-
-            doc.setFontSize(14);
-            doc.setTextColor(100, 100, 100);
-            doc.text("Payslip for the month of " + new Date(0, payslip.month - 1).toLocaleString('default', { month: 'long' }) + " " + payslip.year, 105, 30, { align: "center" });
+            let y = await addCorporatePdfHeader(doc, {
+                title: "Employee Payslip",
+                subtitle: `${new Date(0, payslip.month - 1).toLocaleString('default', { month: 'long' })} ${payslip.year}`,
+            });
 
             // Employee Details Box
             doc.setDrawColor(200, 200, 200);
             doc.setFillColor(250, 250, 250);
-            doc.roundedRect(14, 40, 182, 45, 3, 3, 'FD');
+            doc.roundedRect(14, y, 182, 45, 3, 3, 'FD');
 
             doc.setFontSize(11);
             doc.setTextColor(60, 60, 60);
 
             // Left Column
             doc.setFont("helvetica", "bold");
-            doc.text("Employee Name:", 20, 50);
+            doc.text("Employee Name:", 20, y + 10);
             doc.setFont("helvetica", "normal");
-            doc.text(payslip.employee?.fullName || "N/A", 60, 50);
+            doc.text(payslip.employee?.fullName || "N/A", 60, y + 10);
 
             doc.setFont("helvetica", "bold");
-            doc.text("Employee Code:", 20, 60);
+            doc.text("Employee Code:", 20, y + 20);
             doc.setFont("helvetica", "normal");
-            doc.text(payslip.employee?.employeeCode || "N/A", 60, 60);
+            doc.text(payslip.employee?.employeeCode || "N/A", 60, y + 20);
 
             doc.setFont("helvetica", "bold");
-            doc.text("Designation:", 20, 70);
+            doc.text("Designation:", 20, y + 30);
             doc.setFont("helvetica", "normal");
-            doc.text(payslip.employee?.designation || "N/A", 60, 70); // Field might be missing if not joined, check API
+            doc.text(payslip.employee?.designation || "N/A", 60, y + 30); // Field might be missing if not joined, check API
 
             // Right Column
             doc.setFont("helvetica", "bold");
-            doc.text("Department:", 110, 50);
+            doc.text("Department:", 110, y + 10);
             doc.setFont("helvetica", "normal");
-            doc.text(payslip.employee?.department || "N/A", 150, 50);
+            doc.text(payslip.employee?.department || "N/A", 150, y + 10);
 
             doc.setFont("helvetica", "bold");
-            doc.text("Working Days:", 110, 60);
+            doc.text("Working Days:", 110, y + 20);
             doc.setFont("helvetica", "normal");
-            doc.text(String(payslip.workingDays || 0), 150, 60);
+            doc.text(String(payslip.workingDays || 0), 150, y + 20);
 
             doc.setFont("helvetica", "bold");
-            doc.text("Present Days:", 110, 70);
+            doc.text("Present Days:", 110, y + 30);
             doc.setFont("helvetica", "normal");
-            doc.text(String(payslip.presentDays || 0), 150, 70);
+            doc.text(String(payslip.presentDays || 0), 150, y + 30);
 
             doc.setFont("helvetica", "bold");
-            doc.text("LOP Days:", 110, 80);
+            doc.text("LOP Days:", 110, y + 40);
             doc.setFont("helvetica", "normal");
-            doc.text(String(payslip.unpaidLeaves || 0), 150, 80);
+            doc.text(String(payslip.unpaidLeaves || 0), 150, y + 40);
 
             // Salary Details Table
             const columns = ["Earnings", "Amount (Rs.)", "Deductions", "Amount (Rs.)"];
@@ -178,7 +174,7 @@ const AdminPayslip = () => {
             ];
 
             autoTable(doc, {
-                startY: 95,
+                startY: y + 55,
                 head: [columns],
                 body: data,
                 theme: 'grid',
@@ -207,6 +203,8 @@ const AdminPayslip = () => {
             doc.setFontSize(8);
             doc.setTextColor(150, 150, 150);
             doc.text("This is a computer-generated document and does not require a signature.", 105, 280, { align: "center" });
+
+            addCorporatePdfFooters(doc);
 
             // Save
             doc.save(`Payslip_${payslip.employee?.fullName}_${payslip.month}_${payslip.year}.pdf`);

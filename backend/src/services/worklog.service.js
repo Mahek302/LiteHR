@@ -2,7 +2,7 @@ import { Employee, Worklog } from "../models/index.js";
 
 // EMPLOYEE: add worklog
 export const addWorklogService = async (employeeId, data) => {
-  const { date, description, hoursWorked } = data;
+  const { date, description, hoursWorked, project, taskName } = data;
 
   if (!date || !description) {
     throw new Error("date and description are required");
@@ -13,6 +13,8 @@ export const addWorklogService = async (employeeId, data) => {
     date,
     description,
     hoursWorked: hoursWorked || null,
+    project: project || null,
+    taskName: taskName || null,
   });
 
   return entry;

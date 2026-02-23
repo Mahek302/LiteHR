@@ -43,6 +43,15 @@ const AddEmployee = () => {
   const [allEmployees, setAllEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
 
+  const scrollFormToTop = (smooth = true) => {
+    const container = document.getElementById("app-scroll-container");
+    if (container) {
+      container.scrollTo({ top: 0, behavior: smooth ? "smooth" : "auto" });
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: smooth ? "smooth" : "auto" });
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -154,6 +163,7 @@ const AddEmployee = () => {
     const stepErrors = validateStep(activeStep);
     if (Object.keys(stepErrors).length === 0) {
       setActiveStep(prev => Math.min(prev + 1, totalSteps));
+      scrollFormToTop();
     } else {
       setErrors(stepErrors);
     }
@@ -162,6 +172,7 @@ const AddEmployee = () => {
   const handlePrev = (e) => {
     if (e) e.preventDefault();
     setActiveStep(prev => Math.max(prev - 1, 1));
+    scrollFormToTop();
   };
 
   const handleSubmit = async (e) => {
@@ -268,6 +279,11 @@ const AddEmployee = () => {
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    scrollFormToTop(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeStep]);
 
   return (
     <div className="w-full">

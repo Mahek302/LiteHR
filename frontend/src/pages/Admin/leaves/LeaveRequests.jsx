@@ -3,6 +3,9 @@ import axios from "axios";
 import { FiCalendar, FiCheck, FiX, FiClock, FiUser, FiDownload, FiFilter, FiPieChart, FiBarChart2 } from "react-icons/fi";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useTheme, getThemeClasses } from "../../../contexts/ThemeContext";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { addCorporatePdfHeader, addCorporatePdfFooters, escapeCsvValue } from "../../../utils/corporatePdf";
 
 const LeaveRequests = () => {
   const darkMode = useTheme();
@@ -14,6 +17,7 @@ const LeaveRequests = () => {
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showExportOptions, setShowExportOptions] = useState(false);
 
   const cardBg = darkMode ? 'bg-gray-800' : 'bg-white';
   const cardBorder = darkMode ? 'border-gray-700' : 'border-gray-200';
@@ -231,9 +235,47 @@ const LeaveRequests = () => {
       });
   };
 
-  const handleExport = () => {
+  const handleExport = async (format = "csv") => {
     if (filteredRequests.length === 0) {
       alert("No data to export");
+      return;
+    }
+
+    if (format === "pdf") {
+      try {
+        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+        const y = await addCorporatePdfHeader(pdf, {
+          title: "Leave Requests Report",
+          subtitle: `Status: ${filter.toUpperCase()} | Records: ${filteredRequests.length}`,
+        });
+
+        autoTable(pdf, {
+          startY: y,
+          head: [["Employee", "Emp ID", "Department", "Type", "From", "To", "Duration", "Status"]],
+          body: filteredRequests.map((req) => ([
+            req.employee,
+            req.employeeId,
+            req.department,
+            req.leaveType,
+            req.fromDate,
+            req.toDate,
+            req.duration,
+            req.status,
+          ])),
+          theme: "striped",
+          headStyles: { fillColor: [30, 58, 138] },
+          styles: { fontSize: 9, cellPadding: 2.2 },
+          margin: { left: 14, right: 14 },
+        });
+
+        addCorporatePdfFooters(pdf);
+        pdf.save(`leave_requests_${new Date().toISOString().split('T')[0]}.pdf`);
+      } catch (err) {
+        console.error("PDF export failed:", err);
+        alert("Failed to export PDF");
+      } finally {
+        setShowExportOptions(false);
+      }
       return;
     }
 
@@ -241,16 +283,16 @@ const LeaveRequests = () => {
     const csvContent = [
       headers.join(","),
       ...filteredRequests.map(req => [
-        `"${req.employee}"`,
-        `"${req.employeeId}"`,
-        `"${req.department}"`,
-        `"${req.leaveType}"`,
-        `"${req.fromDate}"`,
-        `"${req.toDate}"`,
-        `"${req.duration}"`,
-        `"${req.reason.replace(/"/g, '""')}"`,
-        `"${req.appliedOn}"`,
-        `"${req.status}"`
+        escapeCsvValue(req.employee),
+        escapeCsvValue(req.employeeId),
+        escapeCsvValue(req.department),
+        escapeCsvValue(req.leaveType),
+        escapeCsvValue(req.fromDate),
+        escapeCsvValue(req.toDate),
+        escapeCsvValue(req.duration),
+        escapeCsvValue(req.reason),
+        escapeCsvValue(req.appliedOn),
+        escapeCsvValue(req.status),
       ].join(","))
     ].join("\n");
 
@@ -263,6 +305,7 @@ const LeaveRequests = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setShowExportOptions(false);
   };
 
   return (
@@ -279,89 +322,35 @@ const LeaveRequests = () => {
             </p>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 relative">
             <button
-              onClick={handleExport}
+              onClick={() => setShowExportOptions((prev) => !prev)}
               className={`flex items-center gap-2 px-4 py-2.5 ${inputBg} border ${inputBorder} ${textPrimary} rounded-lg ${hoverBg} font-medium`}
             >
               <FiDownload className="w-4 h-4" />
               Export
             </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Status Distribution Pie Chart */}
-        <div className={`${cardBg} rounded-xl p-6 border ${cardBorder}`}>
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className={`text-lg font-semibold ${textPrimary}`}>Status Distribution</h3>
-              <p className={`text-sm ${textSecondary}`}>Breakdown of leave requests</p>
-            </div>
-            <FiPieChart className={`w-6 h-6 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`} />
-          </div>
-          <div className="h-64" style={{ minWidth: 0 }}>
-            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-              <PieChart>
-                <Pie
-                  data={statusDistribution}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
+            {showExportOptions && (
+              <div className={`absolute right-0 top-12 w-40 rounded-lg border shadow-lg z-10 ${cardBg} ${cardBorder}`}>
+                <button
+                  onClick={() => handleExport("pdf")}
+                  className={`w-full text-left px-4 py-2 text-sm border-b ${cardBorder} ${textPrimary} ${hoverBg}`}
                 >
-                  {statusDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            {statusDistribution.map((item, index) => (
-              <div key={index} className="text-center">
-                <div className="text-2xl font-bold text-white" style={{ color: item.color }}>
-                  {item.value}
-                </div>
-                <div className={`text-sm ${textSecondary}`}>{item.name}</div>
+                  Export as PDF
+                </button>
+                <button
+                  onClick={() => handleExport("csv")}
+                  className={`w-full text-left px-4 py-2 text-sm ${textPrimary} ${hoverBg}`}
+                >
+                  Export as CSV
+                </button>
               </div>
-            ))}
-          </div>
-        </div>
-
-
-
-        {/* Monthly Trends */}
-        <div className={`${cardBg} rounded-xl p-6 border ${cardBorder}`}>
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className={`text-lg font-semibold ${textPrimary}`}>Monthly Trends</h3>
-              <p className={`text-sm ${textSecondary}`}>Last 6 months leave activity</p>
-            </div>
-            <FiBarChart2 className={`w-6 h-6 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`} />
-          </div>
-          <div className="h-64" style={{ minWidth: 0 }}>
-            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-              <BarChart data={monthlyTrendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#374151" : "#E5E7EB"} />
-                <XAxis dataKey="month" stroke={darkMode ? "#9CA3AF" : "#6B7280"} />
-                <YAxis stroke={darkMode ? "#9CA3AF" : "#6B7280"} />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                <Bar dataKey="requests" name="Total Requests" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="approved" name="Approved" fill="#10B981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>
+
+      
 
       {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -378,7 +367,7 @@ const LeaveRequests = () => {
         <div className={`${cardBg} p-5 rounded-xl border ${darkMode ? 'border-amber-500/30' : 'border-amber-200'}`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-amber-600 dark:text-amber-300">Pending</p>
+              <p className="text-sm text-amber-600 dark:text-amber-300">Pending Leave Approval</p>
               <h3 className="text-2xl font-bold text-amber-600 dark:text-amber-300 mt-1">{stats.pending}</h3>
             </div>
             <FiClock className="w-8 h-8 text-amber-500" />
@@ -431,7 +420,7 @@ const LeaveRequests = () => {
                   : `${inputBg} ${textSecondary} hover:text-white border ${inputBorder}`
                   }`}
               >
-                Pending ({stats.pending})
+                Pending Leave Approval ({stats.pending})
               </button>
               <button
                 onClick={() => setFilter("approved")}
@@ -651,18 +640,84 @@ const LeaveRequests = () => {
             Instead we can show maybe recent rejections or just make the upcoming full width
         */}
 
+        {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Status Distribution Pie Chart */}
+        <div className={`${cardBg} rounded-xl p-6 border ${cardBorder}`}>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className={`text-lg font-semibold ${textPrimary}`}>Status Distribution</h3>
+              <p className={`text-sm ${textSecondary}`}>Breakdown of leave requests</p>
+            </div>
+            <FiPieChart className={`w-6 h-6 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+          </div>
+          <div className="h-64" style={{ minWidth: 0 }}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+              <PieChart>
+                <Pie
+                  data={statusDistribution}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {statusDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="grid grid-cols-3 gap-4 mt-4">
+            {statusDistribution.map((item, index) => (
+              <div key={index} className="text-center">
+                <div className="text-2xl font-bold text-white" style={{ color: item.color }}>
+                  {item.value}
+                </div>
+                <div className={`text-sm ${textSecondary}`}>{item.name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+
+
+        {/* Monthly Trends */}
+        <div className={`${cardBg} rounded-xl p-6 border ${cardBorder}`}>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className={`text-lg font-semibold ${textPrimary}`}>Monthly Trends</h3>
+              <p className={`text-sm ${textSecondary}`}>Last 6 months leave activity</p>
+            </div>
+            <FiBarChart2 className={`w-6 h-6 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+          </div>
+          <div className="h-64" style={{ minWidth: 0 }}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+              <BarChart data={monthlyTrendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#374151" : "#E5E7EB"} />
+                <XAxis dataKey="month" stroke={darkMode ? "#9CA3AF" : "#6B7280"} />
+                <YAxis stroke={darkMode ? "#9CA3AF" : "#6B7280"} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                <Bar dataKey="requests" name="Total Requests" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="approved" name="Approved" fill="#10B981" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
 
         {/* Upcoming Leaves */}
         <div className={`${cardBg} rounded-xl p-6 border ${cardBorder}`}>
           <div className="flex justify-between items-center mb-4">
             <h3 className={`text-lg font-semibold ${textPrimary}`}>Upcoming Approved Leaves</h3>
-            <button
-              onClick={() => setFilter("approved")}
-              className={`text-sm ${darkMode ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-700'} font-medium`}
-            >
-              View All →
-            </button>
-          </div>
+            </div>
 
           <div className="space-y-3">
             {leaveRequests

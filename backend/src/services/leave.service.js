@@ -10,12 +10,39 @@ import { createNotification } from "./notification.service.js";
 import { sendEmail } from "../utils/email.js";
 
 const CURRENT_YEAR = new Date().getFullYear();
+const AUTO_DECISION_WINDOW_HOURS = 24;
 
 // Helper: calculate number of leave days
 const calculateDays = (fromDate, toDate) => {
   const start = new Date(fromDate);
   const end = new Date(toDate);
   return Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+};
+
+const autoRejectExpiredPendingLeaves = async () => {
+  const thresholdDate = new Date(Date.now() - AUTO_DECISION_WINDOW_HOURS * 60 * 60 * 1000);
+  const stalePendingLeaves = await LeaveRequest.findAll({
+    where: {
+      status: "PENDING",
+      createdAt: { [Op.lte]: thresholdDate },
+    },
+    include: [{ model: Employee, as: "employee" }],
+  });
+
+  for (const leave of stalePendingLeaves) {
+    leave.status = "REJECTED";
+    leave.approverId = null;
+    await leave.save();
+
+    if (leave.employee?.userId) {
+      await createNotification({
+        userId: leave.employee.userId,
+        title: "Leave Request Auto-Rejected",
+        message: "Your leave request was automatically rejected after 24 hours without approval.",
+        type: "LEAVE",
+      });
+    }
+  }
 };
 
 // ================= EMPLOYEE =================
@@ -78,33 +105,9 @@ export const applyLeaveService = async (employeeId, data) => {
 
   const hasCollision = collisions.length > 0;
   const collisionCount = collisions.length;
-  // Auto leave approval rule
-  const shouldAutoApproveLeave = ({ days, hasCollision }) => {
-    // Rule 1: Only 1-day leave
-    if (days > 1) return false;
-
-    // Rule 2: No collision
-    if (hasCollision) return false;
-
-    return true;
-  };
-
-  // 🔹 AUTO APPROVAL CHECK
-  const autoApprove = shouldAutoApproveLeave({
-    days,
-    hasCollision,
-  });
-
-  let finalStatus = "PENDING";
-
-  // If auto-approved → deduct balance immediately
-  if (autoApprove) {
-    finalStatus = "APPROVED";
-
-    balance.used += days;
-    balance.remaining -= days;
-    await balance.save();
-  }
+  // All leave requests now require manual review.
+  // If not actioned within 24 hours they are auto-rejected.
+  const finalStatus = "PENDING";
 
   // 5️⃣ Create leave request
   const leave = await LeaveRequest.create({
@@ -119,60 +122,50 @@ export const applyLeaveService = async (employeeId, data) => {
   });
 
   // 6️⃣ Notify managers of the department
-  if (autoApprove) {
-    // 🔔 Notify employee (auto-approved)
+  // 🔔 Notify managers (manual approval)
+  const managers = await Employee.findAll({
+    where: {
+      department: employee.department,
+      designation: { [Op.like]: "%Manager%" },
+    },
+  });
+
+  for (const manager of managers) {
     await createNotification({
-      userId: employee.userId,
-      title: "Leave Auto-Approved",
-      message: "Your leave has been automatically approved",
+      userId: manager.userId,
+      title: "New Leave Request",
+      message: `${employee.fullName} applied for leave`,
       type: "LEAVE",
     });
-  } else {
-    // 🔔 Notify managers (manual approval)
-    const managers = await Employee.findAll({
-      where: {
-        department: employee.department,
-        designation: { [Op.like]: "%Manager%" },
-      },
+  }
+
+  // 🔔 Notify Admins
+  const admins = await User.findAll({ where: { role: 'ADMIN' } });
+  for (const admin of admins) {
+    await createNotification({
+      userId: admin.id,
+      title: "New Leave Request",
+      message: `${employee.fullName} applied for leave`,
+      type: "LEAVE",
     });
+  }
 
-    for (const manager of managers) {
-      await createNotification({
-        userId: manager.userId,
-        title: "New Leave Request",
-        message: `${employee.fullName} applied for leave`,
-        type: "LEAVE",
-      });
-    }
+  // Send email to all involved managers (if emails available)
+  const managerEmails = (
+    await Promise.all(
+      managers.map(async (m) => {
+        const user = await m.getUser();
+        return user ? user.email : null;
+      })
+    )
+  ).filter(Boolean);
 
-    // 🔔 Notify Admins
-    const admins = await User.findAll({ where: { role: 'ADMIN' } });
-    for (const admin of admins) {
-      await createNotification({
-        userId: admin.id,
-        title: "New Leave Request",
-        message: `${employee.fullName} applied for leave`,
-        type: "LEAVE",
-      });
-    }
-
-    // Send email to all involved managers (if emails available)
-    const managerEmails = (
-      await Promise.all(
-        managers.map(async (m) => {
-          const user = await m.getUser();
-          return user ? user.email : null;
-        })
-      )
-    ).filter(Boolean);
-
-    if (managerEmails.length > 0) {
-      await sendEmail({
-        to: managerEmails.join(","),
-        subject: "New Leave Request",
-        text: `${employee.fullName} has applied for leave.`,
-      });
-    }
+  if (managerEmails.length > 0) {
+    await sendEmail({
+      to: managerEmails.join(","),
+      subject: "New Leave Request",
+      text: `${employee.fullName} has applied for leave.`,
+    });
   }
 
   return leave;
@@ -190,6 +183,7 @@ export const getMyLeavesService = async (employeeId) => {
 
 // Pending leaves (with collision info)
 export const getPendingLeavesService = async (user) => {
+  await autoRejectExpiredPendingLeaves();
   const whereLeave = { status: "PENDING" };
 
   const include = [
@@ -232,6 +226,7 @@ export const getPendingLeavesService = async (user) => {
 
 // All leaves (for Admin/Manager View)
 export const getAllLeavesService = async (user, filters = {}) => {
+  await autoRejectExpiredPendingLeaves();
   const whereLeave = {};
 
   if (filters.status && filters.status !== 'all') {
@@ -270,6 +265,7 @@ export const getAllLeavesService = async (user, filters = {}) => {
 
 // Approve / Reject leave
 export const updateLeaveStatusService = async (user, leaveId, newStatus) => {
+  await autoRejectExpiredPendingLeaves();
   if (!["APPROVED", "REJECTED"].includes(newStatus)) {
     throw new Error("Invalid leave status");
   }

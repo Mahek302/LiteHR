@@ -1,13 +1,34 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { FiBell, FiCheck, FiTrash2, FiSettings, FiCalendar, FiUser, FiBriefcase, FiAlertCircle, FiTrendingUp } from "react-icons/fi";
+import { FiBell, FiCheck, FiTrash2, FiSettings, FiCalendar, FiUser, FiBriefcase, FiAlertCircle } from "react-icons/fi";
 import { useTheme, useThemeClasses } from "../../../contexts/ThemeContext";
+import demoRequestService from "../../../services/demoRequestService";
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState("all");
+  const [approvingIds, setApprovingIds] = useState([]);
+  const [trialRolesByNotificationId, setTrialRolesByNotificationId] = useState({});
   const darkMode = useTheme() || false;
   const theme = useThemeClasses();
+
+  const extractDemoRequestId = (title) => {
+    const match = String(title || "").match(/(?:Demo Request|Request for Demo)\s*#(\d+)/i);
+    return match ? Number(match[1]) : null;
+  };
+
+  const isDemoTrialApproved = (notification) => {
+    return /status:\s*approved|trial approved/i.test(
+      `${notification?.message || ""}`
+    );
+  };
+
+  const getApprovedTrialRole = (notification) => {
+    const match = String(notification?.message || "").match(
+      /trial access:\s*(employee|manager|admin)/i
+    );
+    return (match?.[1] || "employee").toLowerCase();
+  };
 
   const mapType = (t, msg) => {
     if (t === "LEAVE") return "info";
@@ -25,30 +46,32 @@ const Notifications = () => {
     return <FiAlertCircle className="w-5 h-5" />;
   };
 
+  const loadNotifications = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("/api/notifications", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const mapped = res.data.map((n) => ({
+        id: n.id,
+        title: n.title || "Notification",
+        message: n.message || "",
+        type: mapType(n.type, n.message),
+        originalType: n.type,
+        createdAt: n.createdAt,
+        timestamp: (n.createdAt || "").replace("T", " ").split(".")[0],
+        read: !!n.isRead,
+        icon: iconFor(n.type),
+      }));
+      setNotifications(mapped);
+    } catch (err) {
+      console.error("Load notifications failed:", err);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("/api/notifications", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const mapped = res.data.map((n) => ({
-          id: n.id,
-          title: n.title || "Notification",
-          message: n.message || "",
-          type: mapType(n.type, n.message),
-          originalType: n.type,
-          createdAt: n.createdAt,
-          timestamp: (n.createdAt || "").replace("T", " ").split(".")[0],
-          read: !!n.isRead,
-          icon: iconFor(n.type),
-        }));
-        setNotifications(mapped);
-      } catch (err) {
-        console.error("Load notifications failed:", err);
-      }
-    };
-    load();
+    loadNotifications();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const markAsRead = async (id) => {
@@ -98,6 +121,26 @@ const Notifications = () => {
       setNotifications([]);
     } catch (err) {
       console.error("Clear notifications failed:", err);
+    }
+  };
+
+  const handleApproveDemo = async (notification) => {
+    const demoRequestId = extractDemoRequestId(notification.title);
+    if (!demoRequestId) return;
+    const selectedRole =
+      trialRolesByNotificationId[notification.id] || "EMPLOYEE";
+
+    try {
+      setApprovingIds((prev) => [...prev, notification.id]);
+      await demoRequestService.approve(demoRequestId, selectedRole);
+      await loadNotifications();
+    } catch (err) {
+      const errorMessage =
+        err?.response?.data?.message || "Failed to approve demo request";
+      console.error("Approve demo request failed:", errorMessage);
+      alert(errorMessage);
+    } finally {
+      setApprovingIds((prev) => prev.filter((id) => id !== notification.id));
     }
   };
 
@@ -294,9 +337,41 @@ const Notifications = () => {
                       </span>
                     </div>
 
-                    <p className={`${getSecondaryTextColor()} mb-4`}>{notification.message}</p>
+                    <p className={`${getSecondaryTextColor()} mb-4 whitespace-pre-line`}>{notification.message}</p>
 
                     <div className="flex gap-2">
+                      {extractDemoRequestId(notification.title) && !isDemoTrialApproved(notification) && (
+                        <>
+                          <select
+                            value={trialRolesByNotificationId[notification.id] || "EMPLOYEE"}
+                            onChange={(e) =>
+                              setTrialRolesByNotificationId((prev) => ({
+                                ...prev,
+                                [notification.id]: e.target.value,
+                              }))
+                            }
+                            className={`px-2 py-1.5 text-sm rounded-lg border ${darkMode ? "bg-gray-700 border-gray-600 text-gray-100" : "bg-white border-gray-300 text-gray-800"}`}
+                          >
+                            <option value="EMPLOYEE">EMPLOYEE</option>
+                            <option value="MANAGER">MANAGER</option>
+                            <option value="ADMIN">ADMIN</option>
+                          </select>
+                          <button
+                            onClick={() => handleApproveDemo(notification)}
+                            disabled={approvingIds.includes(notification.id)}
+                            className={`px-3 py-1.5 text-sm ${darkMode ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-indigo-600 hover:bg-indigo-700'} text-white rounded-lg font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed`}
+                          >
+                            {approvingIds.includes(notification.id)
+                              ? "Approving..."
+                              : "Approve 15-Day Trial"}
+                          </button>
+                        </>
+                      )}
+                      {extractDemoRequestId(notification.title) && isDemoTrialApproved(notification) && (
+                        <span className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded-lg font-medium">
+                          {`Approved for ${getApprovedTrialRole(notification)}`}
+                        </span>
+                      )}
                       {!notification.read && (
                         <button
                           onClick={() => markAsRead(notification.id)}

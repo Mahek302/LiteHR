@@ -23,7 +23,11 @@ import {
   Edit
 } from 'lucide-react';
 import { managerService } from '../../services/managerService';
-import ManagerAttendanceCalendar from './ManagerAttendanceCalendar';
+import AttendanceCalendar from './AttendanceCalendar';
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { toast } from "react-hot-toast";
+import { addCorporatePdfHeader, addCorporatePdfFooters, escapeCsvValue } from "../../utils/corporatePdf";
 
 const AttendanceTracking = () => {
   const navigate = useNavigate();
@@ -187,28 +191,66 @@ const AttendanceTracking = () => {
     }
   };
 
-  const handleExportAttendance = (format = 'csv') => {
+  const handleExportAttendance = async (format = 'pdf') => {
     let dataStr, fileName, mimeType;
+    const exportRows = filteredData.length ? filteredData : attendanceData;
 
-    if (format === 'csv') {
+    if (format === 'excel') {
+      // For Excel, we'll create a CSV that can be opened in Excel
       const headers = ['Employee', 'Department', 'Status', 'Check In', 'Check Out', 'Late Minutes', 'Notes', 'Attendance Score'];
-      const rows = attendanceData.map(record =>
-        [record.employee, record.department, record.status, record.checkIn, record.checkOut, record.lateMinutes, record.notes, record.attendanceScore].join(',')
+      const rows = exportRows.map(record =>
+        [
+          escapeCsvValue(record.employee),
+          escapeCsvValue(record.department),
+          escapeCsvValue(record.status),
+          escapeCsvValue(record.checkIn),
+          escapeCsvValue(record.checkOut),
+          escapeCsvValue(record.lateMinutes),
+          escapeCsvValue(record.notes),
+          escapeCsvValue(record.attendanceScore)
+        ].join(',')
       );
       dataStr = [headers.join(','), ...rows].join('\n');
-      fileName = `attendance-${selectedDate}-${new Date().getTime()}.csv`;
+      fileName = `attendance-${selectedDate}.csv`;
       mimeType = 'text/csv';
+    } else if (format === 'pdf') {
+      try {
+        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+        let y = await addCorporatePdfHeader(pdf, {
+          title: `Attendance Report - ${selectedDate}`,
+          subtitle: `Records: ${exportRows.length} | Overall Attendance: ${calculateOverallAttendance()}%`,
+        });
+
+        autoTable(pdf, {
+          startY: y,
+          head: [["Employee", "Department", "Status", "Check In", "Check Out", "Late", "Score"]],
+          body: exportRows.map((record) => ([
+            record.employee,
+            record.department,
+            record.status,
+            record.checkIn,
+            record.checkOut,
+            String(record.lateMinutes || 0),
+            `${record.attendanceScore || 0}%`,
+          ])),
+          theme: "striped",
+          headStyles: { fillColor: [30, 58, 138] },
+          styles: { fontSize: 9, cellPadding: 2.2 },
+          margin: { left: 14, right: 14 },
+        });
+
+        addCorporatePdfFooters(pdf);
+        pdf.save(`attendance-${selectedDate}.pdf`);
+        setShowExportOptions(false);
+        toast.success("Attendance exported as PDF");
+        return;
+      } catch (error) {
+        console.error("Attendance PDF export failed:", error);
+        toast.error("Failed to export PDF");
+        return;
+      }
     } else {
-      const exportData = {
-        date: selectedDate,
-        attendance: attendanceData,
-        overallAttendance: calculateOverallAttendance(),
-        averageScore: calculateAverageAttendanceScore(),
-        generated: new Date().toISOString()
-      };
-      dataStr = JSON.stringify(exportData, null, 2);
-      fileName = `attendance-data-${new Date().getTime()}.json`;
-      mimeType = 'application/json';
+      return;
     }
 
     const dataBlob = new Blob([dataStr], { type: mimeType });
@@ -220,7 +262,7 @@ const AttendanceTracking = () => {
     URL.revokeObjectURL(url);
 
     setShowExportOptions(false);
-    alert(`Attendance exported as ${format.toUpperCase()}!`);
+    toast.success(`Attendance exported as ${format.toUpperCase()}!`);
   };
 
   const handleSendEmail = (email, subject = 'Regarding your attendance') => {
@@ -280,7 +322,7 @@ const AttendanceTracking = () => {
   if (viewMode === 'calendar') {
     return (
       <div className="space-y-6">
-        <ManagerAttendanceCalendar onBack={() => setViewMode('daily')} />
+        <AttendanceCalendar onBack={() => setViewMode('daily')} />
       </div>
     );
   }
@@ -295,7 +337,7 @@ const AttendanceTracking = () => {
         <div className="flex space-x-2">
           <button
             onClick={() => setShowMarkAttendance(true)}
-            className="px-4 py-2 rounded-lg hover:opacity-90 flex items-center space-x-2 text-white"
+            className="px-4 py-2 rounded-lg hover:opacity-90 flex items-center space-x-2 text-white cursor-pointer"
             style={{ backgroundColor: themeColors.primary }}
           >
             <Plus size={18} />
@@ -304,7 +346,7 @@ const AttendanceTracking = () => {
           <div className="relative">
             <button
               onClick={() => setShowExportOptions(!showExportOptions)}
-              className="px-4 py-2 border rounded-lg hover:opacity-80 flex items-center space-x-2 transition-colors duration-300"
+              className="px-4 py-2 border rounded-lg hover:opacity-80 flex items-center space-x-2 transition-colors duration-300 cursor-pointer"
               style={{
                 borderColor: themeColors.border,
                 color: themeColors.text,
@@ -318,18 +360,18 @@ const AttendanceTracking = () => {
             {showExportOptions && (
               <div className="absolute top-full right-0 mt-1 border rounded-lg shadow-lg z-10 min-w-[160px] transition-colors duration-300" style={{ backgroundColor: themeColors.card, borderColor: themeColors.border }}>
                 <button
-                  onClick={() => handleExportAttendance('csv')}
-                  className="w-full px-4 py-2 text-left hover:opacity-80 transition-colors duration-300"
+                  onClick={() => handleExportAttendance('pdf')}
+                  className="w-full px-4 py-2 text-left hover:opacity-80 transition-colors duration-300 cursor-pointer"
+                  style={{ color: themeColors.text }}
+                >
+                  Export as PDF
+                </button>
+                <button
+                  onClick={() => handleExportAttendance('excel')}
+                  className="w-full px-4 py-2 text-left hover:opacity-80 transition-colors duration-300 cursor-pointer"
                   style={{ color: themeColors.text }}
                 >
                   Export as CSV
-                </button>
-                <button
-                  onClick={() => handleExportAttendance('json')}
-                  className="w-full px-4 py-2 text-left hover:opacity-80 transition-colors duration-300"
-                  style={{ color: themeColors.text }}
-                >
-                  Export as JSON
                 </button>
               </div>
             )}
@@ -345,7 +387,7 @@ const AttendanceTracking = () => {
                 <h3 className="text-lg font-semibold transition-colors duration-300" style={{ color: themeColors.text }}>Mark Attendance</h3>
                 <button
                   onClick={() => setShowMarkAttendance(false)}
-                  className="transition-colors duration-300 hover:opacity-80"
+                  className="transition-colors duration-300 hover:opacity-80 cursor-pointer"
                   style={{ color: themeColors.muted }}
                 >
                   ×
@@ -360,7 +402,7 @@ const AttendanceTracking = () => {
                   <select
                     value={markingData.employeeId}
                     onChange={(e) => setMarkingData({ ...markingData, employeeId: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg transition-colors duration-300"
+                    className="w-full px-3 py-2 border rounded-lg transition-colors duration-300 cursor-pointer"
                     style={{
                       backgroundColor: themeColors.inputBg,
                       borderColor: themeColors.border,
@@ -384,7 +426,7 @@ const AttendanceTracking = () => {
                         key={status}
                         type="button"
                         onClick={() => setMarkingData({ ...markingData, status })}
-                        className={`p-3 rounded-lg text-center capitalize transition-all ${markingData.status === status
+                        className={`p-3 rounded-lg text-center capitalize transition-all cursor-pointer ${markingData.status === status
                           ? 'ring-2 ring-blue-500 font-bold'
                           : 'opacity-70'
                           }`}
@@ -430,14 +472,14 @@ const AttendanceTracking = () => {
                 <button
                   onClick={() => handleMarkAttendance(markingData.employeeId, markingData.status, markingData.notes)}
                   disabled={!markingData.employeeId}
-                  className={`flex-1 px-4 py-2 text-white rounded-lg hover:opacity-90 transition-colors duration-300 ${!markingData.employeeId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`flex-1 px-4 py-2 text-white rounded-lg hover:opacity-90 transition-colors duration-300 cursor-pointer ${!markingData.employeeId ? 'opacity-50 cursor-not-allowed' : ''}`}
                   style={{ backgroundColor: themeColors.primary }}
                 >
                   Save Attendance
                 </button>
                 <button
                   onClick={() => setShowMarkAttendance(false)}
-                  className="px-4 py-2 border rounded-lg hover:opacity-80 transition-colors duration-300"
+                  className="px-4 py-2 border rounded-lg hover:opacity-80 transition-colors duration-300 cursor-pointer"
                   style={{ borderColor: themeColors.border, color: themeColors.text }}
                 >
                   Cancel
@@ -526,7 +568,7 @@ const AttendanceTracking = () => {
           <h3 className="text-lg font-semibold transition-colors duration-300" style={{ color: themeColors.text }}>Quick Actions</h3>
           <button
             onClick={handleViewDashboard}
-            className="text-sm hover:underline transition-colors duration-300"
+            className="text-sm hover:underline transition-colors duration-300 cursor-pointer"
             style={{ color: themeColors.primary }}
           >
             Dashboard
@@ -535,7 +577,7 @@ const AttendanceTracking = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <button
             onClick={() => setShowMarkAttendance(true)}
-            className="p-4 border rounded-lg hover:opacity-80 flex flex-col items-center justify-center transition-colors duration-300"
+            className="p-4 border rounded-lg hover:opacity-80 flex flex-col items-center justify-center transition-colors duration-300 cursor-pointer"
             style={{ borderColor: themeColors.border, color: themeColors.text, backgroundColor: `${themeColors.primary}10` }}
           >
             <Plus size={24} className="mb-2" style={{ color: themeColors.primary }} />
@@ -544,7 +586,7 @@ const AttendanceTracking = () => {
 
           <button
             onClick={handleViewCalendar}
-            className="p-4 border rounded-lg hover:opacity-80 flex flex-col items-center justify-center transition-colors duration-300"
+            className="p-4 border rounded-lg hover:opacity-80 flex flex-col items-center justify-center transition-colors duration-300 cursor-pointer"
             style={{ borderColor: themeColors.border, color: themeColors.text, backgroundColor: `${themeColors.secondary}10` }}
           >
             <Calendar size={24} className="mb-2" style={{ color: themeColors.secondary }} />
@@ -553,7 +595,7 @@ const AttendanceTracking = () => {
 
           <button
             onClick={handleViewAnalytics}
-            className="p-4 border rounded-lg hover:opacity-80 flex flex-col items-center justify-center transition-colors duration-300"
+            className="p-4 border rounded-lg hover:opacity-80 flex flex-col items-center justify-center transition-colors duration-300 cursor-pointer"
             style={{ borderColor: themeColors.border, color: themeColors.text, backgroundColor: `${themeColors.accent}10` }}
           >
             <BarChart3 size={24} className="mb-2" style={{ color: themeColors.accent }} />
@@ -561,8 +603,8 @@ const AttendanceTracking = () => {
           </button>
 
           <button
-            onClick={() => handleExportAttendance('csv')}
-            className="p-4 border rounded-lg hover:opacity-80 flex flex-col items-center justify-center transition-colors duration-300"
+            onClick={() => handleExportAttendance('excel')}
+            className="p-4 border rounded-lg hover:opacity-80 flex flex-col items-center justify-center transition-colors duration-300 cursor-pointer"
             style={{ borderColor: themeColors.border, color: themeColors.text, backgroundColor: `${themeColors.warning}10` }}
           >
             <Download size={24} className="mb-2" style={{ color: themeColors.warning }} />
@@ -582,7 +624,7 @@ const AttendanceTracking = () => {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-4 py-2 border rounded-lg transition-colors duration-300"
+              className="px-4 py-2 border rounded-lg transition-colors duration-300 cursor-pointer"
               style={{
                 backgroundColor: themeColors.inputBg,
                 borderColor: themeColors.border,
@@ -615,7 +657,7 @@ const AttendanceTracking = () => {
                 <select
                   value={selectedDepartment}
                   onChange={(e) => setSelectedDepartment(e.target.value)}
-                  className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 appearance-none transition-colors duration-300"
+                  className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 appearance-none transition-colors duration-300 cursor-pointer"
                   style={{
                     backgroundColor: themeColors.inputBg,
                     borderColor: themeColors.border,
@@ -634,7 +676,7 @@ const AttendanceTracking = () => {
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 appearance-none transition-colors duration-300"
+                className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 appearance-none transition-colors duration-300 cursor-pointer"
                 style={{
                   backgroundColor: themeColors.inputBg,
                   borderColor: themeColors.border,
@@ -728,7 +770,7 @@ const AttendanceTracking = () => {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleMarkAttendance(record.employeeId, 'present')}
-                        className="p-1 hover:opacity-80 disabled:opacity-50"
+                        className="p-1 hover:opacity-80 disabled:opacity-50 cursor-pointer"
                         title="Mark Present"
                         style={{ color: themeColors.secondary }}
                       >
@@ -736,7 +778,7 @@ const AttendanceTracking = () => {
                       </button>
                       <button
                         onClick={() => handleMarkAttendance(record.employeeId, 'absent')}
-                        className="p-1 hover:opacity-80 disabled:opacity-50"
+                        className="p-1 hover:opacity-80 disabled:opacity-50 cursor-pointer"
                         title="Mark Absent"
                         style={{ color: themeColors.danger }}
                       >
@@ -744,13 +786,12 @@ const AttendanceTracking = () => {
                       </button>
                       <button
                         onClick={() => handleSendEmail(record.email, 'Regarding your attendance')}
-                        className="p-1 hover:opacity-80 disabled:opacity-50"
+                        className="p-1 hover:opacity-80 disabled:opacity-50 cursor-pointer"
                         title="Send Email"
                         style={{ color: themeColors.accent }}
                       >
                         <Mail size={16} />
                       </button>
-
                     </div>
                   </td>
                 </tr>
@@ -770,7 +811,7 @@ const AttendanceTracking = () => {
                 setSelectedDepartment('all');
                 setSelectedStatus('all');
               }}
-              className="mt-4 px-4 py-2 text-white rounded-lg hover:opacity-90 text-sm transition-colors duration-300"
+              className="mt-4 px-4 py-2 text-white rounded-lg hover:opacity-90 text-sm transition-colors duration-300 cursor-pointer"
               style={{ backgroundColor: themeColors.primary }}
             >
               Clear Filters
@@ -785,7 +826,7 @@ const AttendanceTracking = () => {
             <h3 className="text-lg font-semibold transition-colors duration-300" style={{ color: themeColors.text }}>Attendance Trends</h3>
             <button
               onClick={handleViewAnalytics}
-              className="text-sm hover:underline transition-colors duration-300"
+              className="text-sm hover:underline transition-colors duration-300 cursor-pointer"
               style={{ color: themeColors.primary }}
             >
               View Analytics
@@ -836,7 +877,7 @@ const AttendanceTracking = () => {
             <h3 className="text-lg font-semibold transition-colors duration-300" style={{ color: themeColors.text }}>Department Overview</h3>
             <button
               onClick={() => navigate('/analytics')}
-              className="text-sm hover:underline transition-colors duration-300"
+              className="text-sm hover:underline transition-colors duration-300 cursor-pointer"
               style={{ color: themeColors.primary }}
             >
               View Details
@@ -865,8 +906,6 @@ const AttendanceTracking = () => {
             ))}
           </div>
         </div>
-
-
       </div>
 
       <div className="rounded-xl p-6 border transition-colors duration-300" style={{ backgroundColor: isDarkMode ? `${themeColors.background}` : '#f8fafc', borderColor: themeColors.border }}>

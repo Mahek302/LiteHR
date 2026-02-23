@@ -138,7 +138,7 @@ const EmployeeManagement = () => {
               <select
                 value={departmentFilter}
                 onChange={(e) => setDepartmentFilter(e.target.value)}
-                className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 appearance-none transition-colors duration-300"
+                className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 appearance-none transition-colors duration-300 cursor-pointer"
                 style={{
                   backgroundColor: themeColors.inputBg,
                   borderColor: themeColors.border,
@@ -157,7 +157,7 @@ const EmployeeManagement = () => {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 appearance-none transition-colors duration-300"
+                className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 appearance-none transition-colors duration-300 cursor-pointer"
                 style={{
                   backgroundColor: themeColors.inputBg,
                   borderColor: themeColors.border,
@@ -249,7 +249,7 @@ const EmployeeManagement = () => {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleViewEmployee(employee)}
-                        className="text-sm font-medium hover:underline transition-colors duration-300"
+                        className="text-sm font-medium hover:underline transition-colors duration-300 cursor-pointer"
                         style={{ color: themeColors.primary }}
                       >
                         View
@@ -277,7 +277,7 @@ const EmployeeManagement = () => {
             {/* Modal Header */}
             <div className="relative p-6 rounded-t-xl overflow-hidden transition-colors duration-300" style={{ backgroundColor: isDarkMode ? themeColors.background : '#1e293b' }}>
               <div className="absolute top-0 right-0 p-4 z-50">
-                <button onClick={closeModal} className="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors">
+                <button onClick={closeModal} className="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors cursor-pointer">
                   <XCircle size={24} />
                 </button>
               </div>
@@ -431,7 +431,7 @@ const ModalTabs = ({ employee, themeColors, isDarkMode }) => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`pb-4 px-2 flex items-center space-x-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap`}
+              className={`pb-4 px-2 flex items-center space-x-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap cursor-pointer`}
               style={{
                 borderColor: activeTab === tab.id ? themeColors.primary : 'transparent',
                 color: activeTab === tab.id ? themeColors.primary : themeColors.muted

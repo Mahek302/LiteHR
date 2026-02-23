@@ -1,11 +1,11 @@
+import { MdSignalWifiStatusbarConnectedNoInternet1 } from "react-icons/md";
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   FiArrowLeft, FiUser, FiMail, FiPhone, FiBriefcase,
   FiCalendar, FiMapPin, FiDownload, FiCheck, FiX,
   FiMessageSquare, FiStar, FiFileText, FiRefreshCw, FiCopy,
-  FiUpload, FiAlertCircle, FiClock, FiActivity
-} from "react-icons/fi";
+  FiUpload, FiAlertCircle, FiClock} from "react-icons/fi";
 import jobService from "../../../services/jobService";
 import axios from "axios";
 import { toast } from "react-hot-toast";
@@ -110,6 +110,25 @@ const ApplicationDetails = () => {
       : `${API_BASE_URL}${application.resumeUrl}`;
 
     window.open(url, '_blank');
+  };
+
+  const handleContactApplicant = () => {
+    const email = application?.email || application?.personalEmail || application?.user?.email;
+    const phone = application?.phone || application?.mobile || application?.contactNumber;
+
+    if (email) {
+      const subject = encodeURIComponent(`Update regarding your application for ${application.job?.title || 'position'}`);
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${subject}`;
+      window.open(gmailUrl, "_blank");
+      return;
+    }
+
+    if (phone) {
+      window.open(`tel:${String(phone).replace(/\D/g, "")}`, "_blank");
+      return;
+    }
+
+    toast.error("No contact details available for this applicant");
   };
 
   if (loading) {
@@ -307,10 +326,7 @@ const ApplicationDetails = () => {
                     <span className="text-sm">Reject</span>
                   </button>
                   <button
-                    onClick={() => {
-                      const subject = encodeURIComponent(`Update regarding your application for ${application.job?.title || 'position'}`);
-                      window.location.href = `mailto:${application.email}?subject=${subject}`;
-                    }}
+                    onClick={handleContactApplicant}
                     className={`flex flex-col items-center gap-2 px-4 py-4 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'} border ${darkMode ? 'border-gray-700' : 'border-gray-200'} ${darkMode ? 'text-gray-400' : 'text-gray-700'} rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 font-medium`}
                   >
                     <FiMessageSquare className="w-5 h-5" />
@@ -540,7 +556,7 @@ const ApplicationDetails = () => {
                   <div className={`px-4 py-3 rounded-xl border-2 font-semibold text-sm ${getStatusColor(status)}`}>
                     <div className="flex items-center justify-between">
                       <span>{status}</span>
-                      <FiActivity className="w-4 h-4" />
+                      <MdSignalWifiStatusbarConnectedNoInternet1 className="w-4 h-4" />
                     </div>
                   </div>
                 </div>

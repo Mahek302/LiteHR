@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { 
   FiArrowLeft, FiSearch, FiUsers, FiUserPlus, FiChevronRight, 
   FiEdit2, FiTrash2, FiDownload, FiEye
@@ -9,88 +9,92 @@ import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from 'recharts';
 import { useTheme, useThemeClasses } from "../../../contexts/ThemeContext";
+import axios from "axios";
 
 const ReportingHierarchy = () => {
   const [search, setSearch] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState("");
   const [selectedManager, setSelectedManager] = useState("");
+  const [employees, setEmployees] = useState([]);
 
 const darkMode = useTheme() || false; // Default to false if undefined
 const theme = useThemeClasses();
 
-
-  const employees = [
-    { id: 1, name: "Rahul Sharma", role: "Senior Software Engineer", department: "IT" },
-    { id: 2, name: "Simran Kaur", role: "HR Director", department: "HR" },
-    { id: 3, name: "Ankit Mehta", role: "Finance Head", department: "Finance" },
-    { id: 4, name: "Priya Patel", role: "Frontend Developer", department: "IT" },
-    { id: 5, name: "Rohit Sharma", role: "Team Lead", department: "IT" },
-  ];
-
-  const hierarchyData = {
-    id: 1,
-    name: "Simran Kaur",
-    role: "HR Director",
-    department: "HR",
-    children: [
-      {
-        id: 2,
-        name: "Ankit Mehta",
-        role: "Finance Head",
-        department: "Finance",
-        children: [
-          {
-            id: 3,
-            name: "Rahul Sharma",
-            role: "Senior Software Engineer",
-            department: "IT",
-          }
-        ]
-      },
-      {
-        id: 4,
-        name: "Rohit Sharma",
-        role: "Team Lead",
-        department: "IT",
-        children: [
-          {
-            id: 5,
-            name: "Priya Patel",
-            role: "Frontend Developer",
-            department: "IT",
-          }
-        ]
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get("/api/admin/employees", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const list = (response.data || [])
+          .filter((user) => user.employee)
+          .map((user) => ({
+            id: user.employee.id,
+            name: user.employee.fullName,
+            role: user.employee.designation || "Employee",
+            department: user.employee.department || "N/A",
+            managerId: user.employee.managerId || null,
+          }));
+        setEmployees(list);
+      } catch (error) {
+        console.error("Failed to load hierarchy employees:", error);
       }
-    ]
-  };
+    };
+
+    fetchEmployees();
+  }, []);
+
+  const hierarchyRoots = useMemo(() => {
+    if (!employees.length) return [];
+    const byManager = new Map();
+    for (const employee of employees) {
+      const managerKey = employee.managerId || "root";
+      if (!byManager.has(managerKey)) byManager.set(managerKey, []);
+      byManager.get(managerKey).push(employee);
+    }
+    const buildNode = (emp) => ({
+      ...emp,
+      children: (byManager.get(emp.id) || []).map(buildNode),
+    });
+    return (byManager.get("root") || []).map(buildNode);
+  }, [employees]);
 
   // Department distribution data for pie chart
-  const departmentDistribution = [
-    { name: "IT", value: 35, color: "#8B5CF6" },
-    { name: "HR", value: 20, color: "#10B981" },
-    { name: "Finance", value: 18, color: "#F59E0B" },
-    { name: "Marketing", value: 15, color: "#3B82F6" },
-    { name: "Operations", value: 12, color: "#EC4899" }
-  ];
+  const departmentDistribution = useMemo(() => {
+    const palette = ["#8B5CF6", "#10B981", "#F59E0B", "#3B82F6", "#EC4899", "#F97316"];
+    const counts = employees.reduce((acc, emp) => {
+      acc[emp.department] = (acc[emp.department] || 0) + 1;
+      return acc;
+    }, {});
+    return Object.entries(counts).map(([name, value], index) => ({
+      name,
+      value,
+      color: palette[index % palette.length],
+    }));
+  }, [employees]);
 
   // Reporting levels data for bar chart
-  const reportingLevelsData = [
-    { level: "Level 1", count: 1, color: "#8B5CF6" },
-    { level: "Level 2", count: 8, color: "#10B981" },
-    { level: "Level 3", count: 25, color: "#F59E0B" },
-    { level: "Level 4", count: 45, color: "#3B82F6" },
-    { level: "Level 5", count: 71, color: "#EC4899" }
-  ];
+  const reportingLevelsData = useMemo(() => {
+    const levelCounts = {};
+    const walk = (node, level) => {
+      levelCounts[level] = (levelCounts[level] || 0) + 1;
+      (node.children || []).forEach((child) => walk(child, level + 1));
+    };
+    hierarchyRoots.forEach((root) => walk(root, 1));
+    const palette = ["#8B5CF6", "#10B981", "#F59E0B", "#3B82F6", "#EC4899", "#F97316"];
+    return Object.entries(levelCounts).map(([level, count], index) => ({
+      level: `Level ${level}`,
+      count,
+      color: palette[index % palette.length],
+    }));
+  }, [hierarchyRoots]);
 
   // Team size distribution for treemap
-  const teamSizeData = [
-    { name: "Engineering", size: 45, color: "#8B5CF6" },
-    { name: "Sales", size: 28, color: "#10B981" },
-    { name: "Marketing", size: 22, color: "#F59E0B" },
-    { name: "HR", size: 15, color: "#3B82F6" },
-    { name: "Finance", size: 12, color: "#EC4899" },
-    { name: "Operations", size: 28, color: "#F97316" }
-  ];
+  const teamSizeData = useMemo(
+    () => departmentDistribution.map((d) => ({ name: d.name, size: d.value, color: d.color })),
+    [departmentDistribution]
+  );
 
   const renderHierarchy = (node, level = 0) => {
     const paddingLeft = level * 32;
@@ -216,17 +220,17 @@ const theme = useThemeClasses();
               </div>
             </div>
 
-            <div className={`mb-6 p-4 ${darkMode ? 'bg-gray-900/50' : 'bg-gray-100'} rounded-lg border ${theme.border.primary}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-500 dark:text-purple-400 font-bold text-lg">
-                    {hierarchyData.name.charAt(0)}
+              <div className={`mb-6 p-4 ${darkMode ? 'bg-gray-900/50' : 'bg-gray-100'} rounded-lg border ${theme.border.primary}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-500 dark:text-purple-400 font-bold text-lg">
+                      {hierarchyRoots[0]?.name?.charAt(0) || "H"}
+                    </div>
+                    <div>
+                      <p className={`font-bold ${theme.text.primary} text-lg`}>{hierarchyRoots[0]?.name || "No Root Manager"}</p>
+                      <p className={theme.text.secondary}>{hierarchyRoots[0]?.role || "Hierarchy unavailable"} (Top Level)</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className={`font-bold ${theme.text.primary} text-lg`}>{hierarchyData.name}</p>
-                    <p className={theme.text.secondary}>{hierarchyData.role} (Top Level)</p>
-                  </div>
-                </div>
                 <div className="text-right">
                   <p className={`text-sm ${theme.text.secondary}`}>Reports To</p>
                   <p className={`font-medium ${theme.text.primary}`}>None (CEO)</p>
@@ -236,7 +240,9 @@ const theme = useThemeClasses();
 
             <div className="relative pl-4">
               <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-purple-500/20 to-transparent"></div>
-              {renderHierarchy(hierarchyData)}
+              {hierarchyRoots.length > 0 ? hierarchyRoots.map((root) => renderHierarchy(root)) : (
+                <p className={theme.text.secondary}>No hierarchy data available.</p>
+              )}
             </div>
           </div>
 
@@ -403,7 +409,7 @@ const theme = useThemeClasses();
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className={`text-lg font-bold ${theme.text.primary}`}>150</div>
+                  <div className={`text-lg font-bold ${theme.text.primary}`}>{employees.length}</div>
                 </div>
               </div>
               
@@ -420,7 +426,7 @@ const theme = useThemeClasses();
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className={`text-lg font-bold ${theme.text.primary}`}>5</div>
+                  <div className={`text-lg font-bold ${theme.text.primary}`}>{reportingLevelsData.length || 0}</div>
                 </div>
               </div>
               
@@ -435,7 +441,9 @@ const theme = useThemeClasses();
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className={`text-lg font-bold ${theme.text.primary}`}>18</div>
+                  <div className={`text-lg font-bold ${theme.text.primary}`}>
+                    {employees.filter((emp) => employees.some((e) => e.managerId === emp.id)).length}
+                  </div>
                 </div>
               </div>
             </div>

@@ -441,7 +441,7 @@ const EmployeeLayout = ({ logout }) => {
           </div>
         </header>
 
-        <main className={`flex-1 overflow-y-auto p-6 transition-colors duration-300`}>
+        <main id="app-scroll-container" className={`flex-1 overflow-y-auto p-6 transition-colors duration-300`}>
           <div className="w-full">
             <ThemeWrapper darkMode={darkMode}>
               <Outlet context={{ user, isDarkMode: darkMode }} />

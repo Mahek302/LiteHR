@@ -380,32 +380,36 @@ const VaultList = () => {
         </div>
       </div>
 
-      {/* Vault Security Info */}
-      <div className={`mt-6 ${darkMode ? 'bg-purple-900/20' : 'bg-purple-50'} rounded-xl p-6 border ${darkMode ? 'border-purple-500/30' : 'border-purple-200'}`}>
-        <div className="flex items-start gap-4">
-          <div className={`w-12 h-12 rounded-full ${darkMode ? 'bg-purple-500/20' : 'bg-purple-100'} flex items-center justify-center`}>
-            <FiLock className={`w-6 h-6 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`} />
-          </div>
-          <div className="flex-1">
-            <h4 className={`text-lg font-semibold ${darkMode ? 'text-purple-300' : 'text-purple-700'} mb-2`}>Vault Security Status</h4>
-            <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-              All documents are encrypted with AES-256 encryption. Access is logged and monitored 24/7.
-              Last security audit: <span className={`${darkMode ? 'text-emerald-400' : 'text-emerald-600'} font-medium`}>Passed ✓</span>
-            </p>
-            <div className="flex gap-4 mt-3">
-              <span className={`px-3 py-1 rounded-full text-sm ${darkMode ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-purple-100 text-purple-700 border border-purple-200'}`}>
-                Encrypted Storage
-              </span>
-              <span className={`px-3 py-1 rounded-full text-sm ${darkMode ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}`}>
-                Access Logging
-              </span>
-              <span className={`px-3 py-1 rounded-full text-sm ${darkMode ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-blue-100 text-blue-700 border border-blue-200'}`}>
-                Backup Enabled
-              </span>
-            </div>
-          </div>
-        </div>
+      {/* Vault Info (Simple UI Placeholder) */}
+<div className={`mt-6 ${darkMode ? 'bg-purple-900/20' : 'bg-purple-50'} rounded-xl p-6 border ${darkMode ? 'border-purple-500/30' : 'border-purple-200'}`}>
+  <div className="flex items-start gap-4">
+    <div className={`w-12 h-12 rounded-full ${darkMode ? 'bg-purple-500/20' : 'bg-purple-100'} flex items-center justify-center`}>
+      <FiLock className={`w-6 h-6 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+    </div>
+
+    <div className="flex-1">
+      <h4 className={`text-lg font-semibold ${darkMode ? 'text-purple-300' : 'text-purple-700'} mb-2`}>
+        Document Vault
+      </h4>
+
+      <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+        Uploaded files are stored in your private vault.  
+        Advanced security features will be available in future updates.
+      </p>
+
+      <div className="flex gap-4 mt-3 flex-wrap">
+        <span className={`px-3 py-1 rounded-full text-sm ${darkMode ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-purple-100 text-purple-700 border border-purple-200'}`}>
+          File Storage
+        </span>
+
+        <span className={`px-3 py-1 rounded-full text-sm ${darkMode ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}`}>
+          Private Access
+        </span>
       </div>
+    </div>
+  </div>
+</div>
+
     </div>
   );
 };

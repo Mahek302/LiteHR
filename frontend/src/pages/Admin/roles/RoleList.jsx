@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { FiSearch, FiFilter, FiEdit2, FiTrash2, FiUser, FiPlus, FiTrendingUp, FiShield, FiCheckCircle, FiUsers } from "react-icons/fi";
+import { FiSearch, FiFilter, FiEdit2, FiTrash2, FiUser, FiPlus,   FiShield, FiCheckCircle, FiUsers } from "react-icons/fi";
 
 import { useTheme, getThemeClasses } from "../../../contexts/ThemeContext";
 
 import roleService from "../../../services/roleService";
 import { toast } from "react-hot-toast";
+import { FaChartGantt } from "react-icons/fa6";
+
 
 const RoleList = () => {
     const [search, setSearch] = useState("");
@@ -143,7 +145,7 @@ const RoleList = () => {
                             <div className="flex items-center gap-1">
                                 {stat.change && (
                                     <>
-                                        {stat.trend === "up" ? <FiTrendingUp className="w-4 h-4 text-emerald-400" /> :
+                                        {stat.trend === "up" ? <FaChartGantt className="w-4 h-4 text-emerald-400" /> :
                                             stat.trend === "down" ? <div className="w-4 h-4 text-rose-400 rotate-90">↓</div> :
                                                 null}
                                         <span className={`text-sm font-medium ${stat.trend === "up" ? "text-emerald-400" :

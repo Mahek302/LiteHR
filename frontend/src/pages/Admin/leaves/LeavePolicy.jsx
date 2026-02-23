@@ -1,8 +1,25 @@
+import { LuCalendarMinus } from "react-icons/lu";
+import { MdOutlineSick } from "react-icons/md";
+import { LuCalendarMinus2 } from "react-icons/lu";
 import React, { useState, useEffect } from "react";
-import { FiSave, FiEdit2, FiCheck, FiX, FiCalendar, FiInfo, FiClock, FiActivity, FiUsers } from "react-icons/fi";
+import { FiSave, FiEdit2, FiCheck, FiX, FiCalendar, FiInfo, FiClock, FiUsers, FiPlus, FiTrash2 } from "react-icons/fi";
 import { useTheme, getThemeClasses } from "../../../contexts/ThemeContext";
 import { toast } from "react-hot-toast";
 import leavePolicyService from "../../../services/leavePolicyService";
+
+const DEFAULT_GUIDELINES = [
+  "All leave requests must be submitted at least 7 days in advance (except for sick/emergency leave).",
+  "Unused leave can be carried forward up to 60 days (for earned leave only).",
+  "Medical certificate is mandatory for sick leave beyond 3 consecutive days.",
+  "Leave balance is updated on the 1st of every month.",
+  "All policies are subject to management discretion and business requirements."
+];
+
+const parseNumericPrefix = (value, fallback = 0) => {
+  if (typeof value === "number") return value;
+  const parsed = parseFloat(String(value ?? "").replace(/[^0-9.]/g, ""));
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
 
 const LeavePolicy = () => {
   const darkMode = useTheme();
@@ -86,8 +103,29 @@ const LeavePolicy = () => {
     overtimeRate: "1.5x",
   });
 
+  // New state for policy guidelines
+  const [policyGuidelines, setPolicyGuidelines] = useState(DEFAULT_GUIDELINES);
+
+  const [newGuideline, setNewGuideline] = useState("");
+
   useEffect(() => {
     fetchPolicy();
+    const storedWorkingHours = localStorage.getItem("admin_leave_policy_working_hours");
+    const storedGuidelines = localStorage.getItem("admin_leave_policy_guidelines");
+    if (storedWorkingHours) {
+      try {
+        setWorkingHours(JSON.parse(storedWorkingHours));
+      } catch {
+        // no-op
+      }
+    }
+    if (storedGuidelines) {
+      try {
+        setPolicyGuidelines(JSON.parse(storedGuidelines));
+      } catch {
+        // no-op
+      }
+    }
   }, []);
 
   const fetchPolicy = async () => {
@@ -96,15 +134,38 @@ const LeavePolicy = () => {
       const data = await leavePolicyService.getLeavePolicy();
 
       if (data && data.length > 0) {
+        const codeToKey = {
+          EL: "earnedLeave",
+          AL: "earnedLeave",
+          SL: "sickLeave",
+          CL: "casualLeave",
+          ML: "maternityLeave",
+          PL: "paternityLeave",
+          BL: "bereavementLeave",
+        };
+        const nameToKey = {
+          "earned leave": "earnedLeave",
+          "annual leave": "earnedLeave",
+          "privilege leave": "earnedLeave",
+          "sick leave": "sickLeave",
+          "casual leave": "casualLeave",
+          "maternity leave": "maternityLeave",
+          "paternity leave": "paternityLeave",
+          "bereavement leave": "bereavementLeave",
+        };
+
         setFormData(prev => {
           const newData = { ...prev };
           data.forEach(policy => {
-            // Map backend policy to frontend key based on code
-            const key = Object.keys(newData).find(k => newData[k].code === policy.code);
+            const normalizedCode = String(policy.code || "").toUpperCase();
+            const normalizedName = String(policy.name || "").toLowerCase();
+            const key = codeToKey[normalizedCode] || nameToKey[normalizedName];
             if (key) {
               newData[key] = {
                 ...newData[key],
                 id: policy.id,
+                code: policy.code || newData[key].code,
+                name: policy.name || newData[key].name,
                 totalDays: policy.yearlyLimit,
                 accrualRate: policy.accrualRate ? `${policy.accrualRate} days/month` : newData[key].accrualRate,
                 maxAccumulation: policy.maxAccumulation,
@@ -130,10 +191,11 @@ const LeavePolicy = () => {
         const payload = {
           name: policy.name,
           code: policy.code,
-          yearlyLimit: policy.totalDays,
-          accrualRate: parseFloat(policy.accrualRate) || 0,
-          minNoticeDays: parseInt(policy.noticePeriod) || 0,
-          maxAccumulation: policy.maxAccumulation,
+          yearlyLimit: Number(policy.totalDays) || 0,
+          accrualRate: parseNumericPrefix(policy.accrualRate, 0),
+          minNoticeDays: Math.round(parseNumericPrefix(policy.noticePeriod, 0)),
+          maxAccumulation: Number(policy.maxAccumulation) || null,
+          requireDocumentation: String(policy.documentation || "").toLowerCase().includes("required"),
           checkAvailability: true,
         };
 
@@ -145,6 +207,11 @@ const LeavePolicy = () => {
       });
 
       await Promise.all(promises);
+
+      // Persist UI-only settings until backend fields are available.
+      localStorage.setItem("admin_leave_policy_working_hours", JSON.stringify(workingHours));
+      localStorage.setItem("admin_leave_policy_guidelines", JSON.stringify(policyGuidelines));
+
       toast.success("Leave policy updated successfully");
       setIsEditing(false);
       fetchPolicy();
@@ -157,6 +224,18 @@ const LeavePolicy = () => {
   const handleCancel = () => {
     setIsEditing(false);
     fetchPolicy();
+    // Reset guidelines to original values
+    const storedGuidelines = localStorage.getItem("admin_leave_policy_guidelines");
+    if (storedGuidelines) {
+      try {
+        setPolicyGuidelines(JSON.parse(storedGuidelines));
+      } catch {
+        setPolicyGuidelines(DEFAULT_GUIDELINES);
+      }
+    } else {
+      setPolicyGuidelines(DEFAULT_GUIDELINES);
+    }
+    setNewGuideline("");
   };
 
   const handleChange = (leaveType, field, value) => {
@@ -174,6 +253,25 @@ const LeavePolicy = () => {
       ...workingHours,
       [field]: value
     });
+  };
+
+  // Guidelines management functions
+  const handleAddGuideline = () => {
+    if (newGuideline.trim()) {
+      setPolicyGuidelines([...policyGuidelines, newGuideline.trim()]);
+      setNewGuideline("");
+    }
+  };
+
+  const handleUpdateGuideline = (index, value) => {
+    const updated = [...policyGuidelines];
+    updated[index] = value;
+    setPolicyGuidelines(updated);
+  };
+
+  const handleRemoveGuideline = (index) => {
+    const updated = policyGuidelines.filter((_, i) => i !== index);
+    setPolicyGuidelines(updated);
   };
 
   // --- Helper Components ---
@@ -279,13 +377,7 @@ const LeavePolicy = () => {
                 <FiX className="w-4 h-4" />
                 Cancel
               </button>
-              <button
-                onClick={handleSave}
-                className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium shadow-sm transition-all hover:shadow md:w-auto"
-              >
-                <FiSave className="w-4 h-4" />
-                Save Changes
-              </button>
+              
             </>
           ) : (
             <button
@@ -387,7 +479,7 @@ const LeavePolicy = () => {
         {/* Standard Leaves Section */}
         <section>
           <div className="flex items-center gap-2 mb-6">
-            <FiActivity className={`w-5 h-5 ${textSecondary}`} />
+            <LuCalendarMinus2 className={`w-5 h-5 ${textSecondary}`} />
             <h2 className={`text-xl font-semibold ${textPrimary}`}>Standard Leave Types</h2>
           </div>
           
@@ -404,7 +496,7 @@ const LeavePolicy = () => {
             <LeaveCard 
               title="Sick Leave" 
               description="Medical leave for health-related issues. Documentation required for extended periods."
-              icon={FiActivity}
+              icon={MdOutlineSick}
               data={formData.sickLeave}
               typeKey="sickLeave"
               colorClass="bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
@@ -413,7 +505,7 @@ const LeavePolicy = () => {
             <LeaveCard 
               title="Casual Leave" 
               description="Short-term personal leave for unforeseen circumstances."
-              icon={FiClock}
+              icon={LuCalendarMinus }
               data={formData.casualLeave}
               typeKey="casualLeave"
               colorClass="bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400"
@@ -458,22 +550,76 @@ const LeavePolicy = () => {
           </div>
         </section>
 
-        {/* Guidelines Footer */}
-        <div className={`${cardBg} rounded-xl p-8 border ${cardBorder} flex items-start gap-4`}>
-          <FiInfo className={`w-6 h-6 flex-shrink-0 ${darkMode ? 'text-purple-400' : 'text-purple-600'} mt-1`} />
-          <div>
-            <h3 className={`text-lg font-semibold ${textPrimary} mb-3`}>Policy Guidelines & Notes</h3>
-            <ul className={`space-y-2 ${textSecondary} text-sm list-disc pl-4`}>
-              <li>All leave requests must be submitted at least {formData.earnedLeave.noticePeriod} in advance (except for sick/emergency leave).</li>
-              <li>Unused leave can be carried forward up to {formData.earnedLeave.maxAccumulation} days (for earned leave only).</li>
-              <li>Medical certificate is mandatory for sick leave beyond {formData.sickLeave.maxPerIncident} consecutive days.</li>
-              <li>Leave balance is updated on the 1st of every month.</li>
-              <li>All policies are subject to management discretion and business requirements.</li>
-            </ul>
+        {/* Guidelines Footer - Now Editable */}
+        <div className={`${cardBg} rounded-xl p-8 border ${cardBorder} flex flex-col gap-6`}>
+          <div className="flex items-start gap-4">
+            <FiInfo className={`w-6 h-6 flex-shrink-0 ${darkMode ? 'text-purple-400' : 'text-purple-600'} mt-1`} />
+            <div className="flex-1">
+              <h3 className={`text-lg font-semibold ${textPrimary} mb-3`}>Policy Guidelines & Notes</h3>
+              
+              {isEditing ? (
+                <div className="space-y-4">
+                  {/* Existing guidelines */}
+                  <div className="space-y-3">
+                    {policyGuidelines.map((guideline, index) => (
+                      <div key={index} className="flex items-start gap-2">
+                        <input
+                          type="text"
+                          value={guideline}
+                          onChange={(e) => handleUpdateGuideline(index, e.target.value)}
+                          className={`flex-1 px-4 py-2 ${inputBg} border ${inputBorder} ${textPrimary} rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm`}
+                        />
+                        <button
+                          onClick={() => handleRemoveGuideline(index)}
+                          className={`p-2 ${inputBg} border ${inputBorder} rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors`}
+                        >
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Add new guideline */}
+                  <div className="flex items-start gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                    <input
+                      type="text"
+                      value={newGuideline}
+                      onChange={(e) => setNewGuideline(e.target.value)}
+                      placeholder="Add new guideline..."
+                      className={`flex-1 px-4 py-2 ${inputBg} border ${inputBorder} ${textPrimary} rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm`}
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddGuideline()}
+                    />
+                    <button
+                      onClick={handleAddGuideline}
+                      className={`flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors`}
+                    >
+                      <FiPlus className="w-4 h-4" />
+                      Add
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <ul className={`space-y-2 ${textSecondary} text-sm list-disc pl-4`}>
+                  {policyGuidelines.map((guideline, index) => (
+                    <li key={index}>{guideline}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
 
       </div>
+
+      {isEditing && (
+        <button
+          onClick={handleSave}
+          className="fixed top-20 right-6 z-50 flex items-center gap-2 px-5 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-xl font-medium transition-all hover:scale-105"
+        >
+          <FiSave className="w-4 h-4" />
+          Save Changes
+        </button>
+      )}
     </div>
   );
 };

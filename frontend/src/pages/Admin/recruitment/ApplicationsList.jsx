@@ -1,6 +1,7 @@
+import { FaChartGantt } from "react-icons/fa6";
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { FiSearch, FiFilter, FiUser, FiMail, FiPhone, FiCalendar, FiDownload, FiEye, FiCheck, FiX, FiTrendingUp } from "react-icons/fi";
+import { FiSearch, FiFilter, FiUser, FiMail, FiPhone, FiCalendar, FiDownload, FiEye, FiCheck, FiX,  } from "react-icons/fi";
 import jobService from "../../../services/jobService";
 import { toast } from "react-hot-toast";
 import { useTheme, useThemeClasses } from "../../../contexts/ThemeContext";
@@ -205,7 +206,7 @@ const ApplicationsList = () => {
                     <h3 className={`text-3xl font-bold ${getTextColor()} mt-2`}>{stats.avgMatch}%</h3>
                   </div>
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center">
-                    <FiTrendingUp className="w-6 h-6 text-white" />
+                    <FaChartGantt className="w-6 h-6 text-white" />
                   </div>
                 </div>
               </div>

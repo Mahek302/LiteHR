@@ -17,6 +17,7 @@ import { defineTermsAcceptanceModel } from "./termsAcceptance.model.js";
 import { defineSettingModel } from "./setting.model.js";
 import { definePayslipModel } from "./payslip.model.js";
 import { defineDocumentModel } from "./document.model.js";
+import { defineDemoRequestModel } from "./demoRequest.model.js";
 
 
 let User;
@@ -38,6 +39,7 @@ let TermsAcceptance;
 let Setting;
 let Payslip;
 let Document;
+let DemoRequest;
 
 
 export const setupModels = (sequelize) => {
@@ -62,6 +64,7 @@ export const setupModels = (sequelize) => {
   TermsAcceptance = defineTermsAcceptanceModel(sequelize);
   Payslip = definePayslipModel(sequelize);
   Document = defineDocumentModel(sequelize);
+  DemoRequest = defineDemoRequestModel(sequelize);
 
 
   // User ↔ Employee
@@ -210,6 +213,16 @@ export const setupModels = (sequelize) => {
   // Employee ↔ Document
   Employee.hasMany(Document, { foreignKey: "employeeId", as: "documents" });
   Document.belongsTo(Employee, { foreignKey: "employeeId", as: "employee" });
+
+  // User ↔ DemoRequest (approved by)
+  User.hasMany(DemoRequest, {
+    foreignKey: "approvedByUserId",
+    as: "approvedDemoRequests",
+  });
+  DemoRequest.belongsTo(User, {
+    foreignKey: "approvedByUserId",
+    as: "approvedBy",
+  });
 };
 
 
@@ -232,6 +245,7 @@ export {
   JobApplication,
   TermsAcceptance,
   Payslip,
-  Document
+  Document,
+  DemoRequest,
 };
 

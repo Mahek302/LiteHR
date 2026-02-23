@@ -1,3 +1,5 @@
+import ClickSpark from "./components/ClickSpark";
+import ScrollToTop from "./ScrollToTop";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -26,21 +28,19 @@ import Dashboard from './pages/manager/Dashboard'; // Manager Dashboard
 import EmployeeManagement from './pages/manager/EmployeeManagement';
 import AttendanceTracking from './pages/manager/AttendanceTracking';
 import LeaveApproval from './pages/manager/LeaveApproval';
-import Roles from './pages/manager/Roles';
 import Recruitment from './pages/manager/Recruitment';
 import SecureVault from './pages/manager/SecureVault';
-import Settings from './pages/manager/Settings';
-import EmployeeHierarchy from './pages/manager/EmployeeHierarchy';
+import Profile from './pages/manager/Profile'; // Renamed from Settings to Profile
 
 // Manager Add/Edit Imports with Aliases to avoid conflict with Admin
 import ManagerDepartmentList from './pages/manager/DepartmentList';
 import ManagerAddDepartment from './pages/manager/AddDepartment';
-
-
-import ManagerAddRole from './pages/manager/AddRole';
 import ManagerLeavePolicy from './pages/manager/LeavePolicy';
 import ManagerUploadDocument from './pages/manager/UploadDocument';
 import TaskManagement from './pages/manager/TaskManagement';
+
+// Calendar import (renamed)
+import AttendanceCalendar from './pages/manager/AttendanceCalendar';
 
 /* Employees (Admin) */
 import EmployeeList from "./pages/Admin/employee/EmployeeList";
@@ -63,7 +63,6 @@ import AttendanceReports from "./pages/Admin/attendance/AttendanceReports";
 import LeaveRequests from "./pages/Admin/leaves/LeaveRequests";
 import AdminLeavePolicy from "./pages/Admin/leaves/LeavePolicy";
 
-
 /* Recruitment (Admin) */
 import JobList from "./pages/Admin/recruitment/JobList";
 import AddJob from "./pages/Admin/recruitment/AddJob";
@@ -71,7 +70,6 @@ import ApplicationsList from "./pages/Admin/recruitment/ApplicationsList";
 import ApplicationDetails from "./pages/Admin/recruitment/ApplicationDetails";
 import CvSummarizer from "./pages/Admin/recruitment/CvSummarizer";
 import JobDetails from "./pages/Admin/recruitment/JobDetails";
-
 
 /* Vault (Admin) */
 import VaultList from "./pages/Admin/vault/VaultList";
@@ -86,8 +84,8 @@ import AdminPayslip from "./pages/Admin/payslip/AdminPayslip";
 /* Notifications (Admin) */
 import Notifications from "./pages/Admin/notifications/Notifications";
 
-/* Settings (Admin) */
-import CompanySettings from "./pages/Admin/settings/CompanySettings";
+/* Profile (Admin) */
+import AdminProfile from "./pages/Admin/profile/AdminProfile";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -143,7 +141,6 @@ function App() {
     return children;
   };
 
-
   const ManagerRoute = ({ user, children }) => {
     const token = localStorage.getItem("token");
 
@@ -161,7 +158,6 @@ function App() {
 
     return children;
   };
-
 
   const EmployeeRoute = ({ user, children }) => {
     const token = localStorage.getItem("token");
@@ -181,7 +177,6 @@ function App() {
     return children;
   };
 
-
   const handleLogout = () => {
     localStorage.removeItem("token");
     setUser(null);
@@ -196,156 +191,155 @@ function App() {
   }
 
   return (
-    <ThemeProvider>
-      <Toaster position="top-right" />
-      <Routes>
-        {/* Public */}
-        <Route path="/" element={<Homepage />} />
-        <Route path="/careers" element={<CareersPage />} />
-        <Route
-          path="/login"
-          element={localStorage.getItem("token") && user ? <Navigate to={getRoleRedirect(user.role)} /> : <Login setUser={setUser} />}
-        />
-        <Route
-          path="/register"
-          element={localStorage.getItem("token") && user ? <Navigate to={getRoleRedirect(user.role)} /> : <Register setUser={setUser} />}
-        />
-        <Route path="/reset-password/:token" element={<ResetPassword />} />
+    <ClickSpark sparkColor="#8b5cf6" sparkSize={8} sparkRadius={18}>
+      <ThemeProvider>
+        <Toaster position="top-right" />
+        <ScrollToTop />
+        <Routes>
+          {/* Public */}
+          <Route path="/" element={<Homepage />} />
+          <Route path="/careers" element={<CareersPage />} />
+          <Route
+            path="/login"
+            element={localStorage.getItem("token") && user ? <Navigate to={getRoleRedirect(user.role)} /> : <Login setUser={setUser} />}
+          />
+          <Route
+            path="/register"
+            element={localStorage.getItem("token") && user ? <Navigate to={getRoleRedirect(user.role)} /> : <Register setUser={setUser} />}
+          />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-        {/* ================= ADMIN (SINGLE SOURCE OF TRUTH) ================= */}
-        <Route
-          path="/admin"
-          element={
-            <AdminRoute user={user}>
-              <AdminLayout logout={handleLogout} />
-            </AdminRoute>
-          }
-        >
-          {/* Dashboard */}
-          <Route index element={<Navigate to="dashboard" />} />
-          <Route path="dashboard" element={<AdminHome />} />
+          {/* ================= ADMIN ================= */}
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute user={user}>
+                <AdminLayout logout={handleLogout} />
+              </AdminRoute>
+            }
+          >
+            {/* Dashboard */}
+            <Route index element={<Navigate to="dashboard" />} />
+            <Route path="dashboard" element={<AdminHome />} />
 
-          {/* Employees */}
-          <Route path="employees" element={<EmployeeList />} />
-          <Route path="employees/add" element={<AdminAddEmployee />} />
-          <Route path="employees/edit/:id" element={<EditEmployee />} />
-          <Route path="employees/:id" element={<EmployeeProfile />} />
+            {/* Employees */}
+            <Route path="employees" element={<EmployeeList />} />
+            <Route path="employees/add" element={<AdminAddEmployee />} />
+            <Route path="employees/edit/:id" element={<EditEmployee />} />
+            <Route path="employees/:id" element={<EmployeeProfile />} />
 
-          {/* Departments */}
-          <Route path="departments" element={<DepartmentList />} />
-          <Route path="departments/add" element={<AdminAddDepartment />} />
-          <Route path="departments/edit/:id" element={<EditDepartment />} />
-          <Route path="departments/:id" element={<DepartmentDetails />} />
+            {/* Departments */}
+            <Route path="departments" element={<DepartmentList />} />
+            <Route path="departments/add" element={<AdminAddDepartment />} />
+            <Route path="departments/edit/:id" element={<EditDepartment />} />
+            <Route path="departments/:id" element={<DepartmentDetails />} />
 
-          {/* Attendance */}
-          <Route path="attendance/daily" element={<DailyAttendance />} />
-          <Route path="attendance/monthly" element={<MonthlyAttendance />} />
-          <Route path="attendance/reports" element={<AttendanceReports />} />
+            {/* Attendance */}
+            <Route path="attendance/daily" element={<DailyAttendance />} />
+            <Route path="attendance/monthly" element={<MonthlyAttendance />} />
+            <Route path="attendance/reports" element={<AttendanceReports />} />
 
-          {/* Leaves */}
-          <Route path="leaves/requests" element={<LeaveRequests />} />
-          <Route path="leaves/policy" element={<AdminLeavePolicy />} />
+            {/* Leaves */}
+            <Route path="leaves/requests" element={<LeaveRequests />} />
+            <Route path="leaves/policy" element={<AdminLeavePolicy />} />
 
-          {/* Recruitment */}
-          <Route path="recruitment/jobs" element={<JobList />} />
-          <Route path="recruitment/add-job" element={<AddJob />} />
-          <Route path="recruitment/edit-job/:id" element={<AddJob />} />
-          <Route path="recruitment/jobs/:id" element={<JobDetails />} />
-          <Route path="recruitment/applications" element={<ApplicationsList />} />
-          <Route path="recruitment/applications/:id" element={<ApplicationDetails />} />
-          <Route path="recruitment/cv-summarizer" element={<CvSummarizer />} />
+            {/* Recruitment */}
+            <Route path="recruitment/jobs" element={<JobList />} />
+            <Route path="recruitment/add-job" element={<AddJob />} />
+            <Route path="recruitment/edit-job/:id" element={<AddJob />} />
+            <Route path="recruitment/jobs/:id" element={<JobDetails />} />
+            <Route path="recruitment/applications" element={<ApplicationsList />} />
+            <Route path="recruitment/applications/:id" element={<ApplicationDetails />} />
+            <Route path="recruitment/cv-summarizer" element={<CvSummarizer />} />
 
-          {/* Vault */}
-          <Route path="vault" element={<VaultList />} />
-          <Route path="vault/upload" element={<AdminUploadDocument />} />
+            {/* Vault */}
+            <Route path="vault" element={<VaultList />} />
+            <Route path="vault/upload" element={<AdminUploadDocument />} />
 
-          {/* Analytics */}
-          <Route path="analytics" element={<AdminAnalytics />} />
+            {/* Analytics */}
+            <Route path="analytics" element={<AdminAnalytics />} />
 
+            {/* Notifications */}
+            <Route path="notifications" element={<Notifications />} />
 
-          {/* Notifications */}
-          <Route path="notifications" element={<Notifications />} />
+            {/* Payroll */}
+            <Route path="payroll/payslips" element={<AdminPayslip />} />
 
-          {/* Payroll */}
-          <Route path="payroll/payslips" element={<AdminPayslip />} />
+            {/* Profile */}
+            <Route path="profile" element={<AdminProfile />} />
+          </Route>
 
-          {/* Settings */}
-          <Route path="settings" element={<CompanySettings />} />
-        </Route>
+          {/* ================= MANAGER ROUTES ================= */}
+          <Route
+            path="/manager"
+            element={
+              <ManagerRoute user={user}>
+                <MainLayout logout={handleLogout} />
+              </ManagerRoute>
+            }
+          >
+            <Route index element={<Navigate to="/manager/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
 
-        {/* ================= MANAGER ROUTES ================= */}
-        <Route
-          path="/manager"
-          element={
-            <ManagerRoute user={user}>
-              <MainLayout logout={handleLogout} />
-            </ManagerRoute>
-          }
-        >
-          <Route index element={<Navigate to="/manager/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
+            {/* Employee Management */}
+            <Route path="employees" element={<EmployeeManagement />} />
+            {/* Employee Hierarchy route removed */}
 
-          {/* Employee Management */}
-          <Route path="employees" element={<EmployeeManagement />} />
-          <Route path="employees/hierarchy" element={<EmployeeHierarchy />} />
+            {/* Departments */}
+            <Route path="departments" element={<ManagerDepartmentList />} />
+            <Route path="departments/add" element={<ManagerAddDepartment />} />
 
+            {/* Task Management */}
+            <Route path="tasks" element={<TaskManagement />} />
 
+            {/* Roles & Permissions - REMOVED */}
 
-          {/* Departments */}
-          <Route path="departments" element={<ManagerDepartmentList />} />
-          <Route path="departments/add" element={<ManagerAddDepartment />} />
+            {/* Attendance Tracking */}
+            <Route path="attendance" element={<AttendanceTracking />} />
+            <Route path="attendance/calendar" element={<AttendanceCalendar />} />
 
-          {/* Task Management */}
-          <Route path="tasks" element={<TaskManagement />} />
+            {/* Leave Management */}
+            <Route path="leave-approval" element={<LeaveApproval />} />
+            <Route path="leave-policy" element={<ManagerLeavePolicy />} />
 
-          {/* Roles & Permissions */}
-          <Route path="roles" element={<Roles />} />
-          <Route path="roles/add" element={<ManagerAddRole />} />
+            {/* Recruitment */}
+            <Route path="recruitment" element={<Recruitment />} />
 
-          {/* Attendance Tracking (direct link) */}
-          <Route path="attendance" element={<AttendanceTracking />} />
+            {/* Secure Vault */}
+            <Route path="documents" element={<SecureVault />} />
+            <Route path="documents/upload" element={<ManagerUploadDocument />} />
 
-          {/* Leave Management */}
-          <Route path="leave-approval" element={<LeaveApproval />} />
-          <Route path="leave-policy" element={<ManagerLeavePolicy />} />
+            {/* Profile (renamed from Settings) */}
+            <Route path="profile" element={<Profile />} />
 
-          {/* Recruitment */}
-          <Route path="recruitment" element={<Recruitment />} />
+            <Route path="*" element={<Navigate to="/manager/dashboard" replace />} />
+          </Route>
 
-          {/* Secure Vault */}
-          <Route path="documents" element={<SecureVault />} />
-          <Route path="documents/upload" element={<ManagerUploadDocument />} />
+          {/* ================= EMPLOYEE ROUTES ================= */}
+          <Route
+            path="/employee"
+            element={
+              <EmployeeRoute user={user}>
+                <EmployeeLayout logout={handleLogout} />
+              </EmployeeRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" />} />
+            <Route path="dashboard" element={<EmployeeHome />} />
+            <Route path="attendance" element={<EmployeeHome />} />
+            <Route path="tasks" element={<EmployeeHome />} />
+            <Route path="leaves" element={<EmployeeHome />} />
+            <Route path="worklogs" element={<EmployeeHome />} />
+            <Route path="profile" element={<EmployeeHome />} />
+            <Route path="payslips" element={<EmployeeHome />} />
+            <Route path="documents" element={<EmployeeHome />} />
+          </Route>
 
-          {/* Settings (direct link) */}
-          <Route path="settings" element={<Settings />} />
-
-          <Route path="*" element={<Navigate to="/manager/dashboard" replace />} />
-        </Route>
-
-        {/* ================= EMPLOYEE ROUTES ================= */}
-        <Route
-          path="/employee"
-          element={
-            <EmployeeRoute user={user}>
-              <EmployeeLayout logout={handleLogout} />
-            </EmployeeRoute>
-          }
-        >
-          <Route index element={<Navigate to="dashboard" />} />
-          <Route path="dashboard" element={<EmployeeHome />} />
-          <Route path="attendance" element={<EmployeeHome />} />
-          <Route path="tasks" element={<EmployeeHome />} />
-          <Route path="leaves" element={<EmployeeHome />} />
-          <Route path="worklogs" element={<EmployeeHome />} />
-          <Route path="profile" element={<EmployeeHome />} />
-          <Route path="payslips" element={<EmployeeHome />} />
-          <Route path="documents" element={<EmployeeHome />} />
-        </Route>
-
-        {/* 404 */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </ThemeProvider>
+          {/* 404 */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </ThemeProvider>
+    </ClickSpark>
   );
 }
 

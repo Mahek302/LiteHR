@@ -1,5 +1,9 @@
+import { AiOutlineBarChart } from "react-icons/ai";
+import { FaChartGantt } from "react-icons/fa6";
+import { GoCheck } from "react-icons/go";
+import { MdOutlineAddchart } from "react-icons/md";
 import React, { useState } from "react";
-import { FiUsers, FiMail, FiUser, FiEdit2, FiActivity, FiCalendar, FiTrendingUp, FiClock, FiBriefcase, FiMapPin, FiCheckCircle, FiXCircle, FiAlertCircle } from "react-icons/fi";
+import { FiUsers, FiMail, FiUser, FiEdit2, FiCalendar, FiClock, FiBriefcase, FiMapPin, FiCheckCircle, FiXCircle, FiAlertCircle } from "react-icons/fi";
 import { FaRupeeSign } from "react-icons/fa";
 import { HiOutlineOfficeBuilding, HiOutlineUserGroup } from "react-icons/hi";
 import { Link, useParams } from "react-router-dom";
@@ -178,7 +182,7 @@ const DepartmentDetails = () => {
                 </div>
                 <div className="mt-4">
                   <div className="flex items-center gap-2 text-sm text-emerald-400">
-                    <FiTrendingUp />
+                    <GoCheck />
                     <span>+12% from last month</span>
                   </div>
                 </div>
@@ -231,7 +235,7 @@ const DepartmentDetails = () => {
                     <h3 className={`text-3xl font-bold ${themeClasses.text.primary} mt-2`}>{analytics.productivity}%</h3>
                   </div>
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                    <FiActivity className="w-6 h-6 text-white" />
+                    <MdOutlineAddchart className="w-6 h-6 text-white" />
                   </div>
                 </div>
                 <div className="mt-4">
@@ -379,7 +383,7 @@ const DepartmentDetails = () => {
                       {(employees.reduce((sum, emp) => sum + emp.performance, 0) / employees.length).toFixed(1)}/5
                     </h3>
                   </div>
-                  <FiTrendingUp className="w-8 h-8 text-emerald-400" />
+                  <FaChartGantt className="w-8 h-8 text-emerald-400" />
                 </div>
               </div>
 
@@ -590,7 +594,7 @@ const DepartmentDetails = () => {
                     <p className={`text-sm ${themeClasses.text.muted}`}>Productivity Score</p>
                     <h3 className={`text-2xl font-bold ${themeClasses.text.primary} mt-1`}>{analytics.productivity}%</h3>
                   </div>
-                  <FiTrendingUp className="w-8 h-8 text-emerald-400" />
+                  <AiOutlineBarChart className="w-8 h-8 text-emerald-400" />
                 </div>
                 <div className="mt-4">
                   <div className={`h-2 ${darkMode ? "bg-gray-700" : "bg-gray-300"} rounded-full overflow-hidden`}>
@@ -801,7 +805,7 @@ const DepartmentDetails = () => {
                 <div className={`p-4 rounded-lg ${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"} border border-emerald-500/30`}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                      <FiTrendingUp className="w-5 h-5 text-emerald-400" />
+                      <AiOutlineBarChart className="w-5 h-5 text-emerald-400" />
                     </div>
                     <div>
                       <p className={`font-medium ${themeClasses.text.primary}`}>Positive Trend</p>

@@ -2,14 +2,24 @@ import { User, Employee } from "../models/index.js";
 import { comparePassword, hashPassword } from "../utils/password.js";
 import { signToken, verifyToken } from "../utils/jwt.js";
 import { sendEmail } from "./emailService.js";
+import { Op, fn, col, where } from "sequelize";
 
 export const loginService = async (email, password) => {
+  const normalizedInput = String(email || "").trim().toLowerCase();
   const user = await User.findOne({
-    where: { email, isActive: true },
+    where: {
+      isActive: true,
+      [Op.or]: [
+        where(fn("LOWER", col("User.email")), normalizedInput),
+        where(fn("LOWER", col("User.username")), normalizedInput),
+        where(fn("LOWER", col("employeeProfile.personalEmail")), normalizedInput),
+      ],
+    },
     include: [
       {
         model: Employee,
         as: "employeeProfile",
+        required: false,
       },
     ],
   });
@@ -60,9 +70,16 @@ export const loginService = async (email, password) => {
 };
 
 export const forgotPasswordService = async (email) => {
+  const normalizedInput = String(email || "").trim().toLowerCase();
   const user = await User.findOne({
-    where: { email },
-    include: [{ model: Employee, as: "employeeProfile" }]
+    where: {
+      [Op.or]: [
+        where(fn("LOWER", col("User.email")), normalizedInput),
+        where(fn("LOWER", col("User.username")), normalizedInput),
+        where(fn("LOWER", col("employeeProfile.personalEmail")), normalizedInput),
+      ],
+    },
+    include: [{ model: Employee, as: "employeeProfile", required: false }]
   });
 
   if (!user) {

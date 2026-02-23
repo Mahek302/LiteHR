@@ -7,6 +7,20 @@ const ResetPassword = () => {
   const { token } = useParams();
   const navigate = useNavigate();
 
+  const decodeJwtPayload = (jwtToken) => {
+    try {
+      const parts = String(jwtToken || "").split(".");
+      if (parts.length < 2) return null;
+      const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+      const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+      return JSON.parse(atob(padded));
+    } catch {
+      return null;
+    }
+  };
+  const tokenPayload = decodeJwtPayload(token);
+  const isTrialActivation = tokenPayload?.purpose === "trial-activation";
+
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -34,7 +48,11 @@ const ResetPassword = () => {
     setIsLoading(true);
     try {
       await axios.post(`/api/reset-password/${token}`, { password });
-      setMessage("Password reset successful! Redirecting to login...");
+      setMessage(
+        isTrialActivation
+          ? "Trial password created successfully! Redirecting to login..."
+          : "Password reset successful! Redirecting to login..."
+      );
 
       // Show success animation
       setTimeout(() => {
@@ -79,9 +97,11 @@ const ResetPassword = () => {
                 <HiLockClosed className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-3xl font-bold text-white mb-2 bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-purple-300">
-                Reset Password
+                {isTrialActivation ? "Activate Trial Account" : "Reset Password"}
               </h2>
-              <p className="text-slate-300">Create a new secure password</p>
+              <p className="text-slate-300">
+                {isTrialActivation ? "Create your trial login password" : "Create a new secure password"}
+              </p>
             </div>
           </div>
 
@@ -104,7 +124,7 @@ const ResetPassword = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-white mb-2">
-                  New Password
+                  {isTrialActivation ? "Create Password" : "New Password"}
                 </label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -116,7 +136,7 @@ const ResetPassword = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-10 pr-12 p-4 bg-slate-900/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 outline-none transition duration-200 text-white placeholder-slate-500 group-hover:border-slate-600"
                     required
-                    placeholder="Enter new password"
+                    placeholder={isTrialActivation ? "Create password" : "Enter new password"}
                   />
                   <button
                     type="button"
@@ -147,7 +167,7 @@ const ResetPassword = () => {
                     onChange={(e) => setConfirm(e.target.value)}
                     className="w-full pl-10 pr-12 p-4 bg-slate-900/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 outline-none transition duration-200 text-white placeholder-slate-500 group-hover:border-slate-600"
                     required
-                    placeholder="Confirm new password"
+                    placeholder={isTrialActivation ? "Confirm created password" : "Confirm new password"}
                   />
                   <button
                     type="button"
@@ -182,10 +202,10 @@ const ResetPassword = () => {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
-                      <span>Resetting Password...</span>
+                      <span>{isTrialActivation ? "Activating Account..." : "Resetting Password..."}</span>
                     </div>
                   ) : (
-                    'Reset Password'
+                    isTrialActivation ? "Activate Account" : "Reset Password"
                   )}
                 </div>
               </button>

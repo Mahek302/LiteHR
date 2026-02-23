@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { FiSearch, FiFilter, FiBriefcase, FiUsers, FiClock, FiEdit2, FiEye, FiTrash2, FiTrendingUp } from "react-icons/fi";
+import { FiSearch, FiFilter, FiBriefcase, FiUsers, FiClock, FiEdit2, FiEye, FiTrash2,   } from "react-icons/fi";
 import jobService from "../../../services/jobService";
 import { toast } from "react-hot-toast";
 import { useTheme, useThemeClasses } from "../../../contexts/ThemeContext";
+import { FaChartGantt } from "react-icons/fa6";
+
 
 const JobList = () => {
   const darkMode = useTheme() || false;
@@ -180,7 +182,7 @@ const JobList = () => {
                     <h3 className={`text-3xl font-bold ${getTextColor()} mt-2`}>{hiringRate}%</h3>
                   </div>
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                    <FiTrendingUp className="w-6 h-6 text-white" />
+                    <FaChartGantt className="w-6 h-6 text-white" />
                   </div>
                 </div>
               </div>

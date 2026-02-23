@@ -64,9 +64,13 @@ import {
   BatteryCharging,
   Wifi,
   WifiOff,
+  EyeOff
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { MdOutlineSick } from "react-icons/md";
+import { CiCalendar } from "react-icons/ci";
+import { FaRegCalendarCheck } from "react-icons/fa6";
 
 // Helper for safe date string
 const getSafeDateStr = (date) => {
@@ -78,7 +82,6 @@ const getSafeDateStr = (date) => {
 
 const EmployeeDashboard = () => {
   // Theme state
-
   const location = useLocation();
   const [activeSection, setActiveSection] = useState("dashboard");
 
@@ -92,8 +95,6 @@ const EmployeeDashboard = () => {
     }
   }, [location]);
 
-
-
   // Attendance state
   const [isClockedIn, setIsClockedIn] = useState(true);
   const [clockInTime, setClockInTime] = useState("09:00 AM");
@@ -106,9 +107,13 @@ const EmployeeDashboard = () => {
   const [showDateDetails, setShowDateDetails] = useState(false);
 
   // Task state
-  // Task state
   const [tasks, setTasks] = useState([]);
-
+  const [completedTasksHistory, setCompletedTasksHistory] = useState([]);
+  const [completedTaskTimers, setCompletedTaskTimers] = useState({});
+  const [showCompletedHistory, setShowCompletedHistory] = useState(false);
+  const [historyDateFilter, setHistoryDateFilter] = useState("");
+  const [historyMonthFilter, setHistoryMonthFilter] = useState("");
+  const [historyStatusFilter, setHistoryStatusFilter] = useState("all");
 
   // Form states
   const [newLeave, setNewLeave] = useState({
@@ -116,13 +121,17 @@ const EmployeeDashboard = () => {
     from: "",
     to: "",
     reason: "",
+    contactNumber: "",
+    showContactNumber: false
   });
+
+
 
   const [newWorklog, setNewWorklog] = useState({
     task: "",
     description: "",
     time: "",
-    project: "Alpha",
+    project: "",
     date: new Date().toISOString().split("T")[0],
   });
 
@@ -136,19 +145,23 @@ const EmployeeDashboard = () => {
   const [hoveredItem, setHoveredItem] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
 
+  // Worklog filters
+  const [worklogDateFilter, setWorklogDateFilter] = useState("");
+  const [worklogMonthFilter, setWorklogMonthFilter] = useState("");
+
+  // Leave filters
+  const [leaveMonthFilter, setLeaveMonthFilter] = useState("");
+  const [leaveDateFilter, setLeaveDateFilter] = useState("");
+  const [leaveStatusFilter, setLeaveStatusFilter] = useState("all");
+
   // Enhanced attendance data for calendar with mark-in/out details
   const [attendanceData, setAttendanceData] = useState({});
-
 
   // Holiday data
   const [holidayData, setHolidayData] = useState({});
 
   // Leave Types
   const [leaveTypes, setLeaveTypes] = useState([]);
-
-
-
-
 
   // Sample data
   const [notifications, setNotifications] = useState([
@@ -162,32 +175,39 @@ const EmployeeDashboard = () => {
     },
   ]);
 
-
-
   const [payslips, setPayslips] = useState([]);
-
-
   const [worklogs, setWorklogs] = useState([]);
-
-
   const [leaveBalance, setLeaveBalance] = useState({
     casual: 0,
     sick: 0,
     earned: 0,
   });
-
   const [leaves, setLeaves] = useState([]);
-
   const [viewPayslip, setViewPayslip] = useState(null);
-
   const [personalDocuments, setPersonalDocuments] = useState([]);
 
+  // Analytics data
+  // Derived Leave Stats - Moved here to access state
+  // Calculate Used Leaves from approved leaves history
+  const usedLeaves = {
+    casual: leaves.filter(l => (l.type === 'cl' || l.type?.toLowerCase().includes('casual')) && l.status === 'approved').reduce((sum, l) => sum + (l.days || 0), 0),
+    sick: leaves.filter(l => (l.type === 'sl' || l.type?.toLowerCase().includes('sick')) && l.status === 'approved').reduce((sum, l) => sum + (l.days || 0), 0),
+    earned: leaves.filter(l => (l.type === 'el' || l.type === 'pl' || l.type?.toLowerCase().includes('earned')) && l.status === 'approved').reduce((sum, l) => sum + (l.days || 0), 0)
+  };
+
+  // Calculate Total Leaves = Used + Remaining
+  const totalLeaves = {
+    casual: usedLeaves.casual + (leaveBalance.casual || 0),
+    sick: usedLeaves.sick + (leaveBalance.sick || 0),
+    earned: usedLeaves.earned + (leaveBalance.earned || 0)
+  };
 
   // Analytics data
   const [analytics, setAnalytics] = useState({});
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+
 
   const fetchAllData = async () => {
     try {
@@ -269,7 +289,6 @@ const EmployeeDashboard = () => {
       setAttendanceData(attendanceMap);
 
       // Check for today's attendance to set clock in/out state
-      // Check for today's attendance to set clock in/out state
       const todayStr = getSafeDateStr(new Date());
 
       const todayRecord = attendanceMap[todayStr];
@@ -294,10 +313,29 @@ const EmployeeDashboard = () => {
         setClockInTime(null);
       }
 
-      setTasks(tasksList.map(t => ({
-        ...t,
-        completed: t.status === 'COMPLETED'
-      })));
+      // Split tasks into active and history
+      const activeTasks = [];
+      const historyTasks = [];
+
+      tasksList.forEach(t => {
+        if (t.status === 'COMPLETED') {
+          historyTasks.push({
+            ...t,
+            completed: true,
+            completedAt: t.updatedAt || t.createdAt || new Date().toISOString(), // Fallback for filter
+            historyStatus: 'Completed'
+          });
+        } else {
+          activeTasks.push({
+            ...t,
+            completed: false
+          });
+        }
+      });
+
+      setTasks(activeTasks);
+      setCompletedTasksHistory(historyTasks);
+
       setLeaves(leavesList.map(l => {
         const start = new Date(l.fromDate);
         const end = new Date(l.toDate);
@@ -312,14 +350,13 @@ const EmployeeDashboard = () => {
       }));
       setWorklogs(worklogsList.map(w => ({
         ...w,
-        task: "Work Log",
-        project: "Internal",
+        task: w.taskName || w.task || "Work Log",
+        project: w.project || "Internal",
         time: w.hoursWorked ? `${w.hoursWorked} hrs` : '--',
         status: "Completed"
       })));
       setPayslips(payslipsList);
       setPersonalDocuments(documentsList.documents || documentsList || []);
-
 
       // Process leave balance
       const balanceMap = { casual: 0, sick: 0, earned: 0 };
@@ -365,18 +402,18 @@ const EmployeeDashboard = () => {
     fetchAllData();
   }, []);
 
-
   // Graph data - Dynamic from tasks
   const [taskCompletionData, setTaskCompletionData] = useState([]);
+  const [hoveredBar, setHoveredBar] = useState(null);
 
-  // Calculate task completion stats when tasks change
+  // Calculate task completion stats when tasks or worklogs change
   useEffect(() => {
-    if (!tasks || tasks.length === 0) {
+    if ((!tasks || tasks.length === 0) && (!worklogs || worklogs.length === 0)) {
       setTaskCompletionData([
-        { week: "Week 1", completed: 0, total: 0, color: "#7C3AED" },
-        { week: "Week 2", completed: 0, total: 0, color: "#2563EB" },
-        { week: "Week 3", completed: 0, total: 0, color: "#10B981" },
-        { week: "Week 4", completed: 0, total: 0, color: "#F59E0B" },
+        { week: "Week 1", completed: 0, total: 5, color: "#7C3AED" },
+        { week: "Week 2", completed: 0, total: 5, color: "#2563EB" },
+        { week: "Week 3", completed: 0, total: 5, color: "#10B981" },
+        { week: "Week 4", completed: 0, total: 5, color: "#F59E0B" },
       ]);
       return;
     }
@@ -401,13 +438,26 @@ const EmployeeDashboard = () => {
         return created >= startOfWeek && created <= endOfWeek;
       });
 
-      const total = weekTasks.length;
-      const completed = weekTasks.filter(t => t.status === "COMPLETED").length;
+      // Filter worklogs created within this window
+      const weekWorklogs = worklogs.filter(log => {
+        const logDate = new Date(log.date);
+        return logDate >= startOfWeek && logDate <= endOfWeek;
+      });
+
+      const tasksTotal = weekTasks.length;
+      const tasksCompleted = weekTasks.filter(t => t.status === "COMPLETED").length;
+      const worklogsCount = weekWorklogs.length;
+
+      // Effective stats: Treat worklogs as "Ad-hoc tasks completed"
+      // Total = Assigned Tasks + Ad-hoc Tasks (Worklogs)
+      // Completed = Completed Assigned Tasks + Ad-hoc Tasks (Worklogs)
+      const combinedTotal = tasksTotal + worklogsCount;
+      const combinedCompleted = tasksCompleted + worklogsCount;
 
       stats.push({
         week: i === 0 ? "Current" : `Week -${i}`,
-        completed,
-        total,
+        completed: combinedCompleted,
+        total: combinedTotal || 5, // Ensure at least 5 for visual consistency
         color: colors[3 - i]
       });
     }
@@ -421,8 +471,7 @@ const EmployeeDashboard = () => {
 
     setTaskCompletionData(finalStats);
 
-  }, [tasks]);
-
+  }, [tasks, worklogs]);
 
   // Calculate today's hours dynamically
   const [todayHours, setTodayHours] = useState("0h 0m");
@@ -434,7 +483,7 @@ const EmployeeDashboard = () => {
 
       if (todayRecord && todayRecord.rawMarkIn) {
         const start = new Date(todayRecord.rawMarkIn);
-        const end = todayRecord.rawMarkOut ? new Date(todayRecord.rawMarkOut) : currentTime;
+        const end = todayRecord.rawMarkOut ? new Date(todayRecord.rawMarkOut) : new Date();
 
         if (!isNaN(start)) {
           const diffMs = end - start;
@@ -453,18 +502,57 @@ const EmployeeDashboard = () => {
     // Re-calculate every minute if clocked in
     const interval = setInterval(calculateTodayHours, 60000);
     return () => clearInterval(interval);
-  }, [attendanceData, currentTime]);
+  }, [attendanceData]);
 
-  // Interactive state for graph hover
-  const [hoveredBar, setHoveredBar] = useState(null);
-
-  // Update current time
+  // Update current time every second for accuracy
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Timer for moving completed tasks to history
+  useEffect(() => {
+    const timers = { ...completedTaskTimers };
+
+    Object.keys(timers).forEach(taskId => {
+      if (!timers[taskId]) {
+        // Start a 10-minute timer
+        const timerId = setTimeout(() => {
+          // Move task to completed history
+          const taskToMove = tasks.find(t => t.id === taskId);
+          if (taskToMove) {
+            setCompletedTasksHistory(prev => [
+              ...prev,
+              { ...taskToMove, completedAt: new Date().toISOString(), historyStatus: 'Completed' }
+            ]);
+
+            // Remove from active tasks
+            setTasks(prev => prev.filter(t => t.id !== taskId));
+
+            // Clear the timer
+            setCompletedTaskTimers(prev => {
+              const newTimers = { ...prev };
+              delete newTimers[taskId];
+              return newTimers;
+            });
+          }
+        }, 10 * 60 * 1000); // 10 minutes
+
+        setCompletedTaskTimers(prev => ({
+          ...prev,
+          [taskId]: timerId
+        }));
+      }
+    });
+
+    return () => {
+      Object.values(timers).forEach(timerId => {
+        if (timerId) clearTimeout(timerId);
+      });
+    };
+  }, [completedTaskTimers, tasks]);
 
   // Calendar functions
   const getDaysInMonth = (date) => {
@@ -522,8 +610,6 @@ const EmployeeDashboard = () => {
     });
   };
 
-
-
   const getAttendanceStatus = (date) => {
     const dateStr = getSafeDateStr(date);
     return (
@@ -552,7 +638,6 @@ const EmployeeDashboard = () => {
   };
 
   // Task completion handler
-  // Task completion handler
   const handleTaskComplete = async (taskId) => {
     try {
       const task = tasks.find(t => t.id === taskId);
@@ -567,9 +652,49 @@ const EmployeeDashboard = () => {
           task.id === taskId ? { ...task, completed: !task.completed, status: task.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED' } : task
         )
       );
+
+      // If task is completed, set up timer for moving to history
+      if (task.status !== 'COMPLETED') {
+        // Task is being marked as completed
+        setCompletedTaskTimers(prev => ({
+          ...prev,
+          [taskId]: null // Timer will be started by useEffect
+        }));
+      } else {
+        // Task is being marked as incomplete - cancel timer if exists
+        if (completedTaskTimers[taskId]) {
+          clearTimeout(completedTaskTimers[taskId]);
+          setCompletedTaskTimers(prev => {
+            const newTimers = { ...prev };
+            delete newTimers[taskId];
+            return newTimers;
+          });
+        }
+
+        // Also remove from completed history if present
+        setCompletedTasksHistory(prev => prev.filter(t => t.id !== taskId));
+      }
     } catch (err) {
       console.error("Error updating task:", err);
       // Revert or show error
+    }
+  };
+
+  // Undo task completion
+  const handleUndoTask = (taskId) => {
+    // Find task in history
+    const taskToRestore = completedTasksHistory.find(t => t.id === taskId);
+    if (taskToRestore) {
+      // Remove from history
+      setCompletedTasksHistory(prev => prev.filter(t => t.id !== taskId));
+
+      // Add back to active tasks with PENDING status
+      setTasks(prev => [
+        ...prev,
+        { ...taskToRestore, status: 'PENDING', completed: false }
+      ]);
+
+      toast.success('Task restored to active list');
     }
   };
 
@@ -644,16 +769,25 @@ const EmployeeDashboard = () => {
   // Handle leave application
   const handleApplyLeave = async (e) => {
     e.preventDefault();
+
+    // Validate Indian mobile number
+    const mobileRegex = /^[6-9]\d{9}$/;
+    if (!mobileRegex.test(newLeave.contactNumber)) {
+      toast.error("Please enter a valid 10-digit Indian mobile number");
+      return;
+    }
+
     try {
       await employeeService.applyLeave({
         leaveType: newLeave.type, // Sending the value directly (code or name)
         fromDate: newLeave.from,
         toDate: newLeave.to,
-        reason: newLeave.reason
+        reason: newLeave.reason,
+        contactNumber: newLeave.contactNumber // Original number sent to backend
       });
 
       setShowLeaveModal(false);
-      setNewLeave({ type: "casual", from: "", to: "", reason: "" });
+      setNewLeave({ type: "casual", from: "", to: "", reason: "", contactNumber: "", showContactNumber: false });
       fetchAllData(); // Refresh list
     } catch (err) {
       console.error("Apply leave failed:", err);
@@ -668,7 +802,8 @@ const EmployeeDashboard = () => {
         taskName: newWorklog.task,
         description: newWorklog.description,
         hoursWorked: parseFloat(newWorklog.time),
-        date: newWorklog.date
+        date: newWorklog.date,
+        project: newWorklog.project // Keep the same field name for backend
       });
 
       setShowWorklogModal(false);
@@ -676,7 +811,7 @@ const EmployeeDashboard = () => {
         task: "",
         description: "",
         time: "",
-        project: "Alpha",
+        project: "",
         date: new Date().toISOString().split("T")[0],
       });
       fetchAllData();
@@ -704,6 +839,78 @@ const EmployeeDashboard = () => {
 
     return matchesCategory && matchesSearch;
   });
+
+  // Filtered worklogs
+  const filteredWorklogs = worklogs.filter(log => {
+    let matches = true;
+    if (worklogDateFilter) {
+      matches = matches && log.date === worklogDateFilter;
+    }
+    if (worklogMonthFilter) {
+      const logMonth = new Date(log.date).getMonth() + 1;
+      matches = matches && logMonth.toString() === worklogMonthFilter;
+    }
+    return matches;
+  });
+
+  // Filtered leaves with working filters
+  const filteredLeaves = leaves.filter(leave => {
+    let matches = true;
+
+    // Date filter
+    if (leaveDateFilter) {
+      const leaveFromDate = new Date(leave.from).toISOString().split('T')[0];
+      const leaveToDate = new Date(leave.to).toISOString().split('T')[0];
+      // Check if filter date is within range
+      matches = matches && (leaveDateFilter >= leaveFromDate && leaveDateFilter <= leaveToDate);
+    }
+
+    // Month filter
+    if (leaveMonthFilter) {
+      const leaveMonth = new Date(leave.from).getMonth() + 1;
+      matches = matches && leaveMonth.toString() === leaveMonthFilter;
+    }
+
+    // Status filter
+    if (leaveStatusFilter !== "all") {
+      matches = matches && leave.status?.toLowerCase() === leaveStatusFilter.toLowerCase();
+    }
+
+    return matches;
+  });
+
+  // Filtered completed tasks history with working filters
+  const filteredCompletedHistory = completedTasksHistory.filter(task => {
+    let matches = true;
+
+    // Date filter
+    if (historyDateFilter && task.completedAt) {
+      const taskDate = new Date(task.completedAt).toISOString().split('T')[0];
+      matches = matches && taskDate === historyDateFilter;
+    }
+
+    // Month filter
+    if (historyMonthFilter && task.completedAt) {
+      const taskMonth = new Date(task.completedAt).getMonth() + 1;
+      matches = matches && taskMonth.toString() === historyMonthFilter;
+    }
+
+    // Status filter
+    if (historyStatusFilter !== "all") {
+      matches = matches && task.historyStatus === historyStatusFilter;
+    }
+
+    return matches;
+  });
+
+  // Get full leave type name
+  const getFullLeaveTypeName = (type) => {
+    const typeLower = type?.toLowerCase() || "";
+    if (typeLower.includes('sick') || type === 'sl') return "Sick Leave";
+    if (typeLower.includes('casual') || type === 'cl') return "Casual Leave";
+    if (typeLower.includes('earned') || type === 'el' || type === 'pl') return "Earned Leave";
+    return type || "Leave";
+  };
 
   // Get status color
   const getStatusColor = (status) => {
@@ -746,8 +953,6 @@ const EmployeeDashboard = () => {
         return Clock;
     }
   };
-
-
 
   // Theme state - Now from context
   const { user, isDarkMode } = useOutletContext();
@@ -815,7 +1020,7 @@ const EmployeeDashboard = () => {
     }
   };
 
-  // Tasks Section
+  // Tasks Section with working filters
   const renderTasks = () => (
     <div className="space-y-6">
       <div
@@ -825,101 +1030,259 @@ const EmployeeDashboard = () => {
           borderColor: themeColors.borderDivider,
         }}
       >
-        <h1
-          className="text-2xl font-bold mb-2"
-          style={{ color: themeColors.textPrimary }}
-        >
-          My Tasks
-        </h1>
-        <p style={{ color: themeColors.textSecondary }}>
-          Manage and track your assigned tasks
-        </p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1
+              className="text-2xl font-bold mb-2"
+              style={{ color: themeColors.textPrimary }}
+            >
+              My Tasks
+            </h1>
+            <p style={{ color: themeColors.textSecondary }}>
+              Manage and track your assigned tasks
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCompletedHistory(!showCompletedHistory)}
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+            style={{
+              backgroundColor: showCompletedHistory ? themeColors.primary : themeColors.cardHover,
+              color: showCompletedHistory ? '#FFFFFF' : themeColors.textPrimary
+            }}
+          >
+            {showCompletedHistory ? 'Show Active Tasks' : 'Show Completed History'}
+          </button>
+        </div>
       </div>
 
-      {tasks.length === 0 ? (
-        <div
-          className="rounded-lg border p-12 text-center"
-          style={{
-            backgroundColor: themeColors.cardBackground,
-            borderColor: themeColors.borderDivider,
-          }}
-        >
-          <Target className="w-12 h-12 mx-auto mb-4 opacity-50" style={{ color: themeColors.textMuted }} />
-          <h3 className="text-lg font-medium mb-1" style={{ color: themeColors.textPrimary }}>No tasks assigned</h3>
-          <p style={{ color: themeColors.textSecondary }}>You're all caught up!</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {tasks.map((task) => (
+      {!showCompletedHistory ? (
+        // Active Tasks
+        <>
+          {tasks.length === 0 ? (
             <div
-              key={task.id}
-              className="rounded-lg border p-4 transition-all hover:shadow-md"
+              className="rounded-lg border p-12 text-center"
               style={{
                 backgroundColor: themeColors.cardBackground,
                 borderColor: themeColors.borderDivider,
               }}
             >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium border`}
-                      style={{
-                        backgroundColor: task.priority === 'HIGH' ? themeColors.dangerBg : task.priority === 'MEDIUM' ? themeColors.warningBg : themeColors.successBg,
-                        color: task.priority === 'HIGH' ? themeColors.danger : task.priority === 'MEDIUM' ? themeColors.warning : themeColors.success,
-                        borderColor: 'transparent'
-                      }}
-                    >
-                      {task.priority || 'NORMAL'}
-                    </span>
-                    {task.dueDate && (
-                      <span className="flex items-center text-xs" style={{ color: themeColors.textMuted }}>
-                        <CalendarIcon size={12} className="mr-1" />
-                        Due: {new Date(task.dueDate).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
+              <Target className="w-12 h-12 mx-auto mb-4 opacity-50" style={{ color: themeColors.textMuted }} />
+              <h3 className="text-lg font-medium mb-1" style={{ color: themeColors.textPrimary }}>No tasks assigned</h3>
+              <p style={{ color: themeColors.textSecondary }}>You're all caught up!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {tasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="rounded-lg border p-4 transition-all hover:shadow-md"
+                  style={{
+                    backgroundColor: themeColors.cardBackground,
+                    borderColor: themeColors.borderDivider,
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium border`}
+                          style={{
+                            backgroundColor: task.priority === 'HIGH' ? themeColors.dangerBg : task.priority === 'MEDIUM' ? themeColors.warningBg : themeColors.successBg,
+                            color: task.priority === 'HIGH' ? themeColors.danger : task.priority === 'MEDIUM' ? themeColors.warning : themeColors.success,
+                            borderColor: 'transparent'
+                          }}
+                        >
+                          {task.priority || 'NORMAL'}
+                        </span>
+                        {task.dueDate && (
+                          <span className="flex items-center text-xs" style={{ color: themeColors.textMuted }}>
+                            <CalendarIcon size={12} className="mr-1" />
+                            Due: {new Date(task.dueDate).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
 
-                  <h3 className="text-lg font-semibold mb-1" style={{ color: themeColors.textPrimary }}>
-                    {task.title}
-                  </h3>
-                  <p className="text-sm mb-3" style={{ color: themeColors.textSecondary }}>
-                    {task.description || "No description provided."}
-                  </p>
+                      <h3 className="text-lg font-semibold mb-1" style={{ color: themeColors.textPrimary }}>
+                        {task.title}
+                      </h3>
+                      <p className="text-sm mb-3" style={{ color: themeColors.textSecondary }}>
+                        {task.description || "No description provided."}
+                      </p>
 
-                  <div className="flex items-center gap-2 text-xs" style={{ color: themeColors.textMuted }}>
-                    <User size={12} />
-                    <span>Assigned by: {task.assigner?.fullName || "Manager"}</span>
+                      <div className="flex items-center gap-2 text-xs" style={{ color: themeColors.textMuted }}>
+                        <User size={12} />
+                        <span>Assigned by: {task.assigner?.fullName || "Manager"}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-2">
+                      <button
+                        onClick={() => handleTaskComplete(task.id)}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border`}
+                        style={{
+                          backgroundColor: task.status === 'COMPLETED' ? themeColors.successBg : 'transparent',
+                          color: task.status === 'COMPLETED' ? themeColors.success : themeColors.textSecondary,
+                          borderColor: task.status === 'COMPLETED' ? 'transparent' : themeColors.borderDivider
+                        }}
+                      >
+                        {task.status === 'COMPLETED' ? (
+                          <>
+                            <CheckCircle size={16} />
+                            Completed
+                          </>
+                        ) : (
+                          <>
+                            <Circle size={16} />
+                            Mark Complete
+                          </>
+                        )}
+                      </button>
+                      <span className="text-xs uppercase font-bold tracking-wider" style={{ color: themeColors.textMuted }}>{task.status?.replace('_', ' ')}</span>
+                    </div>
                   </div>
                 </div>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        // Completed Tasks History with working filters
+        <div
+          className="rounded-lg border p-6"
+          style={{
+            backgroundColor: themeColors.cardBackground,
+            borderColor: themeColors.borderDivider,
+          }}
+        >
+          <div className="mb-6">
+            <h2 className="text-xl font-bold mb-4" style={{ color: themeColors.textPrimary }}>Completed Tasks History</h2>
 
-                <div className="flex flex-col items-end gap-2">
-                  <button
-                    onClick={() => handleTaskComplete(task.id)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border`}
-                    style={{
-                      backgroundColor: task.status === 'COMPLETED' ? themeColors.successBg : 'transparent',
-                      color: task.status === 'COMPLETED' ? themeColors.success : themeColors.textSecondary,
-                      borderColor: task.status === 'COMPLETED' ? 'transparent' : themeColors.borderDivider
-                    }}
-                  >
-                    {task.status === 'COMPLETED' ? (
-                      <>
-                        <CheckCircle size={16} />
-                        Completed
-                      </>
-                    ) : (
-                      <>
-                        <Circle size={16} />
-                        Mark Complete
-                      </>
-                    )}
-                  </button>
-                  <span className="text-xs uppercase font-bold tracking-wider" style={{ color: themeColors.textMuted }}>{task.status?.replace('_', ' ')}</span>
-                </div>
+            {/* Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: themeColors.textSecondary }}>Date</label>
+                <input
+                  type="date"
+                  value={historyDateFilter}
+                  onChange={(e) => setHistoryDateFilter(e.target.value)}
+                  className="w-full p-2 rounded border text-sm"
+                  style={{
+                    backgroundColor: themeColors.cardBackground,
+                    borderColor: themeColors.borderDivider,
+                    color: themeColors.textPrimary,
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: themeColors.textSecondary }}>Month</label>
+                <select
+                  value={historyMonthFilter}
+                  onChange={(e) => setHistoryMonthFilter(e.target.value)}
+                  className="w-full p-2 rounded border text-sm"
+                  style={{
+                    backgroundColor: themeColors.cardBackground,
+                    borderColor: themeColors.borderDivider,
+                    color: themeColors.textPrimary,
+                  }}
+                >
+                  <option value="">All Months</option>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                    <option key={month} value={month}>{new Date(2024, month - 1).toLocaleString('default', { month: 'long' })}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: themeColors.textSecondary }}>Status</label>
+                <select
+                  value={historyStatusFilter}
+                  onChange={(e) => setHistoryStatusFilter(e.target.value)}
+                  className="w-full p-2 rounded border text-sm"
+                  style={{
+                    backgroundColor: themeColors.cardBackground,
+                    borderColor: themeColors.borderDivider,
+                    color: themeColors.textPrimary,
+                  }}
+                >
+                  <option value="all">All Status</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Reopened">Reopened</option>
+                </select>
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={() => {
+                    setHistoryDateFilter("");
+                    setHistoryMonthFilter("");
+                    setHistoryStatusFilter("all");
+                  }}
+                  className="px-4 py-2 rounded-lg text-sm font-medium"
+                  style={{
+                    backgroundColor: themeColors.cardHover,
+                    color: themeColors.textPrimary,
+                  }}
+                >
+                  Clear Filters
+                </button>
               </div>
             </div>
-          ))}
+
+            {/* History List */}
+            {filteredCompletedHistory.length === 0 ? (
+              <div className="text-center py-12">
+                <FileCheck className="w-12 h-12 mx-auto mb-4 opacity-50" style={{ color: themeColors.textMuted }} />
+                <h3 className="text-lg font-medium mb-1" style={{ color: themeColors.textPrimary }}>No completed tasks found</h3>
+                <p style={{ color: themeColors.textSecondary }}>Tasks will appear here 10 minutes after completion</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredCompletedHistory.map((task) => (
+                  <div
+                    key={task.id}
+                    className="rounded-lg border p-4"
+                    style={{
+                      backgroundColor: themeColors.cardHover,
+                      borderColor: themeColors.borderDivider,
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold mb-1" style={{ color: themeColors.textPrimary }}>
+                          {task.title}
+                        </h3>
+                        <p className="text-sm mb-2" style={{ color: themeColors.textSecondary }}>
+                          {task.description || "No description provided."}
+                        </p>
+                        <div className="flex items-center gap-4 text-xs">
+                          <span style={{ color: themeColors.textMuted }}>
+                            Completed: {new Date(task.completedAt).toLocaleString()}
+                          </span>
+                          <span
+                            className="px-2 py-1 rounded-full text-xs font-medium"
+                            style={{
+                              backgroundColor: task.historyStatus === 'Completed' ? themeColors.successBg : themeColors.warningBg,
+                              color: task.historyStatus === 'Completed' ? themeColors.success : themeColors.warning,
+                            }}
+                          >
+                            {task.historyStatus}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleUndoTask(task.id)}
+                        className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:scale-105"
+                        style={{
+                          backgroundColor: themeColors.primary,
+                          color: '#FFFFFF',
+                        }}
+                      >
+                        Undo / Mark Incomplete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -1015,7 +1378,7 @@ const EmployeeDashboard = () => {
               { label: "Email", value: user?.email || "N/A" },
               { label: "Phone", value: userData.phone || "N/A" },
               { label: "Location", value: userData.location || "N/A" },
-              { label: "Join Date", value: userData.joiningDate ? new Date(userData.joiningDate).toLocaleDateString() : "N/A" },
+              { label: "Join Date", value: userData.joiningDate ? new Date(userData.joiningDate).toLocaleDateString() : "03-08-2026" },
             ].map((item, index) => (
               <div key={index}>
                 <label
@@ -1088,26 +1451,12 @@ const EmployeeDashboard = () => {
                   {currentTime.toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
+                    second: "2-digit"
                   })}
                 </p>
               </div>
             </div>
           </div>
-          {/* ThemeToggle in header */}
-          {/* <button
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            className="p-2.5 rounded-lg border transition-all duration-300 hover:scale-110 hover:opacity-90"
-            style={{
-              backgroundColor: themeColors.cardBackground,
-              borderColor: themeColors.borderDivider,
-            }}
-          >
-            {isDarkMode ? (
-              <Sun size={20} style={{ color: themeColors.warning }} />
-            ) : (
-              <Moon size={20} style={{ color: themeColors.textPrimary }} />
-            )}
-          </button> */}
         </div>
       </div>
     </div>
@@ -1231,11 +1580,10 @@ const EmployeeDashboard = () => {
           className="text-sm ml-2 flex items-center transform hover:scale-105 transition-transform"
           style={{ color: themeColors.success }}
         >
-          <TrendingUp size={14} className="mr-1" />
           {(
             (tasks.filter((t) => t.completed).length / tasks.length) *
             100
-          ).toFixed(0)}
+          ).toFixed(0) || 0}
           %
         </span>
       </div>
@@ -1245,7 +1593,7 @@ const EmployeeDashboard = () => {
     </div>
   );
 
-  // LeaveBalanceSummary
+  // LeaveBalanceSummary - Updated icons
   const LeaveBalanceSummary = () => (
     <div
       className="rounded-lg p-5 border transform hover:scale-[1.02] transition-all duration-300"
@@ -1297,10 +1645,11 @@ const EmployeeDashboard = () => {
         </div>
         <div className="flex justify-between items-center transform hover:translate-x-1 transition-transform">
           <div className="flex items-center">
-            <div
-              className="w-2 h-2 rounded-full mr-2"
-              style={{ backgroundColor: themeColors.info }}
-            ></div>
+            <MdOutlineSick
+              className="mr-2"
+              size={16}
+              style={{ color: themeColors.info }}
+            />
             <span
               className="text-sm"
               style={{ color: themeColors.textSecondary }}
@@ -1317,10 +1666,11 @@ const EmployeeDashboard = () => {
         </div>
         <div className="flex justify-between items-center transform hover:translate-x-1 transition-transform">
           <div className="flex items-center">
-            <div
-              className="w-2 h-2 rounded-full mr-2"
-              style={{ backgroundColor: themeColors.primary }}
-            ></div>
+            <CiCalendar
+              className="mr-2"
+              size={16}
+              style={{ color: themeColors.primary }}
+            />
             <span
               className="text-sm"
               style={{ color: themeColors.textSecondary }}
@@ -1333,6 +1683,27 @@ const EmployeeDashboard = () => {
             style={{ color: themeColors.textPrimary }}
           >
             {leaveBalance.earned} days
+          </span>
+        </div>
+        <div className="flex justify-between items-center transform hover:translate-x-1 transition-transform pt-2 mt-2 border-t" style={{ borderColor: themeColors.borderDivider }}>
+          <div className="flex items-center">
+            <FaRegCalendarCheck
+              className="mr-2"
+              size={16}
+              style={{ color: themeColors.accent }}
+            />
+            <span
+              className="text-sm font-medium"
+              style={{ color: themeColors.textPrimary }}
+            >
+              Total Available
+            </span>
+          </div>
+          <span
+            className="font-bold"
+            style={{ color: themeColors.accent }}
+          >
+            {leaveBalance.casual + leaveBalance.sick + leaveBalance.earned} days
           </span>
         </div>
       </div>
@@ -1379,7 +1750,6 @@ const EmployeeDashboard = () => {
           className="text-sm ml-2 flex items-center transform hover:scale-105 transition-transform"
           style={{ color: themeColors.success }}
         >
-          <TrendingUp size={14} className="mr-1" /> +2.5h
         </span>
       </div>
       <div className="text-sm" style={{ color: themeColors.textSecondary }}>
@@ -1388,292 +1758,224 @@ const EmployeeDashboard = () => {
     </div>
   );
 
-  // AnalyticsGraphs - Only Task Completion Graph - Full width like DashboardHeader
-  const AnalyticsGraphs = () => (
-    <div
-      className="rounded-lg border p-6 mb-6 transform hover:scale-[1.002] transition-all duration-300"
-      style={{
-        backgroundColor: themeColors.cardBackground,
-        borderColor: themeColors.borderDivider,
-      }}
-    >
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-        <div>
-          <h3
-            className="text-xl font-bold mb-2"
-            style={{ color: themeColors.textPrimary }}
-          >
-            Task Completion Trend
-          </h3>
-          <p className="text-sm" style={{ color: themeColors.textSecondary }}>
-            Weekly task completion overview for the last month
-          </p>
-        </div>
-        <div className="flex items-center space-x-2 mt-4 md:mt-0">
-          <span
-            className="text-xs px-2 py-1 rounded transform hover:scale-105 transition-transform"
-            style={{
-              backgroundColor: themeColors.infoBg,
-              color: themeColors.info,
-            }}
-          >
-            Last 4 Weeks
-          </span>
-          <span
-            className="text-xs px-2 py-1 rounded transform hover:scale-105 transition-transform"
-            style={{
-              backgroundColor: themeColors.primaryLight,
-              color: themeColors.primary,
-            }}
-          >
-            {Math.round(
-              taskCompletionData.reduce(
-                (sum, item) => sum + (item.completed / item.total) * 100,
-                0
-              ) / taskCompletionData.length
-            )}
-            % Avg
-          </span>
-        </div>
-      </div>
+  // AnalyticsGraphs - Traditional Bar Graph with Y and X Axis
+  const AnalyticsGraphs = () => {
+    // Find max value for y-axis scaling
+    const maxCompleted = Math.max(...taskCompletionData.map(item => item.completed), 1);
+    const maxTotal = Math.max(...taskCompletionData.map(item => item.total), 5);
+    const yAxisMax = Math.max(maxCompleted, maxTotal) + 2; // Add some padding
 
-      <div className="h-64 flex items-end justify-between">
-        {taskCompletionData.map((item, index) => {
-          const percentage = (item.completed / item.total) * 100;
-          const barHeight = `${percentage}%`;
-
-          return (
-            <div
-              key={index}
-              className="flex flex-col items-center flex-1 mx-2 relative group"
-              onMouseEnter={() => setHoveredBar(index)}
-              onMouseLeave={() => setHoveredBar(null)}
-            >
-              {/* Hover Tooltip */}
-              {hoveredBar === index && (
-                <div
-                  className="absolute -top-20 left-1/2 transform -translate-x-1/2 px-4 py-3 rounded-lg shadow-xl z-10 min-w-[140px] text-center transition-all duration-200 animate-in fade-in-0 zoom-in-95"
-                  style={{
-                    backgroundColor: themeColors.cardBackground,
-                    border: `1px solid ${themeColors.borderDivider}`,
-                    boxShadow: `0 10px 25px ${isDarkMode ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.1)"
-                      }`,
-                  }}
-                >
-                  <div
-                    className="font-semibold text-sm mb-1"
-                    style={{ color: themeColors.textPrimary }}
-                  >
-                    {item.week}
-                  </div>
-                  <div
-                    className="text-xs mb-2"
-                    style={{ color: themeColors.textSecondary }}
-                  >
-                    {item.completed} of {item.total} tasks completed
-                  </div>
-                  <div
-                    className="text-sm font-bold"
-                    style={{ color: themeColors.primary }}
-                  >
-                    {Math.round(percentage)}% Completion Rate
-                  </div>
-                  <div
-                    className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-3 h-3"
-                    style={{
-                      backgroundColor: themeColors.cardBackground,
-                      borderRight: `1px solid ${themeColors.borderDivider}`,
-                      borderBottom: `1px solid ${themeColors.borderDivider}`,
-                    }}
-                  />
-                </div>
-              )}
-
-              <div className="mb-2">
-                <div
-                  className="text-xs font-medium"
-                  style={{ color: themeColors.textSecondary }}
-                >
-                  {item.week}
-                </div>
-                <div
-                  className="text-lg font-bold text-center"
-                  style={{ color: themeColors.textPrimary }}
-                >
-                  {item.completed}
-                </div>
-              </div>
-
-              {/* Bar container */}
-              <div
-                className="relative w-16 flex flex-col items-center"
-                style={{ height: "180px" }}
-              >
-                {/* Background line */}
-                <div
-                  className="absolute top-0 left-1/2 transform -translate-x-1/2 w-px h-full"
-                  style={{ backgroundColor: themeColors.borderDivider }}
-                />
-
-                {/* Completion bar */}
-                <div
-                  className="w-10 rounded-t-lg transition-all duration-500 ease-out relative"
-                  style={{
-                    height: barHeight,
-                    backgroundColor:
-                      hoveredBar === index ? themeColors.primary : item.color,
-                    boxShadow:
-                      hoveredBar === index
-                        ? `0 0 20px ${item.color}40`
-                        : "none",
-                    transform:
-                      hoveredBar === index ? "scale(1.05)" : "scale(1)",
-                  }}
-                >
-                  {/* Animated glow effect on hover */}
-                  {hoveredBar === index && (
-                    <div
-                      className="absolute inset-0 rounded-t-lg opacity-30 animate-pulse"
-                      style={{ backgroundColor: themeColors.primary }}
-                    />
-                  )}
-                </div>
-
-                {/* Percentage indicator */}
-                <div
-                  className="absolute -right-8 transform -translate-y-1/2 text-xs font-bold px-1.5 py-0.5 rounded transition-all duration-300"
-                  style={{
-                    backgroundColor: themeColors.cardBackground,
-                    border: `1px solid ${themeColors.borderDivider}`,
-                    color: themeColors.textPrimary,
-                    top: `calc(100% - ${percentage}% + 10px)`,
-                    transform: `translateY(-50%) ${hoveredBar === index ? "scale(1.1)" : "scale(1)"
-                      }`,
-                  }}
-                >
-                  {Math.round(percentage)}%
-                </div>
-              </div>
-
-              <div className="mt-2 text-center">
-                <div
-                  className="text-xs"
-                  style={{ color: themeColors.textSecondary }}
-                >
-                  of {item.total}
-                </div>
-                <div
-                  className={`text-xs font-medium mt-1 px-2 py-0.5 rounded-full transform hover:scale-105 transition-transform ${percentage >= 80
-                    ? "text-green-600"
-                    : percentage >= 60
-                      ? "text-yellow-600"
-                      : "text-red-600"
-                    }`}
-                >
-                  {percentage >= 80
-                    ? "Excellent"
-                    : percentage >= 60
-                      ? "Good"
-                      : "Needs Improvement"}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Interactive legend */}
-      <div className="flex flex-wrap justify-center items-center mt-8 space-x-4">
-        {taskCompletionData.map((item, index) => (
-          <button
-            key={index}
-            className={`flex items-center px-3 py-1.5 rounded-lg transition-all ${hoveredBar === index ? "scale-105" : ""
-              }`}
-            style={{
-              backgroundColor:
-                hoveredBar === index ? themeColors.cardHover : "transparent",
-              border: `1px solid ${hoveredBar === index
-                ? themeColors.primary
-                : themeColors.borderDivider
-                }`,
-            }}
-            onMouseEnter={() => setHoveredBar(index)}
-            onMouseLeave={() => setHoveredBar(null)}
-            onClick={() => setHoveredBar(hoveredBar === index ? null : index)}
-          >
-            <div
-              className="w-3 h-3 rounded mr-2 transition-all"
-              style={{
-                backgroundColor:
-                  hoveredBar === index ? themeColors.primary : item.color,
-                transform: hoveredBar === index ? "scale(1.2)" : "scale(1)",
-              }}
-            ></div>
-            <span
-              className="text-xs font-medium"
+    return (
+      <div
+        className="rounded-lg border p-6 mb-6 transform hover:scale-[1.002] transition-all duration-300"
+        style={{
+          backgroundColor: themeColors.cardBackground,
+          borderColor: themeColors.borderDivider,
+        }}
+      >
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+          <div>
+            <h3
+              className="text-xl font-bold mb-2"
               style={{ color: themeColors.textPrimary }}
             >
-              {item.week}
+              Task Completion Trend
+            </h3>
+            <p className="text-sm" style={{ color: themeColors.textSecondary }}>
+              Weekly task completion overview for the last month
+            </p>
+          </div>
+          <div className="flex items-center space-x-2 mt-4 md:mt-0">
+            <span
+              className="text-xs px-2 py-1 rounded transform hover:scale-105 transition-transform"
+              style={{
+                backgroundColor: themeColors.infoBg,
+                color: themeColors.info,
+              }}
+            >
+              Last 4 Weeks
             </span>
             <span
-              className="text-xs ml-2"
-              style={{ color: themeColors.textSecondary }}
+              className="text-xs px-2 py-1 rounded transform hover:scale-105 transition-transform"
+              style={{
+                backgroundColor: themeColors.primaryLight,
+                color: themeColors.primary,
+              }}
             >
-              ({item.completed}/{item.total})
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* Summary stats */}
-      <div
-        className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6"
-        style={{ borderTop: `1px solid ${themeColors.borderDivider}` }}
-      >
-        <div className="text-center transform hover:scale-105 transition-transform">
-          <div
-            className="text-2xl font-bold"
-            style={{ color: themeColors.success }}
-          >
-            {taskCompletionData.reduce((sum, item) => sum + item.completed, 0)}
-          </div>
-          <div className="text-sm" style={{ color: themeColors.textSecondary }}>
-            Total Completed Tasks
-          </div>
-        </div>
-        <div className="text-center transform hover:scale-105 transition-transform">
-          <div
-            className="text-2xl font-bold"
-            style={{ color: themeColors.primary }}
-          >
-            {taskCompletionData.reduce((sum, item) => sum + item.total, 0)}
-          </div>
-          <div className="text-sm" style={{ color: themeColors.textSecondary }}>
-            Total Assigned Tasks
-          </div>
-        </div>
-        <div className="text-center transform hover:scale-105 transition-transform">
-          <div
-            className="text-2xl font-bold"
-            style={{ color: themeColors.info }}
-          >
-            {Math.round(
-              taskCompletionData.length > 0
-                ? taskCompletionData.reduce(
-                  (sum, item) => sum + (item.total > 0 ? (item.completed / item.total) * 100 : 0),
+              {Math.round(
+                taskCompletionData.reduce(
+                  (sum, item) => sum + (item.completed / item.total) * 100,
                   0
                 ) / taskCompletionData.length
-                : 0
-            )}
-            %
+              )}% Avg
+            </span>
           </div>
-          <div className="text-sm" style={{ color: themeColors.textSecondary }}>
-            Average Completion Rate
+        </div>
+
+        {/* Chart Area with Traditional Axes */}
+        <div className="relative h-80 mb-8">
+          {/* Y-Axis Line */}
+          <div className="absolute left-12 top-0 bottom-0 w-px bg-gray-300 dark:bg-gray-600"></div>
+
+          {/* X-Axis Line */}
+          <div className="absolute left-12 right-4 bottom-8 h-px bg-gray-300 dark:bg-gray-600"></div>
+
+          {/* Y-Axis Labels */}
+          <div className="absolute left-0 top-0 bottom-8 w-10 flex flex-col justify-between text-xs text-right pr-2" style={{ color: themeColors.textSecondary }}>
+            <span>{yAxisMax}</span>
+            <span>{Math.round(yAxisMax * 0.75)}</span>
+            <span>{Math.round(yAxisMax * 0.5)}</span>
+            <span>{Math.round(yAxisMax * 0.25)}</span>
+            <span>0</span>
+          </div>
+
+          {/* Grid Lines (Horizontal) */}
+          <div className="absolute left-12 right-4 top-0 bottom-8">
+            {[0, 25, 50, 75, 100].map((percent) => {
+              const yPosition = 100 - percent;
+              return (
+                <div
+                  key={percent}
+                  className="absolute w-full border-t border-dashed"
+                  style={{
+                    borderColor: themeColors.borderDivider,
+                    top: `${yPosition}%`,
+                    opacity: 0.3
+                  }}
+                />
+              );
+            })}
+          </div>
+
+          {/* Bars */}
+          <div className="absolute left-14 right-4 top-0 bottom-8 flex items-end justify-around">
+            {taskCompletionData.map((item, index) => {
+              const completedHeight = (item.completed / yAxisMax) * 100;
+              const totalHeight = (item.total / yAxisMax) * 100;
+
+              return (
+                <div
+                  key={index}
+                  className="flex flex-col items-center relative group w-16"
+                  onMouseEnter={() => setHoveredBar(index)}
+                  onMouseLeave={() => setHoveredBar(null)}
+                >
+                  {/* Tooltip */}
+                  {hoveredBar === index && (
+                    <div
+                      className="absolute -top-24 left-1/2 transform -translate-x-1/2 px-3 py-2 rounded-lg shadow-xl z-10 min-w-[140px] text-center"
+                      style={{
+                        backgroundColor: themeColors.cardBackground,
+                        border: `1px solid ${themeColors.borderDivider}`,
+                      }}
+                    >
+                      <div className="font-semibold text-sm mb-1" style={{ color: themeColors.textPrimary }}>
+                        {item.week}
+                      </div>
+                      <div className="text-xs mb-1" style={{ color: themeColors.textSecondary }}>
+                        <span style={{ color: themeColors.success }}>Completed: {item.completed}</span>
+                      </div>
+                      <div className="text-xs mb-1" style={{ color: themeColors.textSecondary }}>
+                        <span style={{ color: themeColors.info }}>Total: {item.total}</span>
+                      </div>
+                      <div className="text-sm font-bold" style={{ color: item.color }}>
+                        {Math.round((item.completed / item.total) * 100)}%
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bar Container */}
+                  <div className="w-10 flex flex-col items-center relative h-40">
+                    {/* Total Bar (Background) */}
+                    <div
+                      className="absolute bottom-0 w-8 rounded-t-sm opacity-20"
+                      style={{
+                        height: `${totalHeight}%`,
+                        backgroundColor: themeColors.textMuted,
+                      }}
+                    />
+
+                    {/* Completed Bar */}
+                    <div
+                      className="absolute bottom-0 w-8 rounded-t-sm transition-all duration-300 cursor-pointer"
+                      style={{
+                        height: `${completedHeight}%`,
+                        backgroundColor: item.color,
+                        opacity: hoveredBar === index ? 1 : 0.8,
+                        transform: hoveredBar === index ? 'scale(1.05)' : 'scale(1)',
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* X-Axis Labels */}
+          <div className="absolute left-14 right-4 bottom-0 flex justify-around">
+            {taskCompletionData.map((item, index) => (
+              <div key={index} className="text-xs font-medium w-16 text-center" style={{ color: themeColors.textSecondary }}>
+                {item.week}
+              </div>
+            ))}
+          </div>
+
+          {/* Legend */}
+          <div className="absolute right-0 top-0 flex items-center space-x-4">
+            <div className="flex items-center">
+              <div className="w-3 h-3 rounded-sm mr-1" style={{ backgroundColor: themeColors.success }}></div>
+              <span className="text-xs" style={{ color: themeColors.textSecondary }}>Completed</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 rounded-sm mr-1 opacity-20" style={{ backgroundColor: themeColors.textMuted }}></div>
+              <span className="text-xs" style={{ color: themeColors.textSecondary }}>Total</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Legend and Stats */}
+        <div className="mt-8 pt-6 border-t" style={{ borderColor: themeColors.borderDivider }}>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="text-center transform hover:scale-105 transition-transform">
+              <div className="text-2xl font-bold" style={{ color: themeColors.success }}>
+                {taskCompletionData.reduce((sum, item) => sum + item.completed, 0)}
+              </div>
+              <div className="text-sm" style={{ color: themeColors.textSecondary }}>
+                Completed Tasks
+              </div>
+            </div>
+            <div className="text-center transform hover:scale-105 transition-transform">
+              <div className="text-2xl font-bold" style={{ color: themeColors.primary }}>
+                {taskCompletionData.reduce((sum, item) => sum + item.total, 0)}
+              </div>
+              <div className="text-sm" style={{ color: themeColors.textSecondary }}>
+                Total Tasks
+              </div>
+            </div>
+            <div className="text-center transform hover:scale-105 transition-transform">
+              <div className="text-2xl font-bold" style={{ color: themeColors.info }}>
+                {Math.round(
+                  taskCompletionData.reduce((sum, item) => sum + (item.completed / item.total) * 100, 0) /
+                  taskCompletionData.length
+                )}%
+              </div>
+              <div className="text-sm" style={{ color: themeColors.textSecondary }}>
+                Avg Completion
+              </div>
+            </div>
+            <div className="text-center transform hover:scale-105 transition-transform">
+              <div className="text-2xl font-bold" style={{ color: themeColors.warning }}>
+                {taskCompletionData.reduce((max, item) => Math.max(max, (item.completed / item.total) * 100), 0).toFixed(0)}%
+              </div>
+              <div className="text-sm" style={{ color: themeColors.textSecondary }}>
+                Peak Performance
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Handle Payslip Download
   const handleDownloadPayslip = (payslip) => {
@@ -1870,7 +2172,7 @@ const EmployeeDashboard = () => {
 
     return (
       <div
-        className="rounded-lg p-6 border transform hover:scale-[1.002] transition-all duration-300"
+        className="rounded-lg p-5 border transform hover:scale-[1.002] transition-all duration-300 h-full"
         style={{
           backgroundColor: themeColors.cardBackground,
           borderColor: themeColors.borderDivider,
@@ -1882,35 +2184,31 @@ const EmployeeDashboard = () => {
         >
           Today's Summary
         </h3>
-        <div className="space-y-3">
+        <div className="space-y-2">
           {summaryItems.map((item, index) => (
             <div
               key={index}
-              className="p-3 rounded-lg hover:scale-[1.02] transition-transform group flex items-center justify-between"
+              className="p-2 rounded-lg hover:scale-[1.02] transition-transform group flex items-center justify-between"
               style={{ backgroundColor: themeColors.cardHover }}
             >
               <div className="flex items-center">
                 <item.icon
-                  size={16}
+                  size={14}
                   className="mr-2"
                   style={{ color: item.color }}
                 />
                 <span
-                  className="text-sm"
+                  className="text-xs"
                   style={{ color: themeColors.textSecondary }}
                 >
                   {item.label}
                 </span>
               </div>
               <span
-                className="font-medium flex items-center"
+                className="font-medium text-sm flex items-center"
                 style={{ color: item.color }}
               >
                 {item.value}
-                <ChevronRight
-                  size={12}
-                  className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                />
               </span>
             </div>
           ))}
@@ -2100,7 +2398,7 @@ const EmployeeDashboard = () => {
     </div>
   );
 
-  // Personal Documents Section
+  // Personal Documents Section with dropdown filter
   const renderPersonalDocuments = () => (
     <div
       className="rounded-lg p-6 border mb-6"
@@ -2132,21 +2430,25 @@ const EmployeeDashboard = () => {
             }}
           />
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
-          {['all', 'Employment', 'Payroll', 'Legal', 'HR', 'Verification', 'Personal'].map(category => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === category
-                ? 'bg-purple-600 text-white'
-                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              style={selectedCategory === category ? { backgroundColor: themeColors.primary } : {}}
-            >
-              {category === 'all' ? 'All Categories' : category}
-            </button>
-          ))}
-
+        <div className="flex gap-2">
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="px-4 py-2 rounded-lg border text-sm font-medium bg-transparent focus:ring-2 focus:ring-opacity-50 outline-none"
+            style={{
+              borderColor: themeColors.borderDivider,
+              color: themeColors.textPrimary,
+              backgroundColor: themeColors.cardBackground, // Add this line
+            }}
+          >
+            <option value="all">All Categories</option>
+            <option value="Employment">Employment</option>
+            <option value="Payroll">Payroll</option>
+            <option value="Legal">Legal</option>
+            <option value="HR">HR</option>
+            <option value="Verification">Verification</option>
+            <option value="Personal">Personal</option>
+          </select>
         </div>
       </div>
 
@@ -2164,7 +2466,11 @@ const EmployeeDashboard = () => {
             </thead>
             <tbody>
               {filteredDocuments.map((doc) => (
-                <tr key={doc.id} className="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" style={{ borderColor: themeColors.borderDivider }}>
+                <tr 
+                  key={doc.id} 
+                  className="border-b last:border-0 hover:bg-black/5 dark:hover:bg-white/10 transition-colors" 
+                  style={{ borderColor: themeColors.borderDivider }}
+                >
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
@@ -2226,156 +2532,7 @@ const EmployeeDashboard = () => {
     </div>
   );
 
-
-
-  // Today's Tasks Section
-  const TodaysTasksSection = () => (
-    <div
-      className="rounded-xl border transition-shadow hover:shadow-sm"
-      style={{
-        backgroundColor: themeColors.cardBackground,
-        borderColor: themeColors.borderDivider,
-      }}
-    >
-      {/* Header */}
-      <div
-        className="px-5 py-4 border-b flex items-center justify-between"
-        style={{ borderColor: themeColors.borderDivider }}
-      >
-        <h3
-          className="text-lg font-semibold tracking-tight"
-          style={{ color: themeColors.textPrimary }}
-        >
-          Today’s Tasks
-        </h3>
-
-        <button
-          onClick={() => setShowNewTaskModal(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium shadow-sm transition hover:shadow"
-          style={{
-            backgroundColor: themeColors.primary,
-            color: "#FFFFFF",
-          }}
-        >
-          <Plus size={16} />
-          New Task
-        </button>
-      </div>
-
-      {/* Task List */}
-      <div className="p-5 space-y-3">
-        {tasks.map((task) => (
-          <div
-            key={task.id}
-            onClick={() => handleTaskComplete(task.id)}
-            onMouseEnter={() => setHoveredItem(task.id)}
-            onMouseLeave={() => setHoveredItem(null)}
-            className="flex gap-3 p-4 rounded-lg border cursor-pointer transition hover:shadow-sm"
-            style={{
-              backgroundColor: themeColors.cardHover,
-              borderColor: themeColors.borderDivider,
-            }}
-          >
-            {/* Checkbox */}
-            <div className="mt-0.5 flex-shrink-0">
-              {task.completed ? (
-                <CheckSquare size={20} style={{ color: themeColors.success }} />
-              ) : (
-                <Square size={20} style={{ color: themeColors.textMuted }} />
-              )}
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4
-                    className={`text-sm font-medium ${task.completed ? "line-through" : ""
-                      }`}
-                    style={{
-                      color: task.completed
-                        ? themeColors.textMuted
-                        : themeColors.textPrimary,
-                    }}
-                  >
-                    {task.title}
-                  </h4>
-
-                  <p
-                    className="mt-1 text-sm leading-relaxed"
-                    style={{ color: themeColors.textSecondary }}
-                  >
-                    {task.description}
-                  </p>
-
-                  {/* Meta */}
-                  <div className="flex flex-wrap items-center gap-2 mt-3">
-                    <span
-                      className="px-2 py-0.5 rounded text-xs font-medium"
-                      style={{
-                        backgroundColor:
-                          task.project === "Alpha"
-                            ? themeColors.primaryLight
-                            : task.project === "Beta"
-                              ? themeColors.infoBg
-                              : themeColors.warningBg,
-                        color:
-                          task.project === "Alpha"
-                            ? themeColors.primary
-                            : task.project === "Beta"
-                              ? themeColors.info
-                              : themeColors.warning,
-                      }}
-                    >
-                      {task.project}
-                    </span>
-
-                    <span
-                      className="px-2 py-0.5 rounded text-xs font-medium capitalize"
-                      style={{
-                        backgroundColor:
-                          task.priority === "high"
-                            ? themeColors.dangerBg
-                            : task.priority === "medium"
-                              ? themeColors.warningBg
-                              : themeColors.successBg,
-                        color:
-                          task.priority === "high"
-                            ? themeColors.danger
-                            : task.priority === "medium"
-                              ? themeColors.warning
-                              : themeColors.success,
-                      }}
-                    >
-                      {task.priority}
-                    </span>
-
-                    <span
-                      className="text-xs"
-                      style={{ color: themeColors.textMuted }}
-                    >
-                      {task.time}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Hover Icon */}
-                {hoveredItem === task.id && (
-                  <ChevronRight
-                    size={16}
-                    style={{ color: themeColors.textMuted }}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-
-  // Enhanced Calendar Section with Interactive Date Details
+  // Calendar Section (without summary) - Reduced height
   const CalendarSection = () => {
     const daysInMonth = getDaysInMonth(currentMonth);
     const attendance = getAttendanceStatus(selectedDate);
@@ -2384,17 +2541,17 @@ const EmployeeDashboard = () => {
     const statusColors = getStatusColor(attendance.status);
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div
-          className="rounded-lg border p-4 transform hover:scale-[1.002] transition-all duration-300"
+          className="rounded-lg border p-3 transform hover:scale-[1.002] transition-all duration-300"
           style={{
             backgroundColor: themeColors.cardBackground,
             borderColor: themeColors.borderDivider,
           }}
         >
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-2">
             <h3
-              className="font-semibold"
+              className="font-semibold text-sm"
               style={{ color: themeColors.textPrimary }}
             >
               {currentMonth.toLocaleDateString("en-US", {
@@ -2405,13 +2562,13 @@ const EmployeeDashboard = () => {
             <div className="flex items-center space-x-1">
               <button
                 onClick={() => changeMonth("prev")}
-                className="p-1.5 rounded-lg hover:scale-110 transition-transform"
+                className="p-1 rounded-lg hover:scale-110 transition-transform"
                 style={{
                   backgroundColor: themeColors.cardHover,
                   color: themeColors.textPrimary,
                 }}
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={14} />
               </button>
               <button
                 onClick={() => {
@@ -2419,7 +2576,7 @@ const EmployeeDashboard = () => {
                   setCurrentMonth(today);
                   setSelectedDate(today);
                 }}
-                className="text-xs px-2.5 py-1.5 rounded-lg hover:scale-110 transition-transform"
+                className="text-xs px-2 py-1 rounded-lg hover:scale-110 transition-transform"
                 style={{
                   backgroundColor: themeColors.primaryLight,
                   color: themeColors.primary,
@@ -2429,22 +2586,22 @@ const EmployeeDashboard = () => {
               </button>
               <button
                 onClick={() => changeMonth("next")}
-                className="p-1.5 rounded-lg hover:scale-110 transition-transform"
+                className="p-1 rounded-lg hover:scale-110 transition-transform"
                 style={{
                   backgroundColor: themeColors.cardHover,
                   color: themeColors.textPrimary,
                 }}
               >
-                <ChevronRight size={16} />
+                <ChevronRight size={14} />
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+          <div className="grid grid-cols-7 gap-0.5 mb-1">
+            {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
               <div
                 key={day}
-                className="text-center text-xs font-medium py-1"
+                className="text-center text-[10px] font-medium py-0.5"
                 style={{ color: themeColors.textSecondary }}
               >
                 {day}
@@ -2452,7 +2609,7 @@ const EmployeeDashboard = () => {
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-0.5">
             {daysInMonth.slice(0, 42).map((day, index) => {
               const dayAttendance = getAttendanceStatus(day.date);
               const dayHoliday = getHoliday(day.date);
@@ -2497,7 +2654,7 @@ const EmployeeDashboard = () => {
                     (e.currentTarget.style.transform = "scale(1)")
                   }
                   className={`
-                    aspect-square p-1 rounded-lg flex flex-col items-center justify-center text-sm
+                    aspect-square p-0.5 rounded flex flex-col items-center justify-center text-xs
                     transition-all duration-200 relative overflow-hidden
                     ${!day.isCurrentMonth ? "opacity-60" : ""}
                     hover:z-10 hover:shadow-xl
@@ -2505,7 +2662,7 @@ const EmployeeDashboard = () => {
                   style={{
                     color: dateColor,
                     backgroundColor: bgColor,
-                    border: `2px solid ${borderColor}`,
+                    border: `1px solid ${borderColor}`,
                     transform: "scale(1)",
                   }}
                   title={`${day.date.toLocaleDateString()} - ${dayAttendance.status === "not-marked"
@@ -2530,13 +2687,13 @@ const EmployeeDashboard = () => {
                   {/* Holiday indicator */}
                   {dayHoliday && (
                     <div
-                      className="absolute -top-1 -right-1 w-3 h-3 rounded-full"
+                      className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full"
                       style={{ backgroundColor: "#6366F1" }}
                     />
                   )}
 
                   <div
-                    className={`font-medium relative z-10 ${isSelected ? "text-white" : ""
+                    className={`font-medium relative z-10 text-xs ${isSelected ? "text-white" : ""
                       }`}
                   >
                     {day.date.getDate()}
@@ -2548,93 +2705,83 @@ const EmployeeDashboard = () => {
                     dayAttendance.status !== "not-marked" &&
                     dayAttendance.status !== "weekend" && (
                       <div
-                        className="w-2 h-2 rounded-full mt-0.5 z-10 transition-transform duration-200 hover:scale-150"
+                        className="w-1 h-1 rounded-full mt-0.5 z-10 transition-transform duration-200 hover:scale-150"
                         style={{
                           backgroundColor: statusColors.text,
                         }}
                       />
                     )}
-
-                  {/* Today indicator */}
-                  {isToday && !isSelected && (
-                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-red-500" />
-                  )}
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Selected Date Details Panel */}
+        {/* Selected Date Details Panel - Compact */}
         {showDateDetails && (
           <div
-            className="rounded-lg border p-4 animate-in slide-in-from-bottom-5 duration-300"
+            className="rounded-lg border p-3 animate-in slide-in-from-bottom-5 duration-300 text-sm"
             style={{
               backgroundColor: themeColors.cardBackground,
               borderColor: themeColors.borderDivider,
             }}
           >
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-2">
               <div>
                 <div
-                  className="text-xs"
+                  className="text-[10px]"
                   style={{ color: themeColors.textSecondary }}
                 >
                   Selected Date
                 </div>
                 <div
-                  className="text-lg font-bold flex items-center"
+                  className="text-sm font-bold flex items-center"
                   style={{ color: themeColors.textPrimary }}
                 >
-                  <CalendarIcon className="mr-2" size={18} />
+                  <CalendarIcon className="mr-1" size={14} />
                   {selectedDate.toLocaleDateString("en-US", {
-                    weekday: "long",
-                    month: "long",
+                    month: "short",
                     day: "numeric",
-                    year: "numeric",
                   })}
                 </div>
               </div>
               <button
                 onClick={() => setShowDateDetails(false)}
-                className="p-1.5 rounded-lg hover:scale-110 transition-transform"
+                className="p-1 rounded-lg hover:scale-110 transition-transform"
                 style={{ color: themeColors.textMuted }}
               >
-                <X size={16} />
+                <X size={14} />
               </button>
             </div>
 
-            {/* Holiday Banner */}
+            {/* Holiday Banner - Compact */}
             {holiday && (
               <div
-                className="mb-4 p-3 rounded-lg flex items-center animate-in fade-in-0 zoom-in-95"
+                className="mb-2 p-2 rounded-lg flex items-center animate-in fade-in-0 zoom-in-95"
                 style={{
                   backgroundColor: "#E0E7FF",
                   border: "1px solid #6366F1",
                 }}
               >
                 <Umbrella
-                  className="mr-2"
-                  size={18}
+                  className="mr-1"
+                  size={14}
                   style={{ color: "#6366F1" }}
                 />
                 <div>
                   <div
-                    className="font-medium text-sm"
+                    className="font-medium text-xs"
                     style={{ color: "#6366F1" }}
                   >
-                    Public Holiday
-                  </div>
-                  <div className="text-xs" style={{ color: "#6366F1" }}>
                     {holiday}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Attendance Status Card */}
+            {/* Attendance Status Card - Compact */}
             <div
-              className="mb-4 p-3 rounded-lg transform hover:scale-[1.02] transition-all duration-300"
+              className="mb-2 p-2 rounded-lg transform hover:scale-[1.02] transition-all duration-300"
               style={{
                 backgroundColor: statusColors.bg,
                 border: `1px solid ${statusColors.text}20`,
@@ -2643,58 +2790,46 @@ const EmployeeDashboard = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <StatusIcon
-                    className="mr-2"
-                    size={20}
+                    className="mr-1"
+                    size={14}
                     style={{ color: statusColors.text }}
                   />
                   <div>
                     <div
-                      className="font-bold text-sm"
+                      className="font-bold text-xs"
                       style={{ color: statusColors.text }}
                     >
                       {attendance.status === "work-from-home"
-                        ? "Work From Home"
+                        ? "WFH"
                         : attendance.status === "half-day"
                           ? "Half Day"
                           : attendance.status.charAt(0).toUpperCase() +
                           attendance.status.slice(1)}
-                    </div>
-                    <div
-                      className="text-xs"
-                      style={{ color: statusColors.text }}
-                    >
-                      {attendance.notes}
                     </div>
                   </div>
                 </div>
                 {attendance.hours > 0 && (
                   <div className="text-right">
                     <div
-                      className="text-lg font-bold"
+                      className="text-sm font-bold"
                       style={{ color: statusColors.text }}
                     >
                       {attendance.hours}h
-                    </div>
-                    <div
-                      className="text-xs"
-                      style={{ color: statusColors.text }}
-                    >
-                      Total Hours
                     </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Mark In/Out Details */}
+            {/* Mark In/Out Details - Compact */}
             {(attendance.status === "present" ||
               attendance.status === "late" ||
               attendance.status === "work-from-home" ||
               attendance.status === "half-day") && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <div
-                      className="p-3 rounded-lg transform hover:scale-105 transition-all duration-300 group"
+                      className="p-2 rounded-lg transform hover:scale-105 transition-all duration-300"
                       style={{
                         backgroundColor: themeColors.cardHover,
                         border: `1px solid ${themeColors.borderDivider}`,
@@ -2702,31 +2837,27 @@ const EmployeeDashboard = () => {
                     >
                       <div className="flex items-center mb-1">
                         <ClockIcon
-                          className="mr-2"
-                          size={16}
+                          className="mr-1"
+                          size={12}
                           style={{ color: themeColors.success }}
                         />
                         <span
-                          className="text-xs"
+                          className="text-[10px]"
                           style={{ color: themeColors.textSecondary }}
                         >
-                          Mark In
+                          In
                         </span>
                       </div>
                       <div
-                        className="text-lg font-bold flex items-center"
+                        className="text-sm font-bold"
                         style={{ color: themeColors.textPrimary }}
                       >
                         {attendance.markIn}
-                        <ChevronRight
-                          className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          size={14}
-                        />
                       </div>
                     </div>
 
                     <div
-                      className="p-3 rounded-lg transform hover:scale-105 transition-all duration-300 group"
+                      className="p-2 rounded-lg transform hover:scale-105 transition-all duration-300"
                       style={{
                         backgroundColor: themeColors.cardHover,
                         border: `1px solid ${themeColors.borderDivider}`,
@@ -2734,241 +2865,65 @@ const EmployeeDashboard = () => {
                     >
                       <div className="flex items-center mb-1">
                         <LogOutIcon
-                          className="mr-2"
-                          size={16}
+                          className="mr-1"
+                          size={12}
                           style={{ color: themeColors.danger }}
                         />
                         <span
-                          className="text-xs"
+                          className="text-[10px]"
                           style={{ color: themeColors.textSecondary }}
                         >
-                          Mark Out
+                          Out
                         </span>
                       </div>
                       <div
-                        className="text-lg font-bold flex items-center"
+                        className="text-sm font-bold"
                         style={{ color: themeColors.textPrimary }}
                       >
                         {attendance.markOut}
-                        <ChevronRight
-                          className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          size={14}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Additional Details */}
-                  <div className="grid grid-cols-3 gap-2">
-                    <div
-                      className="p-2 rounded-lg text-center transform hover:scale-105 transition-all duration-300"
-                      style={{
-                        backgroundColor: themeColors.cardHover,
-                        border: `1px solid ${themeColors.borderDivider}`,
-                      }}
-                    >
-                      <div
-                        className="text-xs"
-                        style={{ color: themeColors.textSecondary }}
-                      >
-                        Breaks
-                      </div>
-                      <div
-                        className="font-medium text-sm"
-                        style={{ color: themeColors.textPrimary }}
-                      >
-                        {attendance.breaks}
-                      </div>
-                    </div>
-
-                    <div
-                      className="p-2 rounded-lg text-center transform hover:scale-105 transition-all duration-300"
-                      style={{
-                        backgroundColor: themeColors.cardHover,
-                        border: `1px solid ${themeColors.borderDivider}`,
-                      }}
-                    >
-                      <div
-                        className="text-xs"
-                        style={{ color: themeColors.textSecondary }}
-                      >
-                        Overtime
-                      </div>
-                      <div
-                        className="font-medium text-sm"
-                        style={{ color: themeColors.success }}
-                      >
-                        {attendance.overtime}
-                      </div>
-                    </div>
-
-                    <div
-                      className="p-2 rounded-lg text-center transform hover:scale-105 transition-all duration-300"
-                      style={{
-                        backgroundColor: themeColors.cardHover,
-                        border: `1px solid ${themeColors.borderDivider}`,
-                      }}
-                    >
-                      <div
-                        className="text-xs"
-                        style={{ color: themeColors.textSecondary }}
-                      >
-                        Productivity
-                      </div>
-                      <div
-                        className="font-medium text-sm"
-                        style={{ color: themeColors.info }}
-                      >
-                        {attendance.productivity}
                       </div>
                     </div>
                   </div>
                 </div>
               )}
-
-            {/* Action Buttons for Today */}
-            {selectedDate.toDateString() === new Date().toDateString() && (
-              <div
-                className="mt-4 pt-4 border-t"
-                style={{ borderColor: themeColors.borderDivider }}
-              >
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={handleClockIn}
-                    disabled={isClockedIn}
-                    className="p-2 rounded-lg flex items-center justify-center transform hover:scale-105 transition-all duration-300 disabled:opacity-50"
-                    style={{
-                      backgroundColor: themeColors.successBg,
-                      color: themeColors.success,
-                    }}
-                  >
-                    <ClockIcon className="mr-2" size={16} />
-                    Mark In
-                  </button>
-                  <button
-                    onClick={handleClockOut}
-                    disabled={!isClockedIn}
-                    className="p-2 rounded-lg flex items-center justify-center transform hover:scale-105 transition-all duration-300 disabled:opacity-50"
-                    style={{
-                      backgroundColor: themeColors.dangerBg,
-                      color: themeColors.danger,
-                    }}
-                  >
-                    <LogOutIcon className="mr-2" size={16} />
-                    Mark Out
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Quick Stats */}
-            <div
-              className="mt-4 pt-4 border-t"
-              style={{ borderColor: themeColors.borderDivider }}
-            >
-              <div
-                className="text-xs mb-2"
-                style={{ color: themeColors.textSecondary }}
-              >
-                Month Summary
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="text-center transform hover:scale-110 transition-transform">
-                  <div
-                    className="text-lg font-bold"
-                    style={{ color: themeColors.success }}
-                  >
-                    18
-                  </div>
-                  <div
-                    className="text-xs"
-                    style={{ color: themeColors.textSecondary }}
-                  >
-                    Present
-                  </div>
-                </div>
-                <div className="text-center transform hover:scale-110 transition-transform">
-                  <div
-                    className="text-lg font-bold"
-                    style={{ color: themeColors.warning }}
-                  >
-                    1
-                  </div>
-                  <div
-                    className="text-xs"
-                    style={{ color: themeColors.textSecondary }}
-                  >
-                    Late
-                  </div>
-                </div>
-                <div className="text-center transform hover:scale-110 transition-transform">
-                  <div
-                    className="text-lg font-bold"
-                    style={{ color: themeColors.danger }}
-                  >
-                    1
-                  </div>
-                  <div
-                    className="text-xs"
-                    style={{ color: themeColors.textSecondary }}
-                  >
-                    Absent
-                  </div>
-                </div>
-                <div className="text-center transform hover:scale-110 transition-transform">
-                  <div
-                    className="text-lg font-bold"
-                    style={{ color: themeColors.info }}
-                  >
-                    3
-                  </div>
-                  <div
-                    className="text-xs"
-                    style={{ color: themeColors.textSecondary }}
-                  >
-                    WFH
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         )}
       </div>
     );
   };
 
-  // Quick Actions Section
+  // Quick Actions Section - Reduced size
   const QuickActionsSection = () => (
     <div
-      className="rounded-lg border p-5 transform hover:scale-[1.002] transition-all duration-300"
+      className="rounded-lg border p-3 transform hover:scale-[1.002] transition-all duration-300 h-full flex flex-col"
       style={{
         backgroundColor: themeColors.cardBackground,
         borderColor: themeColors.borderDivider,
       }}
     >
       <h3
-        className="text-lg font-semibold mb-4"
+        className="text-sm font-semibold mb-3"
         style={{ color: themeColors.textPrimary }}
       >
         Quick Actions
       </h3>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2 flex-1">
         <button
           onClick={() => setActiveSection("attendance")}
-          className="p-3 rounded-lg flex flex-col items-center justify-center transition-all hover:scale-105 hover:shadow-lg group"
+          className="p-2 rounded-lg flex flex-col items-center justify-center transition-all hover:scale-105 hover:shadow-lg group"
           style={{
             backgroundColor: themeColors.cardHover,
             border: `1px solid ${themeColors.borderDivider}`,
           }}
         >
           <div
-            className="p-2 rounded-lg mb-2 transform group-hover:rotate-12 transition-transform"
+            className="p-1.5 rounded-lg mb-1 transform group-hover:rotate-12 transition-transform"
             style={{ backgroundColor: themeColors.primaryLight }}
           >
-            <Clock size={20} style={{ color: themeColors.primary }} />
+            <Clock size={14} style={{ color: themeColors.primary }} />
           </div>
           <span
-            className="text-sm font-medium"
+            className="text-xs font-medium"
             style={{ color: themeColors.textPrimary }}
           >
             Attendance
@@ -2976,20 +2931,20 @@ const EmployeeDashboard = () => {
         </button>
         <button
           onClick={() => setShowWorklogModal(true)}
-          className="p-3 rounded-lg flex flex-col items-center justify-center transition-all hover:scale-105 hover:shadow-lg group"
+          className="p-2 rounded-lg flex flex-col items-center justify-center transition-all hover:scale-105 hover:shadow-lg group"
           style={{
             backgroundColor: themeColors.cardHover,
             border: `1px solid ${themeColors.borderDivider}`,
           }}
         >
           <div
-            className="p-2 rounded-lg mb-2 transform group-hover:rotate-12 transition-transform"
+            className="p-1.5 rounded-lg mb-1 transform group-hover:rotate-12 transition-transform"
             style={{ backgroundColor: themeColors.infoBg }}
           >
-            <FileText size={20} style={{ color: themeColors.info }} />
+            <FileText size={14} style={{ color: themeColors.info }} />
           </div>
           <span
-            className="text-sm font-medium"
+            className="text-xs font-medium"
             style={{ color: themeColors.textPrimary }}
           >
             Worklog
@@ -2997,20 +2952,20 @@ const EmployeeDashboard = () => {
         </button>
         <button
           onClick={() => setShowLeaveModal(true)}
-          className="p-3 rounded-lg flex flex-col items-center justify-center transition-all hover:scale-105 hover:shadow-lg group"
+          className="p-2 rounded-lg flex flex-col items-center justify-center transition-all hover:scale-105 hover:shadow-lg group"
           style={{
             backgroundColor: themeColors.cardHover,
             border: `1px solid ${themeColors.borderDivider}`,
           }}
         >
           <div
-            className="p-2 rounded-lg mb-2 transform group-hover:rotate-12 transition-transform"
+            className="p-1.5 rounded-lg mb-1 transform group-hover:rotate-12 transition-transform"
             style={{ backgroundColor: themeColors.warningBg }}
           >
-            <Calendar size={20} style={{ color: themeColors.warning }} />
+            <Calendar size={14} style={{ color: themeColors.warning }} />
           </div>
           <span
-            className="text-sm font-medium"
+            className="text-xs font-medium"
             style={{ color: themeColors.textPrimary }}
           >
             Leave
@@ -3018,20 +2973,20 @@ const EmployeeDashboard = () => {
         </button>
         <button
           onClick={() => setActiveSection("payslips")}
-          className="p-3 rounded-lg flex flex-col items-center justify-center transition-all hover:scale-105 hover:shadow-lg group"
+          className="p-2 rounded-lg flex flex-col items-center justify-center transition-all hover:scale-105 hover:shadow-lg group"
           style={{
             backgroundColor: themeColors.cardHover,
             border: `1px solid ${themeColors.borderDivider}`,
           }}
         >
           <div
-            className="p-2 rounded-lg mb-2 transform group-hover:rotate-12 transition-transform"
+            className="p-1.5 rounded-lg mb-1 transform group-hover:rotate-12 transition-transform"
             style={{ backgroundColor: themeColors.successBg }}
           >
-            <Receipt size={20} style={{ color: themeColors.success }} />
+            <Receipt size={14} style={{ color: themeColors.success }} />
           </div>
           <span
-            className="text-sm font-medium"
+            className="text-xs font-medium"
             style={{ color: themeColors.textPrimary }}
           >
             Payslip
@@ -3041,12 +2996,12 @@ const EmployeeDashboard = () => {
     </div>
   );
 
-  // Dashboard Section
+  // Dashboard Section - Redesigned
   const renderDashboard = () => (
     <div className="space-y-6">
       <DashboardHeader />
 
-      {/* Stats Grid */}
+      {/* Stats Grid - First Row: Attendance, Task, Leave Balance, Working Hours */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <AttendanceSummary />
         <TaskOverview />
@@ -3054,17 +3009,16 @@ const EmployeeDashboard = () => {
         <WorklogSection />
       </div>
 
-      {/* Full width Task Completion Graph */}
+      {/* Task Completion Graph - Full width with traditional axes */}
       <AnalyticsGraphs />
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <TodaysTasksSection />
-        </div>
-        <div className="space-y-6">
-          <CalendarSection />
+      {/* Two Column Layout - Quick Actions and Calendar - Smaller height */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="h-auto">
           <QuickActionsSection />
+        </div>
+        <div className="h-auto">
+          <CalendarSection />
         </div>
       </div>
     </div>
@@ -3211,7 +3165,7 @@ const EmployeeDashboard = () => {
     </div>
   );
 
-  // Worklogs Section
+  // Worklogs Section with filters and text input for project
   const renderWorklogs = () => (
     <div className="space-y-6">
       <div
@@ -3244,7 +3198,66 @@ const EmployeeDashboard = () => {
         </div>
       </div>
 
-      {/* Worklogs Table */}
+      {/* Filters */}
+      <div
+        className="rounded-lg border p-4"
+        style={{
+          backgroundColor: themeColors.cardBackground,
+          borderColor: themeColors.borderDivider,
+        }}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: themeColors.textSecondary }}>Filter by Date</label>
+            <input
+              type="date"
+              value={worklogDateFilter}
+              onChange={(e) => setWorklogDateFilter(e.target.value)}
+              className="w-full p-2 rounded border text-sm"
+              style={{
+                backgroundColor: themeColors.cardBackground,
+                borderColor: themeColors.borderDivider,
+                color: themeColors.textPrimary,
+              }}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: themeColors.textSecondary }}>Filter by Month</label>
+            <select
+              value={worklogMonthFilter}
+              onChange={(e) => setWorklogMonthFilter(e.target.value)}
+              className="w-full p-2 rounded border text-sm"
+              style={{
+                backgroundColor: themeColors.cardBackground,
+                borderColor: themeColors.borderDivider,
+                color: themeColors.textPrimary,
+              }}
+            >
+              <option value="">All Months</option>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                <option key={month} value={month}>{new Date(2024, month - 1).toLocaleString('default', { month: 'long' })}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={() => {
+                setWorklogDateFilter("");
+                setWorklogMonthFilter("");
+              }}
+              className="px-4 py-2 rounded-lg text-sm font-medium"
+              style={{
+                backgroundColor: themeColors.cardHover,
+                color: themeColors.textPrimary,
+              }}
+            >
+              Clear Filters
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Worklogs Display - Professional Cards Layout */}
       <div
         className="rounded-lg border transform hover:scale-[1.002] transition-all duration-300"
         style={{
@@ -3264,297 +3277,350 @@ const EmployeeDashboard = () => {
           </h3>
         </div>
         <div className="p-5">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr
-                  className="border-b"
-                  style={{ borderColor: themeColors.borderDivider }}
-                >
-                  <th
-                    className="text-left py-2 font-medium text-sm"
-                    style={{ color: themeColors.textSecondary }}
-                  >
-                    Task
-                  </th>
-                  <th
-                    className="text-left py-2 font-medium text-sm"
-                    style={{ color: themeColors.textSecondary }}
-                  >
-                    Project
-                  </th>
-                  <th
-                    className="text-left py-2 font-medium text-sm"
-                    style={{ color: themeColors.textSecondary }}
-                  >
-                    Time
-                  </th>
-                  <th
-                    className="text-left py-2 font-medium text-sm"
-                    style={{ color: themeColors.textSecondary }}
-                  >
-                    Date
-                  </th>
-                  <th
-                    className="text-left py-2 font-medium text-sm"
-                    style={{ color: themeColors.textSecondary }}
-                  >
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {worklogs.map((log) => (
-                  <tr
-                    key={log.id}
-                    className="border-b hover:bg-opacity-50 transition-all duration-300 group"
-                    style={{
-                      borderColor: themeColors.borderDivider,
-                      cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor =
-                      themeColors.cardHover)
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = "transparent")
-                    }
-                  >
-                    <td className="py-3">
-                      <div className="flex items-center">
-                        <div className="min-w-0">
-                          <div
-                            className="font-medium text-sm"
-                            style={{ color: themeColors.textPrimary }}
-                          >
-                            {log.task}
-                          </div>
-                          <div
-                            className="text-xs truncate"
-                            style={{ color: themeColors.textSecondary }}
-                          >
-                            {log.description}
-                          </div>
-                        </div>
-                        <ChevronRight
-                          size={12}
-                          className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                          style={{ color: themeColors.textMuted }}
-                        />
-                      </div>
-                    </td>
-                    <td className="py-3">
-                      <span
-                        className="px-2 py-1 rounded-full text-xs transform hover:scale-105 transition-transform"
-                        style={{
-                          backgroundColor: themeColors.infoBg,
-                          color: themeColors.info,
-                        }}
-                      >
-                        {log.project}
-                      </span>
-                    </td>
-                    <td
-                      className="py-3 font-medium text-sm"
-                      style={{ color: themeColors.textPrimary }}
-                    >
-                      {log.time}
-                    </td>
-                    <td
-                      className="py-3 text-sm"
-                      style={{ color: themeColors.textSecondary }}
-                    >
-                      {log.date}
-                    </td>
-                    <td className="py-3">
-                      <span
-                        className="px-2 py-1 rounded-full text-xs font-medium transform hover:scale-105 transition-transform"
-                        style={{
-                          backgroundColor: themeColors.successBg,
-                          color: themeColors.success,
-                        }}
-                      >
-                        Completed
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Leave Management Section
-  const renderLeaveManagement = () => (
-    <div className="space-y-6">
-      <div
-        className="rounded-lg p-6 border transform hover:scale-[1.002] transition-all duration-300"
-        style={{
-          backgroundColor: themeColors.cardBackground,
-          borderColor: themeColors.borderDivider,
-        }}
-      >
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-          <div>
-            <h1
-              className="text-2xl font-bold mb-2"
-              style={{ color: themeColors.textPrimary }}
-            >
-              Leave Management
-            </h1>
-            <p style={{ color: themeColors.textSecondary }}>
-              Apply for leave and track your requests
-            </p>
-          </div>
-          <button
-            onClick={() => setShowLeaveModal(true)}
-            className="mt-4 md:mt-0 px-4 py-2 rounded font-semibold flex items-center text-sm hover:scale-105 transition-transform"
-            style={{ backgroundColor: themeColors.primary, color: "#FFFFFF" }}
-          >
-            <Plus className="mr-2" size={16} />
-            Apply for Leave
-          </button>
-        </div>
-      </div>
-
-      {/* Leave Balance */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[
-          {
-            type: "Casual Leave",
-            balance: leaveBalance.casual,
-            color: themeColors.success,
-            icon: Coffee,
-          },
-          {
-            type: "Sick Leave",
-            balance: leaveBalance.sick,
-            color: themeColors.info,
-            icon: Heart,
-          },
-          {
-            type: "Earned Leave",
-            balance: leaveBalance.earned,
-            color: themeColors.primary,
-            icon: Plane,
-          },
-        ].map((item, index) => (
-          <div
-            key={index}
-            className="rounded-lg p-5 border transform hover:scale-[1.02] transition-all duration-300 group"
-            style={{
-              backgroundColor: themeColors.cardBackground,
-              borderColor: themeColors.borderDivider,
-            }}
-          >
-            <div className="flex items-center mb-3">
-              <div
-                className="p-2 rounded-lg mr-3 transform group-hover:rotate-12 transition-transform"
-                style={{ backgroundColor: themeColors.cardHover }}
-              >
-                <item.icon size={20} style={{ color: item.color }} />
-              </div>
-              <h3
-                className="text-lg font-semibold"
-                style={{ color: themeColors.textPrimary }}
-              >
-                {item.type}
-              </h3>
+          {filteredWorklogs.length === 0 ? (
+            <div className="text-center py-8">
+              <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" style={{ color: themeColors.textMuted }} />
+              <p style={{ color: themeColors.textSecondary }}>No worklogs found</p>
             </div>
-            <div className="text-center">
-              <div
-                className="text-2xl font-bold mb-1"
-                style={{ color: item.color }}
-              >
-                {item.balance}
-              </div>
-              <div
-                className="text-sm"
-                style={{ color: themeColors.textSecondary }}
-              >
-                Days Available
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Leave History */}
-      <div
-        className="rounded-lg border transform hover:scale-[1.002] transition-all duration-300"
-        style={{
-          backgroundColor: themeColors.cardBackground,
-          borderColor: themeColors.borderDivider,
-        }}
-      >
-        <div
-          className="p-5 border-b"
-          style={{ borderColor: themeColors.borderDivider }}
-        >
-          <h3
-            className="text-lg font-semibold"
-            style={{ color: themeColors.textPrimary }}
-          >
-            Leave History
-          </h3>
-        </div>
-        <div className="p-5">
-          <div className="space-y-3">
-            {leaves.map((leave) => (
-              <div
-                key={leave.id}
-                className="p-4 rounded-lg flex items-center justify-between hover:scale-[1.01] transition-transform group"
-                style={{ backgroundColor: themeColors.cardHover }}
-              >
-                <div className="min-w-0 flex-1">
-                  <div
-                    className="font-medium text-sm"
-                    style={{ color: themeColors.textPrimary }}
-                  >
-                    {leave.type}
-                  </div>
-                  <div
-                    className="text-sm"
-                    style={{ color: themeColors.textSecondary }}
-                  >
-                    {leave.from} to {leave.to} • {leave.days} days
-                  </div>
-                  <div
-                    className="text-xs mt-1"
-                    style={{ color: themeColors.textMuted }}
-                  >
-                    {leave.reason}
-                  </div>
-                </div>
-                <span
-                  className="px-2 py-0.5 rounded-full text-xs font-medium ml-2 flex-shrink-0 transform group-hover:scale-110 transition-transform"
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredWorklogs.map((log) => (
+                <div
+                  key={log.id}
+                  className="p-4 rounded-lg border hover:shadow-md transition-all"
                   style={{
-                    backgroundColor:
-                      leave.status === "approved"
-                        ? themeColors.successBg
-                        : leave.status === "pending"
-                          ? themeColors.warningBg
-                          : themeColors.dangerBg,
-                    color:
-                      leave.status === "approved"
-                        ? themeColors.success
-                        : leave.status === "pending"
-                          ? themeColors.warning
-                          : themeColors.danger,
+                    backgroundColor: themeColors.cardHover,
+                    borderColor: themeColors.borderDivider,
                   }}
                 >
-                  {leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
-                </span>
-              </div>
-            ))}
-          </div>
+                  <div className="flex justify-between items-start mb-3">
+                    <h4 className="font-semibold" style={{ color: themeColors.textPrimary }}>{log.task}</h4>
+                    <span
+                      className="px-2 py-1 rounded-full text-xs font-medium"
+                      style={{
+                        backgroundColor: themeColors.successBg,
+                        color: themeColors.success,
+                      }}
+                    >
+                      {log.status}
+                    </span>
+                  </div>
+
+                  <p className="text-sm mb-3" style={{ color: themeColors.textSecondary }}>
+                    {log.description}
+                  </p>
+
+                  <div className="flex flex-wrap gap-3 text-xs">
+                    <span className="flex items-center">
+                      <Briefcase size={12} className="mr-1" style={{ color: themeColors.info }} />
+                      <span style={{ color: themeColors.textMuted }}>Project:</span>
+                      <span className="ml-1 font-medium" style={{ color: themeColors.textPrimary }}>{log.project}</span>
+                    </span>
+                    <span className="flex items-center">
+                      <Timer size={12} className="mr-1" style={{ color: themeColors.warning }} />
+                      <span style={{ color: themeColors.textMuted }}>Time:</span>
+                      <span className="ml-1 font-medium" style={{ color: themeColors.textPrimary }}>{log.time}</span>
+                    </span>
+                    <span className="flex items-center">
+                      <Calendar size={12} className="mr-1" style={{ color: themeColors.primary }} />
+                      <span style={{ color: themeColors.textMuted }}>Date:</span>
+                      <span className="ml-1 font-medium" style={{ color: themeColors.textPrimary }}>{log.date}</span>
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
+
+  // Leave Management Section with working filters
+  const renderLeaveManagement = () => {
+    // Calculate totals
+    const totalLeaves = {
+      casual: leaveBalance.casual + (leaves.filter(l => l.type === 'cl' || l.type?.toLowerCase().includes('casual')).reduce((sum, l) => sum + l.days, 0) || 0),
+      sick: leaveBalance.sick + (leaves.filter(l => l.type === 'sl' || l.type?.toLowerCase().includes('sick')).reduce((sum, l) => sum + l.days, 0) || 0),
+      earned: leaveBalance.earned + (leaves.filter(l => l.type === 'el' || l.type === 'pl' || l.type?.toLowerCase().includes('earned')).reduce((sum, l) => sum + l.days, 0) || 0)
+    };
+
+    const usedLeaves = {
+      casual: leaves.filter(l => (l.type === 'cl' || l.type?.toLowerCase().includes('casual')) && l.status === 'approved').reduce((sum, l) => sum + l.days, 0) || 0,
+      sick: leaves.filter(l => (l.type === 'sl' || l.type?.toLowerCase().includes('sick')) && l.status === 'approved').reduce((sum, l) => sum + l.days, 0) || 0,
+      earned: leaves.filter(l => (l.type === 'el' || l.type === 'pl' || l.type?.toLowerCase().includes('earned')) && l.status === 'approved').reduce((sum, l) => sum + l.days, 0) || 0
+    };
+
+    return (
+      <div className="space-y-6">
+        <div
+          className="rounded-lg p-6 border transform hover:scale-[1.002] transition-all duration-300"
+          style={{
+            backgroundColor: themeColors.cardBackground,
+            borderColor: themeColors.borderDivider,
+          }}
+        >
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+            <div>
+              <h1
+                className="text-2xl font-bold mb-2"
+                style={{ color: themeColors.textPrimary }}
+              >
+                Leave Management
+              </h1>
+              <p style={{ color: themeColors.textSecondary }}>
+                Apply for leave and track your requests
+              </p>
+            </div>
+            <button
+              onClick={() => setShowLeaveModal(true)}
+              className="mt-4 md:mt-0 px-4 py-2 rounded font-semibold flex items-center text-sm hover:scale-105 transition-transform"
+              style={{ backgroundColor: themeColors.primary, color: "#FFFFFF" }}
+            >
+              <Plus className="mr-2" size={16} />
+              Apply for Leave
+            </button>
+          </div>
+        </div>
+
+        {/* Leave Balance with Totals */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            {
+              type: "Casual Leave",
+              total: totalLeaves.casual,
+              used: usedLeaves.casual,
+              remaining: leaveBalance.casual,
+              color: themeColors.success,
+              icon: CiCalendar,
+            },
+            {
+              type: "Sick Leave",
+              total: totalLeaves.sick,
+              used: usedLeaves.sick,
+              remaining: leaveBalance.sick,
+              color: themeColors.info,
+              icon: MdOutlineSick,
+            },
+            {
+              type: "Earned Leave",
+              total: totalLeaves.earned,
+              used: usedLeaves.earned,
+              remaining: leaveBalance.earned,
+              color: themeColors.primary,
+              icon: FaRegCalendarCheck,
+            },
+          ].map((item, index) => {
+            const isExhausted = item.remaining === 0;
+
+            return (
+              <div
+                key={index}
+                className={`rounded-lg p-5 border transform hover:scale-[1.02] transition-all duration-300 group ${isExhausted ? 'opacity-75' : ''}`}
+                style={{
+                  backgroundColor: themeColors.cardBackground,
+                  borderColor: isExhausted ? themeColors.danger : themeColors.borderDivider,
+                }}
+              >
+                <div className="flex items-center mb-3">
+                  <div
+                    className="p-2 rounded-lg mr-3 transform group-hover:rotate-12 transition-transform"
+                    style={{ backgroundColor: themeColors.cardHover }}
+                  >
+                    <item.icon size={20} style={{ color: item.color }} />
+                  </div>
+                  <h3
+                    className="text-lg font-semibold"
+                    style={{ color: themeColors.textPrimary }}
+                  >
+                    {item.type}
+                  </h3>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span style={{ color: themeColors.textSecondary }}>Total:</span>
+                    <span className="font-medium" style={{ color: themeColors.textPrimary }}>{item.total} days</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span style={{ color: themeColors.textSecondary }}>Used:</span>
+                    <span className="font-medium" style={{ color: themeColors.warning }}>{item.used} days</span>
+                  </div>
+                  <div className="flex justify-between text-sm pt-2 mt-2 border-t" style={{ borderColor: themeColors.borderDivider }}>
+                    <span style={{ color: themeColors.textSecondary }}>Remaining:</span>
+                    <span className={`font-bold ${isExhausted ? 'text-red-500' : ''}`} style={{ color: isExhausted ? themeColors.danger : item.color }}>
+                      {item.remaining} days
+                    </span>
+                  </div>
+                  {isExhausted && (
+                    <div className="mt-2 text-xs text-center p-1 rounded" style={{ backgroundColor: themeColors.dangerBg, color: themeColors.danger }}>
+                      Balance exhausted
+                    </div>  
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Leave Filters */}
+        <div
+          className="rounded-lg border p-4"
+          style={{
+            backgroundColor: themeColors.cardBackground,
+            borderColor: themeColors.borderDivider,
+          }}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: themeColors.textSecondary }}>Filter by Date</label>
+              <input
+                type="date"
+                value={leaveDateFilter}
+                onChange={(e) => setLeaveDateFilter(e.target.value)}
+                className="w-full p-2 rounded border text-sm"
+                style={{
+                  backgroundColor: themeColors.cardBackground,
+                  borderColor: themeColors.borderDivider,
+                  color: themeColors.textPrimary,
+                }}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: themeColors.textSecondary }}>Filter by Month</label>
+              <select
+                value={leaveMonthFilter}
+                onChange={(e) => setLeaveMonthFilter(e.target.value)}
+                className="w-full p-2 rounded border text-sm"
+                style={{
+                  backgroundColor: themeColors.cardBackground,
+                  borderColor: themeColors.borderDivider,
+                  color: themeColors.textPrimary,
+                }}
+              >
+                <option value="">All Months</option>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                  <option key={month} value={month}>{new Date(2024, month - 1).toLocaleString('default', { month: 'long' })}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: themeColors.textSecondary }}>Filter by Status</label>
+              <select
+                value={leaveStatusFilter}
+                onChange={(e) => setLeaveStatusFilter(e.target.value)}
+                className="w-full p-2 rounded border text-sm"
+                style={{
+                  backgroundColor: themeColors.cardBackground,
+                  borderColor: themeColors.borderDivider,
+                  color: themeColors.textPrimary,
+                }}
+              >
+                <option value="all">All Status</option>
+                <option value="approved">Approved</option>
+                <option value="pending">Pending</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={() => {
+                  setLeaveDateFilter("");
+                  setLeaveMonthFilter("");
+                  setLeaveStatusFilter("all");
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-medium"
+                style={{
+                  backgroundColor: themeColors.cardHover,
+                  color: themeColors.textPrimary,
+                }}
+              >
+                Clear Filters
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Leave History */}
+        <div
+          className="rounded-lg border transform hover:scale-[1.002] transition-all duration-300"
+          style={{
+            backgroundColor: themeColors.cardBackground,
+            borderColor: themeColors.borderDivider,
+          }}
+        >
+          <div
+            className="p-5 border-b"
+            style={{ borderColor: themeColors.borderDivider }}
+          >
+            <h3
+              className="text-lg font-semibold"
+              style={{ color: themeColors.textPrimary }}
+            >
+              Leave History
+            </h3>
+          </div>
+          <div className="p-5">
+            {filteredLeaves.length === 0 ? (
+              <div className="text-center py-8">
+                <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" style={{ color: themeColors.textMuted }} />
+                <p style={{ color: themeColors.textSecondary }}>No leave records found</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredLeaves.map((leave) => (
+                  <div
+                    key={leave.id}
+                    className="p-4 rounded-lg flex items-center justify-between hover:scale-[1.01] transition-transform group"
+                    style={{ backgroundColor: themeColors.cardHover }}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div
+                        className="font-medium text-sm"
+                        style={{ color: themeColors.textPrimary }}
+                      >
+                        {getFullLeaveTypeName(leave.type)}
+                      </div>
+                      <div
+                        className="text-sm"
+                        style={{ color: themeColors.textSecondary }}
+                      >
+                        {new Date(leave.from).toLocaleDateString()} to {new Date(leave.to).toLocaleDateString()} • {leave.days} days
+                      </div>
+                      <div
+                        className="text-xs mt-1"
+                        style={{ color: themeColors.textMuted }}
+                      >
+                        {leave.reason}
+                      </div>
+                    </div>
+                    <span
+                      className="px-2 py-0.5 rounded-full text-xs font-medium ml-2 flex-shrink-0 transform group-hover:scale-110 transition-transform"
+                      style={{
+                        backgroundColor:
+                          leave.status === "approved"
+                            ? themeColors.successBg
+                            : leave.status === "pending"
+                              ? themeColors.warningBg
+                              : themeColors.dangerBg,
+                        color:
+                          leave.status === "approved"
+                            ? themeColors.success
+                            : leave.status === "pending"
+                              ? themeColors.warning
+                              : themeColors.danger,
+                      }}
+                    >
+                      {leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  };
 
   // Render Modals
   const renderModals = () => (
@@ -3597,9 +3663,7 @@ const EmployeeDashboard = () => {
                     </label>
                     <select
                       value={newLeave.type}
-                      onChange={(e) =>
-                        setNewLeave({ ...newLeave, type: e.target.value })
-                      }
+                      onChange={(e) => setNewLeave({ ...newLeave, type: e.target.value })}
                       className="w-full p-2 rounded border text-sm hover:scale-105 transition-transform"
                       style={{
                         backgroundColor: themeColors.cardBackground,
@@ -3609,11 +3673,31 @@ const EmployeeDashboard = () => {
                       required
                     >
                       <option value="">Select Leave Type</option>
-                      {leaveTypes.map((type) => (
-                        <option key={type.id || type.code} value={type.code || type.name}>
-                          {type.name}
-                        </option>
-                      ))}
+                      {(() => {
+                        // Combine hardcoded and API options
+                        const hardcodedTypes = [
+                          { name: "Casual Leave", value: "Casual Leave" },
+                          { name: "Sick Leave", value: "Sick Leave" },
+                          { name: "Earned Leave", value: "Earned Leave" }
+                        ];
+
+                        const apiTypes = leaveTypes.map(type => ({
+                          name: type.name,
+                          value: type.code || type.name
+                        }));
+
+                        // Combine and remove duplicates based on name
+                        const allTypes = [...hardcodedTypes, ...apiTypes];
+                        const uniqueTypes = allTypes.filter((type, index, self) =>
+                          index === self.findIndex(t => t.name === type.name)
+                        );
+
+                        return uniqueTypes.map((type) => (
+                          <option key={type.value} value={type.value}>
+                            {type.name}
+                          </option>
+                        ));
+                      })()}
                     </select>
                   </div>
 
@@ -3622,18 +3706,47 @@ const EmployeeDashboard = () => {
                       className="block text-sm font-medium mb-1"
                       style={{ color: themeColors.textSecondary }}
                     >
-                      Contact During Leave
+                      Contact During Leave *
                     </label>
-                    <input
-                      type="tel"
-                      className="w-full p-2 rounded border text-sm hover:scale-105 transition-transform"
-                      style={{
-                        backgroundColor: themeColors.cardBackground,
-                        borderColor: themeColors.borderDivider,
-                        color: themeColors.textPrimary,
-                      }}
-                      placeholder="Phone number"
-                    />
+                    <div className="relative">
+                      <input
+                        type={newLeave.showContactNumber ? "text" : "password"}
+                        value={newLeave.contactNumber}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          setNewLeave({ ...newLeave, contactNumber: value });
+                        }}
+                        className="w-full p-2 rounded border text-sm pr-10 hover:scale-105 transition-transform"
+                        style={{
+                          backgroundColor: themeColors.cardBackground,
+                          borderColor: themeColors.borderDivider,
+                          color: themeColors.textPrimary,
+                        }}
+                        placeholder="Enter 10-digit mobile number"
+                        maxLength="10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setNewLeave({ ...newLeave, showContactNumber: !newLeave.showContactNumber })}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                      >
+                        {newLeave.showContactNumber ? (
+                          <EyeOff size={16} style={{ color: themeColors.textMuted }} />
+                        ) : (
+                          <Eye size={16} style={{ color: themeColors.textMuted }} />
+                        )}
+                      </button>
+                    </div>
+                    {newLeave.contactNumber && (
+                      <div className="mt-1 text-xs">
+                        {/^[6-9]\d{9}$/.test(newLeave.contactNumber) ? (
+                          <span style={{ color: themeColors.success }}>✓ Valid Indian Mobile Number</span>
+                        ) : (
+                          <span style={{ color: themeColors.danger }}>✗ Invalid Indian Mobile Number (must start with 6-9 and be 10 digits)</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -3798,7 +3911,9 @@ const EmployeeDashboard = () => {
                     >
                       Project *
                     </label>
-                    <select
+                    <input
+                      type="text"
+                      required
                       value={newWorklog.project}
                       onChange={(e) =>
                         setNewWorklog({
@@ -3812,12 +3927,8 @@ const EmployeeDashboard = () => {
                         borderColor: themeColors.borderDivider,
                         color: themeColors.textPrimary,
                       }}
-                    >
-                      <option value="Alpha">Project Alpha</option>
-                      <option value="Beta">Project Beta</option>
-                      <option value="Gamma">Project Gamma</option>
-                      <option value="Internal">Internal</option>
-                    </select>
+                      placeholder="Enter project name"
+                    />
                   </div>
                 </div>
 
@@ -3854,10 +3965,12 @@ const EmployeeDashboard = () => {
                       className="block text-sm font-medium mb-1"
                       style={{ color: themeColors.textSecondary }}
                     >
-                      Time Spent *
+                      Time Spent (hours) *
                     </label>
                     <input
-                      type="text"
+                      type="number"
+                      step="0.5"
+                      min="0.5"
                       required
                       value={newWorklog.time}
                       onChange={(e) =>
@@ -3869,7 +3982,7 @@ const EmployeeDashboard = () => {
                         borderColor: themeColors.borderDivider,
                         color: themeColors.textPrimary,
                       }}
-                      placeholder="e.g., 2h 30m"
+                      placeholder="e.g., 2.5"
                     />
                   </div>
 
@@ -4125,9 +4238,6 @@ const EmployeeDashboard = () => {
       {renderModals()}
     </div >
   );
-
-
 };
 
 export default EmployeeDashboard;
-

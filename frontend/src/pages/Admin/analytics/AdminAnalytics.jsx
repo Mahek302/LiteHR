@@ -1,7 +1,8 @@
+import { MdMoreTime } from "react-icons/md";
+import { GoCheck } from "react-icons/go";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { FiUsers, FiCalendar, FiTrendingUp, FiTrendingDown, FiBarChart2, FiPieChart, FiActivity, FiDownload } from "react-icons/fi";
-import { FaRupeeSign } from "react-icons/fa";
+import { FiUsers, FiCalendar, FiBarChart2, FiPieChart, FiDownload } from "react-icons/fi";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area
@@ -9,6 +10,8 @@ import {
 import { useTheme, getThemeClasses } from "../../../contexts/ThemeContext";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { TbCalendarMonth } from "react-icons/tb";
+import { addCorporatePdfHeader, addCorporatePdfFooters } from "../../../utils/corporatePdf";
 
 const AdminAnalytics = () => {
   const darkMode = useTheme();
@@ -21,6 +24,20 @@ const AdminAnalytics = () => {
   const [activeJobsCount, setActiveJobsCount] = useState(null);
 
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  // Add this mapping function for leave types
+  const getLeaveTypeName = (code) => {
+    const leaveTypes = {
+      'AL': 'Earned Leave',
+      'EL': 'Earned Leave',
+      'SL': 'Sick Leave',
+      'CL': 'Casual Leave',
+      'ML': 'Maternity Leave',
+      'PL': 'Paternity Leave',
+      'BL': 'Bereavement Leave'
+    };
+    return leaveTypes[code] || code; // Return the mapped name or original code if not found
+  };
 
   // Color palette based on theme
   const colors = darkMode ? {
@@ -54,47 +71,24 @@ const AdminAnalytics = () => {
   };
 
   // Attendance data for bar chart (monthly present counts)
-  const attendanceData = charts?.attendance || [
-    { month: "Jan", present: 95 },
-    { month: "Feb", present: 96 },
-    { month: "Mar", present: 97 },
-    { month: "Apr", present: 94 },
-    { month: "May", present: 98 },
-    { month: "Jun", present: 30 },
-    { month: "Jul", present: 20 }
-  ];
+  const attendanceData = charts?.attendance || [];
 
-  // Department distribution for pie chart (fallback)
-  const departmentData = charts?.departments?.map((d, i) => ({ name: d.department || 'Unknown', value: Number(d.count), color: [colors.primary, colors.secondary, colors.warning, colors.tertiary, '#EC4899'][i % 5] })) || [
-    { name: "IT", value: 35, color: colors.primary },
-    { name: "HR", value: 20, color: colors.secondary },
-    { name: "Finance", value: 18, color: colors.warning },
-    { name: "Marketing", value: 15, color: colors.tertiary },
-    { name: "Operations", value: 12, color: "#EC4899" }
-  ];
+  // Department distribution for pie chart
+  const departmentData = charts?.departments?.map((d, i) => ({
+    name: d.department || 'Unknown',
+    value: Number(d.count),
+    color: [colors.primary, colors.secondary, colors.warning, colors.tertiary, '#EC4899'][i % 5]
+  })) || [];
 
   // Hiring trends for area chart
-  const hiringData = charts?.hiring || [
-    { month: "Jan", hired: 8, resigned: 2 },
-    { month: "Feb", hired: 12, resigned: 1 },
-    { month: "Mar", hired: 10, resigned: 3 },
-    { month: "Apr", hired: 15, resigned: 2 },
-    { month: "May", hired: 8, resigned: 4 },
-    { month: "Jun", hired: 14, resigned: 1 },
-    { month: "Jul", hired: 12, resigned: 3 }
-  ];
+  const hiringData = charts?.hiring || [];
 
-
-
-  // Leave statistics
+  // Leave statistics with mapped names
   const leaveData = charts?.leaveStats?.map((l, i) => ({
     ...l,
+    type: getLeaveTypeName(l.type), // Map the leave code to full name
     color: [colors.success, colors.warning, colors.danger, colors.primary][i % 4]
-  })) || [
-      { type: "Approved", value: 42, color: colors.success },
-      { type: "Pending", value: 8, color: colors.warning },
-      { type: "Rejected", value: 3, color: colors.danger }
-    ];
+  })) || [];
 
   // Custom tooltip for charts with theme support
   const CustomTooltip = ({ active, payload, label }) => {
@@ -160,11 +154,11 @@ const AdminAnalytics = () => {
             resigned: 0 // We assume 0 for now as we didn't impl resigned yet
           })) || null,
 
-          // Map leave stats (from leaveStats service)
+          // Map leave stats (from leaveStats service) - store raw type for mapping later
           leaveStats: chartsRes.data.leaveStats?.map(l => ({
             type: l.type,
-            value: l.count,
-            color: colors.success // Logic to assign colors could be improved
+            count: l.count,
+            // Color will be applied in render/leaveData
           })) || null,
 
           // Performance from explicit service
@@ -176,7 +170,8 @@ const AdminAnalytics = () => {
           })) || null,
 
           overtime: chartsRes.data.overtime || [],
-          training: chartsRes.data.training || null
+          training: chartsRes.data.training || null,
+          leaves: chartsRes.data.leaves || null
         };
         setCharts(chartData);
       } catch (err) {
@@ -188,24 +183,8 @@ const AdminAnalytics = () => {
     };
 
     fetchData();
-  }, [darkMode]); // Add darkMode dependency if colors needed inside (colors is outside though, but let's stick to empty array or minimal deps)
-  // Actually colors is used in mapping leaveStats? Yes.
-  // Ideally mapping should happen in render or colors passed.
-  // I will remove colors dependency in useEffect and map in render if possible, OR just use constants.
-  // But wait, `colors` changes with `darkMode`. 
-  // Code structure: `colors` is defined at top of component.
-  // If I put mapping in useEffect, I need to depend on `colors` (and thus `darkMode`).
-  // Better to store RAW data in state and map in render. 
-  // BUT the existing code mapped in useEffect. I will map in render to avoid deep dependency chain issues.
-  // Actually, I'll modify the state to store RAW response mostly, and map in render.
+  }, []);
 
-  /*
-    Wait, the previous code mapped in useEffect:
-    `const chartData = { attendance: ... }`
-    I will stick to that to minimize diff, but add `colors` to dep array or just map colors in render.
-    Mapping `color` in `useEffect` is bad practice if theme changes.
-    I'll just map values in `useEffect` and handle colors in render.
-  */
   const handleExportPDF = async () => {
     try {
       const pdf = new jsPDF({
@@ -214,26 +193,11 @@ const AdminAnalytics = () => {
         format: "a4",
       });
 
-      const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      let yPosition = 15;
-
-      // Add title
-      pdf.setFontSize(20);
-      pdf.text("Admin Dashboard Report", pageWidth / 2, yPosition, {
-        align: "center",
+      let yPosition = await addCorporatePdfHeader(pdf, {
+        title: "Admin Dashboard Report",
+        subtitle: "Organization-level summary and trend data",
       });
-      yPosition += 12;
-
-      // Add timestamp
-      pdf.setFontSize(10);
-      pdf.text(
-        `Generated on: ${new Date().toLocaleString()}`,
-        pageWidth / 2,
-        yPosition,
-        { align: "center" },
-      );
-      yPosition += 8;
 
       // Add stats summary
       pdf.setFontSize(12);
@@ -251,14 +215,16 @@ const AdminAnalytics = () => {
         `Active Jobs: ${activeJobsCount || "—"}`,
       ];
 
-      stats.forEach((stat) => {
+      for (const stat of stats) {
         if (yPosition > pageHeight - 20) {
           pdf.addPage();
-          yPosition = 15;
+          yPosition = await addCorporatePdfHeader(pdf, {
+            title: "Admin Dashboard Report",
+          });
         }
         pdf.text(stat, 15, yPosition);
         yPosition += 6;
-      });
+      }
 
       yPosition += 4;
 
@@ -266,7 +232,9 @@ const AdminAnalytics = () => {
       if (charts?.departments && charts.departments.length > 0) {
         if (yPosition > pageHeight - 40) {
           pdf.addPage();
-          yPosition = 15;
+          yPosition = await addCorporatePdfHeader(pdf, {
+            title: "Department Overview",
+          });
         }
 
         pdf.setFontSize(12);
@@ -308,7 +276,9 @@ const AdminAnalytics = () => {
       if (charts?.attendance && charts.attendance.length > 0) {
         if (yPosition > pageHeight - 40) {
           pdf.addPage();
-          yPosition = 15;
+          yPosition = await addCorporatePdfHeader(pdf, {
+            title: "Monthly Attendance Summary",
+          });
         }
 
         pdf.setFontSize(12);
@@ -320,7 +290,7 @@ const AdminAnalytics = () => {
           ["Month", "Present Count"],
           ...charts.attendance.map((a) => [
             monthNames[(Number(a.month) - 1) % 12] || "N/A",
-            String(a.count || 0),
+            String(a.present || 0),
           ]),
         ];
 
@@ -350,7 +320,9 @@ const AdminAnalytics = () => {
       if (charts?.leaves && charts.leaves.length > 0) {
         if (yPosition > pageHeight - 40) {
           pdf.addPage();
-          yPosition = 15;
+          yPosition = await addCorporatePdfHeader(pdf, {
+            title: "Leave Request Summary",
+          });
         }
 
         pdf.setFontSize(12);
@@ -360,7 +332,7 @@ const AdminAnalytics = () => {
         pdf.setFontSize(9);
         const leaveTableData = [
           ["Leave Type", "Count"],
-          ...charts.leaves.map((l) => [l.type || "N/A", String(l.count || 0)]),
+          ...charts.leaves.map((l) => [getLeaveTypeName(l.type) || "N/A", String(l.count || 0)]),
         ];
 
         autoTable(pdf, {
@@ -386,7 +358,9 @@ const AdminAnalytics = () => {
       // Add recent activities
       if (dashboard?.recentWorklogs && dashboard.recentWorklogs.length > 0) {
         pdf.addPage();
-        yPosition = 15;
+        yPosition = await addCorporatePdfHeader(pdf, {
+          title: "Recent Activities",
+        });
 
         pdf.setFontSize(12);
         pdf.text("Recent Activities", 15, yPosition);
@@ -424,6 +398,8 @@ const AdminAnalytics = () => {
         });
       }
 
+      addCorporatePdfFooters(pdf);
+
       // Save the PDF
       const fileName = `Admin_Dashboard_Report_${new Date().getTime()}.pdf`;
       pdf.save(fileName);
@@ -432,6 +408,7 @@ const AdminAnalytics = () => {
       alert("Failed to generate PDF. Please try again.");
     }
   };
+
   return (
     <div className="w-full">
       {/* Header */}
@@ -452,16 +429,6 @@ const AdminAnalytics = () => {
             </p>
           </div>
           <div className="flex gap-3">
-            {/* <select 
-              className={`px-4 py-2.5 ${inputBg} border ${inputBorder} ${textPrimary} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-            >
-              <option value="weekly">This Week</option>
-              <option value="monthly">This Month</option>
-              <option value="quarterly">This Quarter</option>
-              <option value="yearly">This Year</option>
-            </select> */}
             <button onClick={handleExportPDF} className={`flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors`}>
               <FiDownload className="w-4 h-4" />
               Export Report
@@ -479,7 +446,7 @@ const AdminAnalytics = () => {
               <p className={`text-sm ${textSecondary}`}>Total Employees</p>
               <h3 className={`text-2xl font-bold ${textPrimary} mt-2`}>{dashboard ? dashboard.totalEmployees : '—'}</h3>
               <div className="flex items-center gap-2 mt-2">
-                <FiTrendingUp className="w-4 h-4 text-green-500" />
+                <GoCheck className="w-4 h-4 text-green-500" />
                 <span className="text-sm text-green-500">{dashboard ? `Active users: ${dashboard.totalActiveUsers}` : '—'}</span>
               </div>
             </div>
@@ -496,12 +463,12 @@ const AdminAnalytics = () => {
               <p className={`text-sm ${textSecondary}`}>Avg. Attendance</p>
               <h3 className={`text-2xl font-bold ${textPrimary} mt-2`}>{dashboard ? `${((dashboard.presentToday / dashboard.totalEmployees) * 100).toFixed(1)}%` : '—'}</h3>
               <div className="flex items-center gap-2 mt-2">
-                <FiTrendingUp className="w-4 h-4 text-green-500" />
+                <GoCheck className="w-4 h-4 text-green-500" />
                 <span className="text-sm text-green-500">Present today: {dashboard ? dashboard.presentToday : '—'}</span>
               </div>
             </div>
             <div className={`w-12 h-12 rounded-lg ${darkMode ? 'bg-green-900/30' : 'bg-green-100'} flex items-center justify-center`}>
-              <FiCalendar className={`w-6 h-6 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
+              <GoCheck className={`w-6 h-6 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
             </div>
           </div>
         </div>
@@ -513,12 +480,12 @@ const AdminAnalytics = () => {
               <p className={`text-sm ${textSecondary}`}>Monthly Turnover</p>
               <h3 className={`text-2xl font-bold ${textPrimary} mt-2`}>{dashboard ? `${dashboard.onLeaveToday || 0}` : '—'}</h3>
               <div className="flex items-center gap-2 mt-2">
-                <FiTrendingDown className="w-4 h-4 text-red-500" />
+                <TbCalendarMonth className="w-4 h-4 text-red-500" />
                 <span className="text-sm text-red-500">On leave today</span>
               </div>
             </div>
             <div className={`w-12 h-12 rounded-lg ${darkMode ? 'bg-amber-900/30' : 'bg-amber-100'} flex items-center justify-center`}>
-              <FiActivity className={`w-6 h-6 ${darkMode ? 'text-amber-400' : 'text-amber-600'}`} />
+              <TbCalendarMonth className={`w-6 h-6 ${darkMode ? 'text-amber-400' : 'text-amber-600'}`} />
             </div>
           </div>
         </div>
@@ -528,10 +495,14 @@ const AdminAnalytics = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className={`text-sm ${textSecondary}`}>Avg. Performance</p>
-              <h3 className={`text-2xl font-bold ${textPrimary} mt-2`}>{dashboard ? `${(dashboard.avgPerformance || 4.2).toFixed(1)}/5.0` : '—'}</h3>
+              <h3 className={`text-2xl font-bold ${textPrimary} mt-2`}>
+                {dashboard?.avgPerformance ? `${Number(dashboard.avgPerformance).toFixed(1)}/5.0` : '—'}
+              </h3>
               <div className="flex items-center gap-2 mt-2">
-                <FiTrendingUp className="w-4 h-4 text-green-500" />
-                <span className="text-sm text-green-500">{dashboard ? `Avg performance: ${(dashboard.avgPerformance || 4.2).toFixed(1)}` : '—'}</span>
+                <GoCheck className="w-4 h-4 text-green-500" />
+                <span className="text-sm text-green-500">
+                  {dashboard?.avgPerformance ? `Avg performance: ${Number(dashboard.avgPerformance).toFixed(1)}` : '—'}
+                </span>
               </div>
             </div>
             <div className={`w-12 h-12 rounded-lg ${darkMode ? 'bg-purple-900/30' : 'bg-purple-100'} flex items-center justify-center`}>
@@ -543,48 +514,6 @@ const AdminAnalytics = () => {
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Attendance Chart - Bar Chart */}
-        <div className={`${cardBg} rounded-xl p-6 border ${cardBorder} shadow-sm`}>
-
-          <div className="flex justify-between items-center mb-6">
-            <h3 className={`text-lg font-semibold ${textPrimary}`}>Weekly Attendance</h3>
-          </div>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <BarChart
-                data={attendanceData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridColor} />
-                <XAxis
-                  dataKey="month"
-                  stroke={chartTheme.axisColor}
-                  tick={{ fill: chartTheme.textColor }}
-                />
-                <YAxis
-                  stroke={chartTheme.axisColor}
-                  tick={{ fill: chartTheme.textColor }}
-                />
-                <Tooltip
-                  content={<CustomTooltip />}
-                  contentStyle={{
-                    backgroundColor: colors.card,
-                    borderColor: colors.border,
-                    color: colors.text
-                  }}
-                />
-                <Legend />
-                <Bar
-                  dataKey="present"
-                  name="Present"
-                  fill={colors.primary}
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
         {/* Department Distribution - Pie Chart */}
         <div className={`${cardBg} rounded-xl p-6 border ${cardBorder} shadow-sm`}>
           <div className="flex justify-between items-center mb-6">
@@ -607,18 +536,32 @@ const AdminAnalytics = () => {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip
-                  formatter={(value) => [`${value}%`, 'Percentage']}
-                  contentStyle={{
-                    backgroundColor: colors.card,
-                    borderColor: colors.border,
-                    color: colors.text
-                  }}
-                />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
           </div>
+        </div>
+
+        {/* Recent Worklogs */}
+        <div className={`${cardBg} rounded-xl p-6 border ${cardBorder} shadow-sm`}>
+          <h3 className={`text-lg font-semibold ${textPrimary} mb-4`}>Recent Worklogs</h3>
+          {dashboard?.recentWorklogs && dashboard.recentWorklogs.length > 0 ? (
+            <div className="space-y-3">
+              {dashboard.recentWorklogs.map((w) => (
+                <div key={w.id} className={`p-3 rounded ${darkMode ? 'bg-slate-900/50' : 'bg-gray-50'}`}>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className={`font-semibold ${textPrimary}`}>{w.employee?.fullName || 'Unknown'}</div>
+                      <div className={`text-sm ${textSecondary}`}>{w.description}</div>
+                    </div>
+                    <div className="text-sm text-gray-500">{new Date(w.date).toLocaleDateString()} • {w.hoursWorked} hrs</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className={textSecondary}>No recent worklogs found</p>
+          )}
         </div>
       </div>
 
@@ -637,11 +580,13 @@ const AdminAnalytics = () => {
           </div>
 
           <div className="space-y-3">
-            {(charts?.leaves ? charts.leaves : leaveData).map((item, idx) => (
+            {(leaveData).map((item, idx) => (
               <div key={idx} className={`flex justify-between items-center p-3 ${darkMode ? 'bg-slate-900/50' : 'bg-gray-50'} rounded-lg`}>
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color || (idx === 0 ? colors.success : idx === 1 ? colors.warning : colors.danger) }}></div>
-                  <span className={`${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{item.type || `Month ${item.month}`}</span>
+                  <span className={`${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {item.type || `Month ${item.month}`}
+                  </span>
                 </div>
                 <span className="font-bold" style={{ color: item.color || '#111' }}>{item.value || item.count}</span>
               </div>
@@ -653,7 +598,7 @@ const AdminAnalytics = () => {
         <div className={`${cardBg} rounded-xl p-6 border ${cardBorder} shadow-sm`}>
           <div className="flex items-center gap-3 mb-4">
             <div className={`w-10 h-10 rounded-lg ${darkMode ? 'bg-green-900/30' : 'bg-green-100'} flex items-center justify-center`}>
-              <FiActivity className={`w-5 h-5 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
+              <MdMoreTime className={`w-5 h-5 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
             </div>
             <div>
               <h3 className={`font-semibold ${textPrimary}`}>Overtime Hours</h3>
@@ -680,32 +625,74 @@ const AdminAnalytics = () => {
             <p className={textSecondary}>No overtime data</p>
           )}
         </div>
-
-
       </div>
 
-      {/* Recent Worklogs */}
+      {/* Department Performance Table */}
       <div className={`${cardBg} rounded-xl p-6 border ${cardBorder} shadow-sm mb-8`}>
-        <h3 className={`text-lg font-semibold ${textPrimary} mb-4`}>Recent Worklogs</h3>
-        {dashboard?.recentWorklogs && dashboard.recentWorklogs.length > 0 ? (
-          <div className="space-y-3">
-            {dashboard.recentWorklogs.map((w) => (
-              <div key={w.id} className={`p-3 rounded ${darkMode ? 'bg-slate-900/50' : 'bg-gray-50'}`}>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className={`font-semibold ${textPrimary}`}>{w.employee?.fullName || 'Unknown'}</div>
-                    <div className={`text-sm ${textSecondary}`}>{w.description}</div>
-                  </div>
-                  <div className="text-sm text-gray-500">{new Date(w.date).toLocaleDateString()} • {w.hoursWorked} hrs</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className={textSecondary}>No recent worklogs found</p>
-        )}
+        <h3 className={`text-lg font-semibold ${textPrimary} mb-6`}>Department Performance</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className={darkMode ? 'bg-slate-700' : 'bg-gray-100'}>
+              <tr>
+                <th className={`p-4 text-center text-sm font-semibold ${textSecondary}`}>Department</th>
+                <th className={`p-4 text-center text-sm font-semibold ${textSecondary}`}>Employees</th>
+                <th className={`p-4 text-center text-sm font-semibold ${textSecondary}`}>Attendance Rate</th>
+                <th className={`p-4 text-center text-sm font-semibold ${textSecondary}`}>Late Arrivals</th>
+                <th className={`p-4 text-center text-sm font-semibold ${textSecondary}`}>Absences</th>
+                <th className={`p-4 text-center text-sm font-semibold ${textSecondary}`}>Performance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {departmentData.map((dept, index) => (
+                <tr key={index} className={`${darkMode ? 'hover:bg-slate-700' : 'hover:bg-gray-50'} transition-colors border-t ${cardBorder}`}>
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-purple-600 to-purple-400 flex items-center justify-center text-white font-bold">
+                        {dept.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className={`font-medium ${textPrimary}`}>{dept.name} Department</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-4 text-center">
+                    <span className={`font-bold ${textPrimary}`}>{dept.value}</span>
+                  </td>
+                  <td className="p-4 text-center">
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="flex-1 max-w-[150px]">
+                        <div className={`h-2 ${darkMode ? 'bg-gray-700' : 'bg-gray-300'} rounded-full overflow-hidden`}>
+                          <div
+                            className={`h-full rounded-full ${dept.value >= 35 ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' :
+                              dept.value >= 20 ? 'bg-gradient-to-r from-amber-500 to-amber-400' : 'bg-gradient-to-r from-rose-500 to-rose-400'
+                              }`}
+                            style={{ width: `${(dept.value / 50) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                      <span className={`font-bold ${textPrimary}`}>{dept.value}%</span>
+                    </div>
+                  </td>
+                  <td className="p-4 text-center">
+                    <span className="font-bold text-amber-400">{Math.floor(dept.value / 5)}</span>
+                  </td>
+                  <td className="p-4 text-center">
+                    <span className="font-bold text-rose-400">{Math.floor(dept.value / 8)}</span>
+                  </td>
+                  <td className="p-4 text-center">
+                    <span className={`px-3 py-1.5 rounded-full text-sm font-medium border ${dept.value >= 35 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                      dept.value >= 20 ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                      }`}>
+                      {dept.value >= 35 ? 'Excellent' :
+                        dept.value >= 20 ? 'Good' : 'Needs Improvement'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-
     </div>
   );
 };
