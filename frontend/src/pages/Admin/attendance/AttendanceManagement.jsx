@@ -79,11 +79,11 @@ const AttendanceManagement = () => {
           </div>
           
           <div className="flex gap-3">
-            <button className={`flex items-center gap-2 px-4 py-2.5 ${themeClasses.bg.secondary} border ${themeClasses.border.primary} ${themeClasses.text.primary} rounded-lg hover:${darkMode ? 'bg-gray-700' : 'bg-gray-300'} font-medium`}>
+            <button className={`flex items-center gap-2 px-4 py-2.5 ${themeClasses.bg.secondary} border ${themeClasses.border.primary} ${themeClasses.text.primary} rounded-lg ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-violet-100'} font-medium`}>
               <FiDownload className="w-4 h-4" />
               Export CSV
             </button>
-            <button onClick={refresh} className={`px-4 py-2.5 border ${themeClasses.border.primary} ${themeClasses.text.primary} rounded-lg hover:${darkMode ? 'bg-gray-700' : 'bg-gray-300'} font-medium`}>
+            <button onClick={refresh} className={`px-4 py-2.5 border ${themeClasses.border.primary} ${themeClasses.text.primary} rounded-lg ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-violet-100'} font-medium`}>
               Refresh
             </button>
           </div>
@@ -379,3 +379,6 @@ const AttendanceManagement = () => {
 };
 
 export default AttendanceManagement;
+
+
+

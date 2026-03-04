@@ -31,6 +31,7 @@ import uploadRoutes from "./routes/upload.routes.js";
 import roleRoutes from "./routes/role.routes.js";
 import resetPasswordRoutes from "./routes/resetPassword.routes.js";
 import demoRequestRoutes from "./routes/demoRequest.routes.js";
+import licensingRoutes from "./routes/licensing.routes.js";
 
 
 const app = express();
@@ -71,6 +72,7 @@ app.use("/api/roles", roleRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/reset-password", resetPasswordRoutes);
 app.use("/api/demo-requests", demoRequestRoutes);
+app.use("/api/licensing", licensingRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

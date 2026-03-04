@@ -343,7 +343,7 @@ const AddEmployee = () => {
                     Profile Image
                   </label>
                   <div className="flex items-center gap-6">
-                    <div className={`w-32 h-32 rounded-full border-2 border-dashed ${darkMode ? 'border-gray-600' : 'border-gray-400'} flex items-center justify-center overflow-hidden ${darkMode ? 'bg-gray-900/50' : 'bg-gray-100'}`}>
+                    <div className={`w-32 h-32 rounded-full border-2 border-dashed ${darkMode ? 'border-gray-600' : 'border-gray-400'} flex items-center justify-center overflow-hidden ${darkMode ? 'bg-slate-900/60' : 'bg-violet-50'}`}>
                       {formData.profileImage ? (
                         <img
                           src={URL.createObjectURL(formData.profileImage)}
@@ -358,7 +358,7 @@ const AddEmployee = () => {
                       )}
                     </div>
                     <div className="flex-1">
-                      <label className={`inline-flex items-center gap-2 px-4 py-3 ${darkMode ? 'bg-gray-900' : 'bg-gray-100'} border ${theme.border.primary} rounded-lg hover:border-purple-500 cursor-pointer ${theme.text.secondary} hover:text-purple-600 transition-colors`}>
+                      <label className={`inline-flex items-center gap-2 px-4 py-3 ${darkMode ? 'bg-gray-900' : 'bg-violet-50'} border ${theme.border.primary} rounded-lg hover:border-purple-500 cursor-pointer ${theme.text.secondary} hover:text-purple-600 transition-colors`}>
                         <FiUpload className="w-5 h-5" />
                         Upload Photo
                         <input
@@ -732,7 +732,7 @@ const AddEmployee = () => {
                         onChange={handleChange}
                         className="text-purple-500 focus:ring-purple-500/20"
                       />
-                      <span className={`px-4 py-2 rounded-lg border ${theme.border.primary} ${darkMode ? 'bg-gray-900/50' : 'bg-gray-100'} ${theme.text.secondary} font-medium`}>
+                      <span className={`px-4 py-2 rounded-lg border ${theme.border.primary} ${darkMode ? 'bg-slate-900/60' : 'bg-violet-50'} ${theme.text.secondary} font-medium`}>
                         Inactive
                       </span>
                     </label>
@@ -874,7 +874,7 @@ const AddEmployee = () => {
       {/* Preview Section */}
       <div className={`${theme.bg.secondary} rounded-xl p-6 border ${theme.border.primary} shadow-sm`}>
         <h3 className={`text-lg font-semibold ${theme.text.primary} mb-4`}>Employee Preview</h3>
-        <div className={`flex items-center gap-4 p-4 rounded-lg ${darkMode ? 'bg-gray-900/50' : 'bg-gray-100'} border ${theme.border.primary}`}>
+        <div className={`flex items-center gap-4 p-4 rounded-lg ${darkMode ? 'bg-slate-900/60' : 'bg-violet-50'} border ${theme.border.primary}`}>
           <div className={`w-20 h-20 rounded-full border-2 ${darkMode ? 'border-gray-600' : 'border-gray-300'} flex items-center justify-center ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
             {formData.profileImage ? (
               <img
@@ -897,7 +897,7 @@ const AddEmployee = () => {
               <span className="text-sm text-gray-500 dark:text-gray-400">{formData.email || "email@company.com"}</span>
               <span className={`px-3 py-1 text-xs rounded-full ${formData.status === "Active"
                 ? `${darkMode ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-emerald-100 text-emerald-700 border border-emerald-300'}`
-                : `${darkMode ? 'bg-gray-900/50 text-gray-300 border border-gray-700' : 'bg-gray-100 text-gray-600 border border-gray-300'}`
+                : `${darkMode ? 'bg-slate-900/60 text-gray-300 border border-gray-700' : 'bg-violet-50 text-gray-600 border border-gray-300'}`
                 }`}>
                 {formData.status || "Status"}
               </span>
@@ -910,3 +910,4 @@ const AddEmployee = () => {
 };
 
 export default AddEmployee;
+

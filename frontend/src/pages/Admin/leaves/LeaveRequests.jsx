@@ -17,15 +17,14 @@ const LeaveRequests = () => {
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showExportOptions, setShowExportOptions] = useState(false);
 
   const cardBg = darkMode ? 'bg-gray-800' : 'bg-white';
-  const cardBorder = darkMode ? 'border-gray-700' : 'border-gray-200';
+  const cardBorder = darkMode ? 'border-slate-700' : 'border-gray-200';
   const textPrimary = darkMode ? 'text-white' : 'text-gray-900';
   const textSecondary = darkMode ? 'text-gray-400' : 'text-gray-600';
-  const inputBg = darkMode ? 'bg-gray-900' : 'bg-gray-50';
-  const inputBorder = darkMode ? 'border-gray-700' : 'border-gray-300';
-  const hoverBg = darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100';
+  const inputBg = darkMode ? 'bg-slate-900' : 'bg-violet-50';
+  const inputBorder = darkMode ? 'border-slate-700' : 'border-slate-300';
+  const hoverBg = darkMode ? 'hover:bg-slate-700' : 'hover:bg-violet-100';
 
   const formatDate = (d) => {
     try {
@@ -154,7 +153,7 @@ const LeaveRequests = () => {
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div className={`${darkMode ? 'bg-gray-900' : 'bg-white'} p-3 border ${darkMode ? 'border-gray-700' : 'border-gray-200'} rounded-lg shadow-lg`}>
+        <div className={`${darkMode ? 'bg-slate-900' : 'bg-white'} p-3 border ${darkMode ? 'border-slate-700' : 'border-gray-200'} rounded-lg shadow-lg`}>
           <p className={`${darkMode ? 'text-gray-300' : 'text-gray-700'} font-medium`}>{label}</p>
           {payload.map((entry, index) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
@@ -273,8 +272,6 @@ const LeaveRequests = () => {
       } catch (err) {
         console.error("PDF export failed:", err);
         alert("Failed to export PDF");
-      } finally {
-        setShowExportOptions(false);
       }
       return;
     }
@@ -305,7 +302,6 @@ const LeaveRequests = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    setShowExportOptions(false);
   };
 
   return (
@@ -322,30 +318,21 @@ const LeaveRequests = () => {
             </p>
           </div>
 
-          <div className="flex gap-3 relative">
+          <div className="flex gap-3">
             <button
-              onClick={() => setShowExportOptions((prev) => !prev)}
+              onClick={() => handleExport("pdf")}
               className={`flex items-center gap-2 px-4 py-2.5 ${inputBg} border ${inputBorder} ${textPrimary} rounded-lg ${hoverBg} font-medium`}
             >
               <FiDownload className="w-4 h-4" />
-              Export
+              Export as PDF
             </button>
-            {showExportOptions && (
-              <div className={`absolute right-0 top-12 w-40 rounded-lg border shadow-lg z-10 ${cardBg} ${cardBorder}`}>
-                <button
-                  onClick={() => handleExport("pdf")}
-                  className={`w-full text-left px-4 py-2 text-sm border-b ${cardBorder} ${textPrimary} ${hoverBg}`}
-                >
-                  Export as PDF
-                </button>
-                <button
-                  onClick={() => handleExport("csv")}
-                  className={`w-full text-left px-4 py-2 text-sm ${textPrimary} ${hoverBg}`}
-                >
-                  Export as CSV
-                </button>
-              </div>
-            )}
+            <button
+              onClick={() => handleExport("csv")}
+              className={`flex items-center gap-2 px-4 py-2.5 ${inputBg} border ${inputBorder} ${textPrimary} rounded-lg ${hoverBg} font-medium`}
+            >
+              <FiDownload className="w-4 h-4" />
+              Export as CSV
+            </button>
           </div>
         </div>
       </div>
@@ -503,14 +490,14 @@ const LeaveRequests = () => {
       <div className={`${cardBg} rounded-xl p-1 border ${cardBorder} mb-8`}>
         <div className="overflow-x-auto rounded-lg">
           <table className="w-full">
-            <thead className={darkMode ? 'bg-gray-900' : 'bg-gray-50'}>
+            <thead className={darkMode ? 'bg-slate-900' : 'bg-violet-50'}>
               <tr>
-                <th className="p-4 border-b border-gray-700 text-left">
+                <th className="p-4 border-b border-slate-700 text-left">
                   <input
                     type="checkbox"
                     checked={selectedRequests.length === filteredRequests.length && filteredRequests.length > 0}
                     onChange={selectAll}
-                    className={`rounded ${darkMode ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-white'} text-purple-500 focus:ring-purple-500`}
+                    className={`rounded ${darkMode ? 'border-gray-600 bg-gray-800' : 'border-slate-300 bg-white'} text-purple-500 focus:ring-purple-500`}
                   />
                 </th>
                 <th className={`p-4 border-b ${cardBorder} text-left text-sm font-semibold ${textSecondary}`}>
@@ -538,13 +525,13 @@ const LeaveRequests = () => {
             </thead>
             <tbody>
               {filteredRequests.map((req) => (
-                <tr key={req.id} className={`${darkMode ? 'hover:bg-gray-900/50' : 'hover:bg-gray-50'} transition-colors`}>
+                <tr key={req.id} className={`${darkMode ? 'hover:bg-slate-900/60' : 'hover:bg-violet-50'} transition-colors`}>
                   <td className={`p-4 border-b ${cardBorder}`}>
                     <input
                       type="checkbox"
                       checked={selectedRequests.includes(req.id)}
                       onChange={() => toggleSelectRequest(req.id)}
-                      className={`rounded ${darkMode ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-white'} text-purple-500 focus:ring-purple-500`}
+                      className={`rounded ${darkMode ? 'border-gray-600 bg-gray-800' : 'border-slate-300 bg-white'} text-purple-500 focus:ring-purple-500`}
                     />
                   </td>
                   <td className={`p-4 border-b ${cardBorder}`}>
@@ -704,8 +691,28 @@ const LeaveRequests = () => {
                 <YAxis stroke={darkMode ? "#9CA3AF" : "#6B7280"} />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                <Bar dataKey="requests" name="Total Requests" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="approved" name="Approved" fill="#10B981" radius={[4, 4, 0, 0]} />
+                <Bar
+                  dataKey="requests"
+                  name="Total Requests"
+                  fill="#8B5CF6"
+                  radius={[4, 4, 0, 0]}
+                  label={{
+                    position: "top",
+                    fill: darkMode ? "#9CA3AF" : "#4B5563",
+                    fontSize: 11,
+                  }}
+                />
+                <Bar
+                  dataKey="approved"
+                  name="Approved"
+                  fill="#10B981"
+                  radius={[4, 4, 0, 0]}
+                  label={{
+                    position: "top",
+                    fill: darkMode ? "#9CA3AF" : "#4B5563",
+                    fontSize: 11,
+                  }}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -731,7 +738,7 @@ const LeaveRequests = () => {
               .sort((a, b) => new Date(a.fromDate) - new Date(b.fromDate))
               .slice(0, 5)
               .map((req, index) => (
-                <div key={index} className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'hover:bg-gray-900/50' : 'hover:bg-gray-50'} transition-colors`}>
+                <div key={index} className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'hover:bg-slate-900/60' : 'hover:bg-violet-50'} transition-colors`}>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-purple-400 flex items-center justify-center text-white font-bold">
                       {req.avatar}
@@ -755,3 +762,5 @@ const LeaveRequests = () => {
 };
 
 export default LeaveRequests;
+
+

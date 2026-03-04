@@ -255,7 +255,7 @@ const DepartmentDetails = () => {
             <div className={`rounded-xl p-6 border ${themeClasses.border.primary} ${themeClasses.bg.secondary} mb-8`}>
               <h3 className={`text-xl font-bold ${themeClasses.text.primary} mb-6`}>Today's Status</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div className={`rounded-xl p-5 border border-emerald-500/30 ${darkMode ? "bg-gray-900/50" : "bg-emerald-50/50"}`}>
+                <div className={`rounded-xl p-5 border border-emerald-500/30 ${darkMode ? "bg-slate-900/60" : "bg-emerald-50/50"}`}>
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center">
                       <FiUser className="w-6 h-6 text-white" />
@@ -267,7 +267,7 @@ const DepartmentDetails = () => {
                   </div>
                 </div>
 
-                <div className={`rounded-xl p-5 border border-blue-500/30 ${darkMode ? "bg-gray-900/50" : "bg-blue-50/50"}`}>
+                <div className={`rounded-xl p-5 border border-blue-500/30 ${darkMode ? "bg-slate-900/60" : "bg-blue-50/50"}`}>
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
                       <FiCalendar className="w-6 h-6 text-white" />
@@ -279,7 +279,7 @@ const DepartmentDetails = () => {
                   </div>
                 </div>
 
-                <div className={`rounded-xl p-5 border border-red-500/30 ${darkMode ? "bg-gray-900/50" : "bg-red-50/50"}`}>
+                <div className={`rounded-xl p-5 border border-red-500/30 ${darkMode ? "bg-slate-900/60" : "bg-red-50/50"}`}>
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center">
                       <FiUser className="w-6 h-6 text-white" />
@@ -291,7 +291,7 @@ const DepartmentDetails = () => {
                   </div>
                 </div>
 
-                <div className={`rounded-xl p-5 border border-amber-500/30 ${darkMode ? "bg-gray-900/50" : "bg-amber-50/50"}`}>
+                <div className={`rounded-xl p-5 border border-amber-500/30 ${darkMode ? "bg-slate-900/60" : "bg-amber-50/50"}`}>
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
                       <FiClock className="w-6 h-6 text-white" />
@@ -312,7 +312,7 @@ const DepartmentDetails = () => {
                 <h3 className={`text-xl font-bold ${themeClasses.text.primary} mb-6`}>Project Timeline</h3>
                 <div className="space-y-4">
                   {projectTimelineData.map((project, index) => (
-                    <div key={index} className={`rounded-lg p-4 border ${themeClasses.border.primary} ${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"}`}>
+                    <div key={index} className={`rounded-lg p-4 border ${themeClasses.border.primary} ${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"}`}>
                       <div className="flex justify-between items-center mb-2">
                         <span className={`font-medium ${themeClasses.text.primary}`}>{project.project}</span>
                         <span className={`text-sm ${themeClasses.text.muted}`}>Due: {project.deadline}</span>
@@ -334,7 +334,7 @@ const DepartmentDetails = () => {
               {/* Department Head */}
               <div className={`rounded-xl border ${themeClasses.border.primary} ${themeClasses.bg.secondary} p-6`}>
                 <h3 className={`text-xl font-bold ${themeClasses.text.primary} mb-6`}>Department Head</h3>
-                <div className={`rounded-lg p-6 border ${themeClasses.border.primary} ${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"}`}>
+                <div className={`rounded-lg p-6 border ${themeClasses.border.primary} ${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"}`}>
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white text-xl font-bold">
                       {department.headAvatar}
@@ -452,7 +452,7 @@ const DepartmentDetails = () => {
 
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className={darkMode ? "bg-gray-900/50" : "bg-gray-100/50"}>
+                  <thead className={darkMode ? "bg-slate-900/60" : "bg-violet-50/60"}>
                     <tr>
                       <th className={`p-4 text-left text-sm font-semibold ${themeClasses.text.muted}`}>Employee</th>
                       <th className={`p-4 text-left text-sm font-semibold ${themeClasses.text.muted}`}>Role</th>
@@ -465,7 +465,7 @@ const DepartmentDetails = () => {
                   </thead>
                   <tbody>
                     {employees.map((emp) => (
-                      <tr key={emp.id} className={`hover:${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"} transition-colors border-b ${themeClasses.border.primary}`}>
+                      <tr key={emp.id} className={`hover:${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"} transition-colors border-b ${themeClasses.border.primary}`}>
                         <td className="p-4">
                           <div className="flex items-center gap-3">
                             <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${emp.color} flex items-center justify-center text-white font-bold`}>
@@ -546,7 +546,7 @@ const DepartmentDetails = () => {
               <h3 className={`text-xl font-bold ${themeClasses.text.primary} mb-6`}>Teams ({teams.length})</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {teams.map((team) => (
-                  <div key={team.id} className={`rounded-xl p-6 border ${themeClasses.border.primary} ${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"} hover:border-purple-500/30 transition-colors`}>
+                  <div key={team.id} className={`rounded-xl p-6 border ${themeClasses.border.primary} ${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"} hover:border-purple-500/30 transition-colors`}>
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <p className={`font-bold ${themeClasses.text.primary}`}>{team.name}</p>
@@ -689,7 +689,16 @@ const DepartmentDetails = () => {
                       <XAxis dataKey="skill" stroke={darkMode ? "#9CA3AF" : "#6b7280"} />
                       <YAxis stroke={darkMode ? "#9CA3AF" : "#6b7280"} />
                       <Tooltip />
-                      <Bar dataKey="level" name="Skill Level (%)" radius={[4, 4, 0, 0]}>
+                      <Bar
+                        dataKey="level"
+                        name="Skill Level (%)"
+                        radius={[4, 4, 0, 0]}
+                        label={{
+                          position: "top",
+                          fill: darkMode ? "#9CA3AF" : "#4B5563",
+                          fontSize: 11,
+                        }}
+                      >
                         {skillDistributionData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
@@ -704,7 +713,7 @@ const DepartmentDetails = () => {
             <div className={`rounded-xl border ${themeClasses.border.primary} ${themeClasses.bg.secondary} p-6`}>
               <h3 className={`text-xl font-bold ${themeClasses.text.primary} mb-6`}>Performance Comparison</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className={`rounded-xl p-6 border ${themeClasses.border.primary} ${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"}`}>
+                <div className={`rounded-xl p-6 border ${themeClasses.border.primary} ${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"}`}>
                   <h4 className={`text-lg font-semibold ${themeClasses.text.primary} mb-4`}>Top Performers</h4>
                   <div className="space-y-4">
                     {employees
@@ -744,7 +753,7 @@ const DepartmentDetails = () => {
                   </div>
                 </div>
 
-                <div className={`rounded-xl p-6 border ${themeClasses.border.primary} ${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"}`}>
+                <div className={`rounded-xl p-6 border ${themeClasses.border.primary} ${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"}`}>
                   <h4 className={`text-lg font-semibold ${themeClasses.text.primary} mb-4`}>Attendance Leaders</h4>
                   <div className="space-y-4">
                     {employees
@@ -770,7 +779,7 @@ const DepartmentDetails = () => {
                   </div>
                 </div>
 
-                <div className={`rounded-xl p-6 border ${themeClasses.border.primary} ${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"}`}>
+                <div className={`rounded-xl p-6 border ${themeClasses.border.primary} ${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"}`}>
                   <h4 className={`text-lg font-semibold ${themeClasses.text.primary} mb-4`}>Project Contribution</h4>
                   <div className="space-y-4">
                     {employees
@@ -802,7 +811,7 @@ const DepartmentDetails = () => {
             <div className={`rounded-xl border ${themeClasses.border.primary} ${themeClasses.bg.secondary} p-6`}>
               <h3 className={`text-xl font-bold ${themeClasses.text.primary} mb-6`}>Performance Insights</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className={`p-4 rounded-lg ${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"} border border-emerald-500/30`}>
+                <div className={`p-4 rounded-lg ${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"} border border-emerald-500/30`}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
                       <AiOutlineBarChart className="w-5 h-5 text-emerald-400" />
@@ -815,7 +824,7 @@ const DepartmentDetails = () => {
                   <p className={`text-sm ${themeClasses.text.primary}`}>Department performance has improved consistently over the last 6 months.</p>
                 </div>
 
-                <div className={`p-4 rounded-lg ${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"} border border-blue-500/30`}>
+                <div className={`p-4 rounded-lg ${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"} border border-blue-500/30`}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
                       <FiUsers className="w-5 h-5 text-blue-400" />
@@ -828,7 +837,7 @@ const DepartmentDetails = () => {
                   <p className={`text-sm ${themeClasses.text.primary}`}>Team meetings and collaboration have increased by 25% this quarter.</p>
                 </div>
 
-                <div className={`p-4 rounded-lg ${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"} border border-amber-500/30`}>
+                <div className={`p-4 rounded-lg ${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"} border border-amber-500/30`}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
                       <FiAlertCircle className="w-5 h-5 text-amber-400" />
@@ -911,7 +920,7 @@ const DepartmentDetails = () => {
             <div className={`rounded-xl border border-red-500/30 p-6 ${themeClasses.bg.secondary}`}>
               <h3 className={`text-xl font-bold ${themeClasses.text.primary} mb-6`}>Danger Zone</h3>
               <div className="space-y-4">
-                <div className={`p-4 rounded-lg ${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"} border ${themeClasses.border.primary}`}>
+                <div className={`p-4 rounded-lg ${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"} border ${themeClasses.border.primary}`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className={`font-medium ${themeClasses.text.primary}`}>Archive Department</p>
@@ -923,7 +932,7 @@ const DepartmentDetails = () => {
                   </div>
                 </div>
 
-                <div className={`p-4 rounded-lg ${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"} border ${themeClasses.border.primary}`}>
+                <div className={`p-4 rounded-lg ${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"} border ${themeClasses.border.primary}`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className={`font-medium ${themeClasses.text.primary}`}>Delete Department</p>
@@ -941,23 +950,23 @@ const DepartmentDetails = () => {
             <div className={`rounded-xl border ${themeClasses.border.primary} ${themeClasses.bg.secondary} p-6`}>
               <h3 className={`text-xl font-bold ${themeClasses.text.primary} mb-6`}>Department Information</h3>
               <div className="space-y-3">
-                <div className={`flex justify-between items-center p-3 rounded-lg hover:${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"} transition-colors`}>
+                <div className={`flex justify-between items-center p-3 rounded-lg hover:${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"} transition-colors`}>
                   <span className={themeClasses.text.muted}>Created Date</span>
                   <span className={`font-medium ${themeClasses.text.primary}`}>{department.createdAt}</span>
                 </div>
-                <div className={`flex justify-between items-center p-3 rounded-lg hover:${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"} transition-colors`}>
+                <div className={`flex justify-between items-center p-3 rounded-lg hover:${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"} transition-colors`}>
                   <span className={themeClasses.text.muted}>Established Date</span>
                   <span className={`font-medium ${themeClasses.text.primary}`}>{department.establishedDate}</span>
                 </div>
-                <div className={`flex justify-between items-center p-3 rounded-lg hover:${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"} transition-colors`}>
+                <div className={`flex justify-between items-center p-3 rounded-lg hover:${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"} transition-colors`}>
                   <span className={themeClasses.text.muted}>Total Teams</span>
                   <span className={`font-medium ${themeClasses.text.primary}`}>{department.totalTeams}</span>
                 </div>
-                <div className={`flex justify-between items-center p-3 rounded-lg hover:${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"} transition-colors`}>
+                <div className={`flex justify-between items-center p-3 rounded-lg hover:${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"} transition-colors`}>
                   <span className={themeClasses.text.muted}>Active Projects</span>
                   <span className={`font-medium ${themeClasses.text.primary}`}>{department.projects}</span>
                 </div>
-                <div className={`flex justify-between items-center p-3 rounded-lg hover:${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"} transition-colors`}>
+                <div className={`flex justify-between items-center p-3 rounded-lg hover:${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"} transition-colors`}>
                   <span className={themeClasses.text.muted}>Annual Budget</span>
                   <span className={`font-bold ${themeClasses.text.primary}`}>{department.budget}</span>
                 </div>
@@ -1001,7 +1010,7 @@ const DepartmentDetails = () => {
 
       {/* Tabs */}
       <div className="mb-8">
-        <div className={`p-1 rounded-lg w-fit border ${themeClasses.border.primary} ${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"}`}>
+        <div className={`p-1 rounded-lg w-fit border ${themeClasses.border.primary} ${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"}`}>
           <div className="flex space-x-1">
             {["overview", "employees", "performance", "settings"].map((tab) => (
               <button

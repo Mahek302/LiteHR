@@ -1,5 +1,5 @@
-import { RxCrossCircled } from "react-icons/rx";
 import { GoCheck } from "react-icons/go";
+import { RxCrossCircled } from "react-icons/rx";
 import React, { useState, useEffect, useMemo } from "react";
 import { FiCalendar, FiChevronLeft, FiChevronRight, FiBarChart2, FiDownload, FiUsers, FiTrendingUp, FiTrendingDown, FiClock, FiPieChart, FiUser, FiFilter, FiBriefcase } from "react-icons/fi";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -17,6 +17,7 @@ const isSingleEmployee = selectedEmployee !== "all";
   const [rawAttendance, setRawAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDepartment, setSelectedDepartment] = useState("all");
+  const [departmentOptions, setDepartmentOptions] = useState(["all"]);
   const darkMode = useTheme();
   const themeClasses = getThemeClasses(darkMode);
 
@@ -36,8 +37,11 @@ const isSingleEmployee = selectedEmployee !== "all";
         const token = localStorage.getItem("token");
         const headers = { Authorization: `Bearer ${token}` };
 
-        // Fetch Employees
-        const empRes = await axios.get("http://localhost:5000/api/admin/employees", { headers });
+        // Fetch Employees + Departments
+        const [empRes, deptRes] = await Promise.all([
+          axios.get("http://localhost:5000/api/admin/employees", { headers }),
+          axios.get("http://localhost:5000/api/departments", { headers }),
+        ]);
         const validEmployees = empRes.data
           .filter(u => u.employee)
           .map(u => ({
@@ -50,6 +54,17 @@ const isSingleEmployee = selectedEmployee !== "all";
             initials: u.employee.fullName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
           }));
         setEmployees(validEmployees);
+
+        const deptNames = Array.isArray(deptRes?.data)
+          ? deptRes.data
+              .map((d) => String(d?.name || d?.department || d?.departmentName || "").trim())
+              .filter(Boolean)
+          : [];
+        const uniqueDeptNames = Array.from(new Set(deptNames.map((d) => d.toLowerCase())))
+          .map((lower) => deptNames.find((d) => d.toLowerCase() === lower))
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b));
+        setDepartmentOptions(["all", ...uniqueDeptNames]);
 
         // Fetch Attendance for Month
         const monthParam = currentMonth.getMonth() + 1;
@@ -69,15 +84,22 @@ const isSingleEmployee = selectedEmployee !== "all";
 
   // Get unique departments for filter
   const departments = useMemo(() => {
+    if (departmentOptions.length > 1) return departmentOptions;
     const depts = new Set(employees.map(emp => emp.department).filter(Boolean));
     return ['all', ...Array.from(depts)];
-  }, [employees]);
+  }, [departmentOptions, employees]);
 
   // Filter employees by department
   const filteredEmployees = useMemo(() => {
     if (selectedDepartment === 'all') return employees;
     return employees.filter(emp => emp.department === selectedDepartment);
   }, [employees, selectedDepartment]);
+
+  useEffect(() => {
+    if (selectedDepartment !== "all" && !departments.includes(selectedDepartment)) {
+      setSelectedDepartment("all");
+    }
+  }, [selectedDepartment, departments]);
 
   // Process Data for UI
   const processedData = useMemo(() => {
@@ -210,11 +232,19 @@ const isSingleEmployee = selectedEmployee !== "all";
       });
     });
 
-    return Object.keys(deptMap).map(dept => ({
+    const masterDepartments = departments.filter((d) => d !== "all");
+    if (masterDepartments.length > 0) {
+      return masterDepartments.map((dept) => ({
+        department: dept,
+        attendance: deptMap[dept]?.total > 0 ? Math.round((deptMap[dept].present / deptMap[dept].total) * 100) : 0,
+      }));
+    }
+
+    return Object.keys(deptMap).map((dept) => ({
       department: dept,
       attendance: deptMap[dept].total > 0 ? Math.round((deptMap[dept].present / deptMap[dept].total) * 100) : 0,
     }));
-  }, [processedData]);
+  }, [processedData, departments]);
 
   const nextMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
@@ -229,15 +259,15 @@ const isSingleEmployee = selectedEmployee !== "all";
       case 'present': return 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30';
       case 'absent': return 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/30';
       case 'leave': return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30';
-      case 'weekend': return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-500/20 dark:text-gray-400 dark:border-gray-500/30';
-      default: return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-500/20 dark:text-gray-400 dark:border-gray-500/30';
+      case 'weekend': return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-violet-500/20 dark:text-gray-400 dark:border-gray-500/30';
+      default: return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-violet-500/20 dark:text-gray-400 dark:border-gray-500/30';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'present': return '✓';
-      case 'absent': return '✗';
+      case 'present': return 'P';
+      case 'absent': return 'A';
       case 'leave': return 'L';
       case 'weekend': return 'W';
       default: return '-';
@@ -282,10 +312,35 @@ const isSingleEmployee = selectedEmployee !== "all";
         responseType: 'blob',
       });
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const csvText = await response.data.text();
+      const rows = csvText
+        .split(/\r?\n/)
+        .filter((row) => row.trim().length > 0)
+        .map((row) => row.split(","));
+
+      if (!rows.length) {
+        alert("No data available to export.");
+        return;
+      }
+
+      const [headers, ...bodyRows] = rows;
+      const tableHtml = `
+        <table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:12px;">
+          <thead>
+            <tr>
+              ${headers.map((h) => `<th style="background:#8B5CF6;color:#FFFFFF;font-weight:700;">${h}</th>`).join("")}
+            </tr>
+          </thead>
+          <tbody>
+            ${bodyRows.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("")}
+          </tbody>
+        </table>
+      `;
+      const excelHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8" /></head><body>${tableHtml}</body></html>`;
+      const url = window.URL.createObjectURL(new Blob([excelHtml], { type: "application/vnd.ms-excel;charset=utf-8;" }));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `attendance_${currentMonthName}_${currentYear}.csv`);
+      link.setAttribute('download', `attendance_${currentMonthName}_${currentYear}.xls`);
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
@@ -312,7 +367,7 @@ const isSingleEmployee = selectedEmployee !== "all";
           <div className="flex gap-3">
             <button
               onClick={handleExport}
-              className={`flex items-center gap-2 px-4 py-2.5 ${themeClasses.bg.secondary} border ${themeClasses.border.primary} ${themeClasses.text.primary} rounded-lg hover:${darkMode ? 'bg-gray-700' : 'bg-gray-300'} font-medium transition-all hover:scale-105`}
+              className={`flex items-center gap-2 px-4 py-2.5 ${themeClasses.bg.secondary} border ${themeClasses.border.primary} ${themeClasses.text.primary} rounded-lg ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-violet-100'} font-medium transition-all hover:scale-105`}
             >
               <FiDownload className="w-4 h-4" />
               Export Excel
@@ -367,13 +422,35 @@ const isSingleEmployee = selectedEmployee !== "all";
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={departmentPerformance}>
+              <BarChart
+                data={departmentPerformance}
+                margin={{ top: 8, right: 12, left: 0, bottom: 22 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#374151" : "#e5e7eb"} />
-                <XAxis dataKey="department" stroke={darkMode ? "#9CA3AF" : "#4b5563"} />
+                <XAxis
+                  dataKey="department"
+                  stroke={darkMode ? "#9CA3AF" : "#4b5563"}
+                  interval={0}
+                  minTickGap={0}
+                  tick={{ fontSize: 11 }}
+                  angle={-18}
+                  textAnchor="end"
+                  height={58}
+                />
                 <YAxis stroke={darkMode ? "#9CA3AF" : "#4b5563"} />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                <Bar dataKey="attendance" name="Attendance %" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+                <Bar
+                  dataKey="attendance"
+                  name="Attendance %"
+                  fill="#8B5CF6"
+                  radius={[4, 4, 0, 0]}
+                  label={{
+                    position: "top",
+                    fill: darkMode ? "#9CA3AF" : "#4B5563",
+                    fontSize: 11,
+                  }}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -387,7 +464,7 @@ const isSingleEmployee = selectedEmployee !== "all";
           <div className="flex items-center gap-4">
             <button
               onClick={prevMonth}
-              className={`p-2 rounded-lg hover:${darkMode ? 'bg-gray-700' : 'bg-gray-300'} transition-all hover:scale-110`}
+              className={`p-2 rounded-lg ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-violet-100'} transition-all hover:scale-110`}
             >
               <FiChevronLeft className="w-5 h-5" />
             </button>
@@ -403,7 +480,7 @@ const isSingleEmployee = selectedEmployee !== "all";
 
             <button
               onClick={nextMonth}
-              className={`p-2 rounded-lg hover:${darkMode ? 'bg-gray-700' : 'bg-gray-300'} transition-all hover:scale-110`}
+              className={`p-2 rounded-lg ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-violet-100'} transition-all hover:scale-110`}
             >
               <FiChevronRight className="w-5 h-5" />
             </button>
@@ -416,9 +493,9 @@ const isSingleEmployee = selectedEmployee !== "all";
               onChange={(e) => setSelectedEmployee(e.target.value)}
               className={`px-4 py-2.5 ${themeClasses.input.bg} border ${themeClasses.input.border} ${themeClasses.input.text} rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500`}
             >
-              <option value="all" className={darkMode ? 'bg-gray-900' : 'bg-white'}>All Employees</option>
+              <option value="all" className={darkMode ? 'bg-slate-900' : 'bg-white'}>All Employees</option>
               {employees.map(emp => (
-                <option key={emp.id} value={emp.id} className={darkMode ? 'bg-gray-900' : 'bg-white'}>{emp.fullName}</option>
+                <option key={emp.id} value={emp.id} className={darkMode ? 'bg-slate-900' : 'bg-white'}>{emp.fullName}</option>
               ))}
             </select>
 
@@ -427,7 +504,7 @@ const isSingleEmployee = selectedEmployee !== "all";
                 onClick={() => setViewMode("calendar")}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === "calendar"
                   ? "bg-purple-600 text-white"
-                  : `${themeClasses.text.secondary} hover:${themeClasses.text.primary}`
+                  : `${themeClasses.text.secondary} ${darkMode ? "hover:text-slate-100" : "hover:text-slate-900"}`
                   }`}
               >
                 Calendar View
@@ -436,7 +513,7 @@ const isSingleEmployee = selectedEmployee !== "all";
                 onClick={() => setViewMode("summary")}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === "summary"
                   ? "bg-purple-600 text-white"
-                  : `${themeClasses.text.secondary} hover:${themeClasses.text.primary}`
+                  : `${themeClasses.text.secondary} ${darkMode ? "hover:text-slate-100" : "hover:text-slate-900"}`
                   }`}
               >
                 Summary View
@@ -520,7 +597,14 @@ const isSingleEmployee = selectedEmployee !== "all";
 
       {/* Calendar Table – All Employees */}
       {viewMode === "calendar" && !isSingleEmployee && (
-        <div className={`${themeClasses.bg.secondary} rounded-xl border ${themeClasses.border.primary} mb-8`}>
+        <div className={`${themeClasses.bg.secondary} rounded-xl border ${themeClasses.border.primary} mb-8 shadow-sm overflow-hidden`}>
+          <div className={`px-4 py-3 border-b ${themeClasses.border.primary} flex flex-wrap gap-3 ${themeClasses.bg.tertiary}`}>
+            <span className={`text-xs font-medium ${themeClasses.text.secondary}`}>Table Legend:</span>
+            <span className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-emerald-500/20 text-emerald-500 border border-emerald-500/30">P - Present</span>
+            <span className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-rose-500/20 text-rose-500 border border-rose-500/30">A - Absent</span>
+            <span className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-blue-500/20 text-blue-500 border border-blue-500/30">L - Leave</span>
+            <span className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-slate-500/20 text-slate-800 border border-slate-500/30">W - Weekend</span>
+          </div>
           <div className="overflow-x-auto">
             <table className="min-w-max w-full border-separate border-spacing-0">
               {/* HEADER */}
@@ -541,12 +625,12 @@ const isSingleEmployee = selectedEmployee !== "all";
                       ${themeClasses.border.primary} ${themeClasses.bg.tertiary}`}
                     >
                       {/* Date Number */}
-                      <div className={`text-sm font-semibold ${day.isWeekend ? "text-gray-500" : themeClasses.text.secondary}`}>
+                      <div className={`text-sm font-semibold ${day.isWeekend ? (darkMode ? "text-slate-500" : "text-slate-400") : themeClasses.text.secondary}`}>
                         {day.day}
                       </div>
 
                       {/* Day Name (Mon, Tue, etc.) */}
-                      <div className={`text-xs mt-1 ${day.isWeekend ? "text-gray-500" : themeClasses.text.muted}`}>
+                      <div className={`text-xs mt-1 ${day.isWeekend ? (darkMode ? "text-slate-500" : "text-slate-400") : themeClasses.text.muted}`}>
                         {day.dayName?.slice(0,3)}
                       </div>
                     </th>
@@ -556,8 +640,8 @@ const isSingleEmployee = selectedEmployee !== "all";
 
               {/* BODY */}
               <tbody>
-                {processedData[0]?.employees.map(baseEmp => (
-                  <tr key={baseEmp.id} className={`border-b ${themeClasses.border.primary}`}>
+                {processedData[0]?.employees.map((baseEmp, rowIndex) => (
+                  <tr key={baseEmp.id} className={`border-b ${themeClasses.border.primary} ${rowIndex % 2 === 0 ? (darkMode ? "bg-slate-900/35" : "bg-white/70") : (darkMode ? "bg-slate-900/15" : "bg-violet-50/35")}`}>
                     {/* LEFT COLUMN */}
                     <td
                       className={`sticky left-0 z-30 p-4 border-r
@@ -567,7 +651,7 @@ const isSingleEmployee = selectedEmployee !== "all";
                         <p className={`font-medium ${themeClasses.text.primary}`}>
                           {baseEmp.fullName}
                         </p>
-                        <p className={`text-sm ${themeClasses.text.secondary}`}>
+                        <p className={`text-xs ${themeClasses.text.secondary}`}>
                           {baseEmp.department}
                         </p>
                       </div>
@@ -577,13 +661,16 @@ const isSingleEmployee = selectedEmployee !== "all";
                       const employeeDay = day.employees.find(e => e.id === baseEmp.id);
 
                       return (
-                        <td key={day.day} className="p-2 text-center">
-                          <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center text-sm font-medium border ${getStatusColor(employeeDay?.status || "")}`}>
+                        <td key={day.day} className={`p-2 text-center border-l ${themeClasses.border.primary}`}>
+                          <div
+                            title={`${baseEmp.fullName} - ${day.dayName} ${day.day}: ${employeeDay?.status || "N/A"}`}
+                            className={`w-8 h-8 mx-auto rounded-md flex items-center justify-center text-xs font-semibold border ${getStatusColor(employeeDay?.status || "")}`}
+                          >
                             {getStatusIcon(employeeDay?.status || "")}
                           </div>
 
                           {employeeDay?.status === "present" && !day.isWeekend && (
-                            <div className="text-xs text-gray-400 mt-1">
+                            <div className={`text-[10px] mt-1 ${themeClasses.text.muted}`}>
                               {employeeDay.checkIn}
                             </div>
                           )}
@@ -624,31 +711,36 @@ const isSingleEmployee = selectedEmployee !== "all";
               }
 
               return (
-                <div className={`${themeClasses.bg.secondary} p-6 rounded-xl border ${themeClasses.border.primary}`}>
+                <div className={`${themeClasses.bg.secondary} p-6 rounded-xl border ${themeClasses.border.primary} shadow-sm`}>
                   <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>
                     {emp?.fullName}'s Monthly Calendar
                   </h3>
 
                   {/* Weekdays */}
-                  <div className="grid grid-cols-7 mb-2 text-center text-sm">
+                  <div className={`grid grid-cols-7 mb-2 text-center text-sm rounded-lg overflow-hidden border ${themeClasses.border.primary}`}>
                     {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
-                      <div key={d} className={themeClasses.text.secondary}>{d}</div>
+                      <div
+                        key={d}
+                        className={`py-2 font-medium ${d === "Sun" || d === "Sat" ? "text-rose-500" : themeClasses.text.secondary} ${themeClasses.bg.tertiary}`}
+                      >
+                        {d}
+                      </div>
                     ))}
                   </div>
 
                   {/* Calendar Grid */}
-                  <div className="grid grid-cols-7 text-center border ${themeClasses.border.primary}">
+                  <div className={`grid grid-cols-7 text-center border ${themeClasses.border.primary}`}>
                     {calendarCells.map((cell, i) => {
-                      if (!cell) return <div key={i} className={`h-14 border ${themeClasses.border.primary}`}></div>;
+                      if (!cell) return <div key={i} className={`h-14 border ${themeClasses.border.primary} ${themeClasses.bg.tertiary}`}></div>;
 
                       return (
                         <div
                           key={i}
-                          className={`h-14 flex flex-col items-center justify-center text-sm border ${themeClasses.border.primary}
-                            ${cell.isToday ? "bg-purple-100 dark:bg-purple-700/20" : ""}
+                          className={`h-14 flex flex-col items-center justify-center text-sm border ${themeClasses.border.primary} transition-colors
+                            ${cell.isToday ? "bg-purple-100 dark:bg-purple-700/25 ring-1 ring-purple-500/40" : darkMode ? "hover:bg-slate-800/80" : "hover:bg-violet-50"}
                           `}
                         >
-                         <span className={`text-xs ${cell.isToday ? "text-gray-900 dark:text-black" : themeClasses.text.primary}`}>
+                         <span className={`text-xs font-medium ${cell.isToday ? (darkMode ? "text-purple-200" : "text-purple-700") : themeClasses.text.primary}`}>
   {cell.day}
 </span>
 
@@ -696,7 +788,7 @@ const isSingleEmployee = selectedEmployee !== "all";
                   {/* Employee Basic Info */}
                   <div className="text-center">
                     <h3 className={`text-xl font-bold ${themeClasses.text.primary}`}>{emp?.fullName}</h3>
-                    <p className={`text-sm ${themeClasses.text.secondary}`}>{emp?.employeeCode}</p>
+                    <p className={`text-xs ${themeClasses.text.secondary}`}>{emp?.employeeCode}</p>
                     <span className={`inline-block mt-2 px-3 py-1 ${themeClasses.bg.tertiary} ${themeClasses.text.secondary} rounded-full text-sm border ${themeClasses.border.primary}`}>
                       {emp?.department}
                     </span>
@@ -705,7 +797,7 @@ const isSingleEmployee = selectedEmployee !== "all";
                   
 
                   {/* Employee Details */}
-                  <div className="space-y-3 pt-3 border-t ${themeClasses.border.primary}">
+                  <div className={`space-y-3 pt-3 border-t ${themeClasses.border.primary}`}>
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
                         <FiUser className="w-4 h-4 text-purple-400" />
@@ -793,7 +885,7 @@ const isSingleEmployee = selectedEmployee !== "all";
                   const attendancePercentage = totalWorkingDays > 0 ? Math.round((presentCount / totalWorkingDays) * 100) : 0;
 
                   return (
-                    <tr key={emp.id} className={`hover:${themeClasses.bg.tertiary}/50 transition-colors border-b ${themeClasses.border.primary}`}>
+                    <tr key={emp.id} className={`${darkMode ? "hover:bg-slate-800/35" : "hover:bg-violet-50/40"} transition-colors border-b ${themeClasses.border.primary}`}>
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-purple-400 flex items-center justify-center text-white font-bold">
@@ -801,7 +893,7 @@ const isSingleEmployee = selectedEmployee !== "all";
                           </div>
                           <div>
                             <p className={`font-medium ${themeClasses.text.primary}`}>{emp.fullName}</p>
-                            <p className={`text-sm ${themeClasses.text.secondary}`}>{emp.employeeCode}</p>
+                            <p className={`text-xs ${themeClasses.text.secondary}`}>{emp.employeeCode}</p>
                           </div>
                         </div>
                       </td>
@@ -850,26 +942,15 @@ const isSingleEmployee = selectedEmployee !== "all";
         </div>
       )}
 
-      {/* Legend */}
-      <div className={`${themeClasses.bg.secondary} rounded-xl p-6 border ${themeClasses.border.primary} mb-8`}>
-        <h3 className={`text-sm font-semibold ${themeClasses.text.primary} mb-4`}>Attendance Legend</h3>
-        <div className="flex flex-wrap gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">✓</div>
-            <span className={`text-sm ${themeClasses.text.primary}`}>Present</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center">✗</div>
-            <span className={`text-sm ${themeClasses.text.primary}`}>Absent</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-gray-500/20 text-gray-400 border border-gray-500/30 flex items-center justify-center">W</div>
-            <span className={`text-sm ${themeClasses.text.primary}`}>Weekend/Holiday</span>
-          </div>
-        </div>
-      </div>
+     
     </div>
   );
 };
 
 export default MonthlyAttendance;
+
+
+
+
+
+

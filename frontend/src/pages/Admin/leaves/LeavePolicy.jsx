@@ -29,12 +29,12 @@ const LeavePolicy = () => {
 
   // Theme Helpers
   const cardBg = darkMode ? 'bg-gray-800' : 'bg-white';
-  const cardBorder = darkMode ? 'border-gray-700' : 'border-gray-200';
+  const cardBorder = darkMode ? 'border-slate-700' : 'border-gray-200';
   const textPrimary = darkMode ? 'text-white' : 'text-gray-900';
   const textSecondary = darkMode ? 'text-gray-400' : 'text-gray-500';
-  const inputBg = darkMode ? 'bg-gray-900' : 'bg-gray-50';
-  const inputBorder = darkMode ? 'border-gray-700' : 'border-gray-300';
-  const hoverBg = darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100';
+  const inputBg = darkMode ? 'bg-slate-900' : 'bg-violet-50';
+  const inputBorder = darkMode ? 'border-slate-700' : 'border-slate-300';
+  const hoverBg = darkMode ? 'hover:bg-slate-700' : 'hover:bg-violet-100';
 
   // Default structure
   const [formData, setFormData] = useState({
@@ -323,10 +323,10 @@ const LeavePolicy = () => {
   const LeaveCard = ({ title, description, icon: Icon, data, typeKey, colorClass }) => {
     return (
       <div className={`${cardBg} rounded-xl border ${cardBorder} overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200`}>
-        <div className="p-6 border-b border-gray-100 dark:border-gray-700">
+        <div className="p-6 border-b border-gray-100 dark:border-slate-700">
           <div className="flex items-center gap-4">
             <div className={`w-12 h-12 rounded-xl ${colorClass} flex items-center justify-center flex-shrink-0`}>
-              <Icon className={`w-6 h-6 ${darkMode ? 'text-white' : 'text-gray-800'}`} />
+              <Icon className="w-6 h-6" />
             </div>
             <div>
               <h3 className={`text-lg font-bold ${textPrimary}`}>{title}</h3>
@@ -428,7 +428,7 @@ const LeavePolicy = () => {
               />
             </div>
 
-            <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
+            <div className="pt-6 border-t border-gray-100 dark:border-slate-700">
               <label className={`block text-xs uppercase tracking-wider font-semibold ${textSecondary} mb-4`}>
                 Working Days
               </label>
@@ -439,8 +439,8 @@ const LeavePolicy = () => {
                     <label key={day} className={`
                       relative flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all
                       ${isSelected 
-                        ? 'bg-purple-50 border-purple-200 dark:bg-purple-900/20 dark:border-purple-700' 
-                        : `${inputBg} ${inputBorder} opacity-60 hover:opacity-100`
+                        ? 'bg-purple-50 border-purple-200 dark:bg-purple-900/25 dark:border-purple-600' 
+                        : `${inputBg} ${inputBorder} hover:opacity-100`
                       }
                     `}>
                       {isEditing && (
@@ -465,7 +465,7 @@ const LeavePolicy = () => {
                         {isSelected && <FiCheck className="w-3 h-3 text-white" />}
                       </div>
                       
-                      <span className={`font-medium ${isSelected ? 'text-purple-700 dark:text-purple-300' : textSecondary}`}>
+                      <span className={`font-medium ${isSelected ? 'text-purple-700 dark:text-purple-300' : (darkMode ? 'text-slate-200' : textSecondary)}`}>
                         {day}
                       </span>
                     </label>
@@ -580,7 +580,7 @@ const LeavePolicy = () => {
                   </div>
 
                   {/* Add new guideline */}
-                  <div className="flex items-start gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                  <div className="flex items-start gap-2 pt-2 border-t border-gray-100 dark:border-slate-700">
                     <input
                       type="text"
                       value={newGuideline}
@@ -625,3 +625,5 @@ const LeavePolicy = () => {
 };
 
 export default LeavePolicy;
+
+

@@ -46,13 +46,16 @@ const ApplicationDetails = () => {
   }, [id]);
 
   // Theme helper functions
-  const getBgColor = () => darkMode ? "bg-gray-900" : "bg-white";
-  const getBorderColor = () => darkMode ? "border-gray-700" : "border-gray-200";
-  const getTextColor = () => darkMode ? "text-white" : "text-gray-800";
-  const getSecondaryTextColor = () => darkMode ? "text-gray-400" : "text-gray-600";
-  const getInputBg = () => darkMode ? "bg-gray-800" : "bg-gray-50";
-  const getCardBg = () => darkMode ? "bg-gray-800/50" : "bg-white";
-  const getPageBg = () => darkMode ? "bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" : "bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/20";
+  const getBgColor = () => darkMode ? "bg-slate-950" : "bg-white";
+  const getBorderColor = () => darkMode ? "border-slate-700/70" : "border-slate-200";
+  const getTextColor = () => darkMode ? "text-slate-100" : "text-slate-800";
+  const getSecondaryTextColor = () => darkMode ? "text-slate-300" : "text-slate-600";
+  const getInputBg = () => darkMode ? "bg-slate-900/80" : "bg-slate-50";
+  const getCardBg = () => darkMode ? "bg-slate-900/75" : "bg-white/95";
+  const getPageBg = () =>
+    darkMode
+      ? "bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950"
+      : "bg-gradient-to-br from-violet-50 via-indigo-50/50 to-emerald-50/40";
 
   const handleGenerateSummary = async () => {
     if (!application?.resumeUrl) {
@@ -171,7 +174,9 @@ const ApplicationDetails = () => {
   return (
     <div className={`min-h-screen ${getPageBg()}`}>
       {/* Enhanced Header */}
-      <div className={`${getBgColor()} border-b ${getBorderColor()} shadow-sm`}>
+      <div className={`${getBgColor()} border-b ${getBorderColor()} shadow-sm relative overflow-hidden`}>
+        <div className={`absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl ${darkMode ? "bg-violet-500/20" : "bg-violet-300/35"}`} />
+        <div className={`absolute -bottom-12 -left-10 w-44 h-44 rounded-full blur-3xl ${darkMode ? "bg-emerald-500/20" : "bg-emerald-300/35"}`} />
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
@@ -194,9 +199,9 @@ const ApplicationDetails = () => {
             <button
               onClick={handleDownloadCV}
               disabled={!application.resumeUrl}
-              className={`flex items-center gap-2 px-5 py-2.5 ${darkMode ? 'bg-gray-800' : 'bg-gray-900'} text-grey rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-800'} transition-colors duration-200 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm`}
+              className={`flex items-center gap-2 px-5 py-2.5 ${darkMode ? 'bg-slate-800 hover:bg-slate-700 border border-slate-600/60' : 'bg-slate-900 hover:bg-slate-800'} text-white rounded-lg transition-colors duration-200 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm`}
             >
-              <FiDownload className="w-4 h-4 text-grey" />
+              <FiDownload className="w-4 h-4 text-white" />
               Download Resume
             </button>
           </div>
@@ -234,17 +239,17 @@ const ApplicationDetails = () => {
             {/* Candidate Profile Card */}
             <div className={`${getCardBg()} rounded-2xl shadow-sm border ${getBorderColor()} overflow-hidden`}>
               {/* Header Section */}
-              <div className="bg-gradient-to-r from-indigo-900 to-blue-800 px-8 py-8">
+              <div className={`px-8 py-8 ${darkMode ? "bg-gradient-to-r from-slate-800 via-indigo-900/70 to-slate-800" : "bg-gradient-to-r from-indigo-100 to-blue-100"}`}>
                 <div className="flex items-start gap-6">
-                  <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl font-bold border border-white/30 shadow-lg">
+                  <div className={`w-20 h-20 rounded-2xl backdrop-blur-sm flex items-center justify-center text-2xl font-bold border shadow-lg ${darkMode ? "bg-white/20 text-white border-white/30" : "bg-white text-indigo-700 border-indigo-200"}`}>
                     {application.name.charAt(0)}
                   </div>
                   <div className="flex-1">
-                    <h2 className="text-2xl font-bold text-white mb-1">{application.name}</h2>
-                    <p className="text-indigo-100 font-medium">{application.job?.title}</p>
+                    <h2 className={`text-2xl font-bold mb-1 ${darkMode ? "text-white" : "text-slate-900"}`}>{application.name}</h2>
+                    <p className={`font-medium ${darkMode ? "text-indigo-100" : "text-indigo-700"}`}>{application.job?.title}</p>
                     <div className="flex items-center gap-2 mt-3">
-                      <FiClock className="w-4 h-4 text-indigo-200" />
-                      <span className="text-sm text-indigo-100">
+                      <FiClock className={`w-4 h-4 ${darkMode ? "text-indigo-200" : "text-indigo-600"}`} />
+                      <span className={`text-sm ${darkMode ? "text-indigo-100" : "text-indigo-700"}`}>
                         Applied {new Date(application.createdAt).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
@@ -257,14 +262,14 @@ const ApplicationDetails = () => {
               </div>
 
               {/* Contact Information */}
-              <div className={`px-8 py-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} ${darkMode ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
+              <div className={`px-8 py-6 border-b ${getBorderColor()} ${darkMode ? 'bg-gradient-to-r from-slate-900/90 to-violet-900/20' : 'bg-gradient-to-r from-violet-50 to-indigo-50'}`}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center gap-3 group">
                     <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-500/30 transition-colors">
                       <FiMail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">Email</p>
+                      <p className={`text-xs ${getSecondaryTextColor()} font-medium uppercase tracking-wide`}>Email</p>
                       <p className={`text-sm ${getTextColor()} font-medium`}>{application.email}</p>
                     </div>
                   </div>
@@ -274,7 +279,7 @@ const ApplicationDetails = () => {
                         <FiPhone className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">Phone</p>
+                        <p className={`text-xs ${getSecondaryTextColor()} font-medium uppercase tracking-wide`}>Phone</p>
                         <p className={`text-sm ${getTextColor()} font-medium`}>{application.phone}</p>
                       </div>
                     </div>
@@ -285,7 +290,7 @@ const ApplicationDetails = () => {
                         <FiUser className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">LinkedIn</p>
+                        <p className={`text-xs ${getSecondaryTextColor()} font-medium uppercase tracking-wide`}>LinkedIn</p>
                         <a
                           href={application.linkedin}
                           target="_blank"
@@ -327,7 +332,7 @@ const ApplicationDetails = () => {
                   </button>
                   <button
                     onClick={handleContactApplicant}
-                    className={`flex flex-col items-center gap-2 px-4 py-4 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'} border ${darkMode ? 'border-gray-700' : 'border-gray-200'} ${darkMode ? 'text-gray-400' : 'text-gray-700'} rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 font-medium`}
+                    className={`flex flex-col items-center gap-2 px-4 py-4 ${darkMode ? 'bg-slate-900/70' : 'bg-slate-50'} border ${darkMode ? 'border-slate-700/70' : 'border-slate-200'} ${darkMode ? 'text-slate-300' : 'text-slate-700'} rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 font-medium`}
                   >
                     <FiMessageSquare className="w-5 h-5" />
                     <span className="text-sm">Contact</span>
@@ -355,7 +360,7 @@ const ApplicationDetails = () => {
 
             {/* CV Summary Section */}
             <div className={`${getCardBg()} rounded-2xl shadow-sm border ${getBorderColor()} overflow-hidden`}>
-              <div className={`px-8 py-6 border-b ${getBorderColor()} ${darkMode ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
+              <div className={`px-8 py-6 border-b ${getBorderColor()} ${darkMode ? 'bg-gradient-to-r from-slate-900/90 to-violet-900/20' : 'bg-gradient-to-r from-violet-20 to-indigo-50'}`}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <h3 className={`text-lg font-bold ${getTextColor()}`}>AI-Powered CV Analysis</h3>
@@ -390,7 +395,7 @@ const ApplicationDetails = () => {
                   onClick={() => setActiveTab("summary")}
                   className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 ${activeTab === "summary"
                     ? `${darkMode ? 'text-indigo-400 border-b-2 border-indigo-400 bg-indigo-500/10' : 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50'}`
-                    : `${getSecondaryTextColor()} hover:text-indigo-600 dark:hover:text-indigo-400 hover:${darkMode ? 'bg-gray-800' : 'bg-gray-50'}`
+                    : `${getSecondaryTextColor()} hover:text-indigo-600 dark:hover:text-indigo-400 hover:${darkMode ? 'bg-slate-800' : 'bg-violet-50'}`
                     }`}
                 >
                   <FiFileText className="inline-block w-4 h-4 mr-2" />
@@ -400,7 +405,7 @@ const ApplicationDetails = () => {
                   onClick={() => setActiveTab("cover")}
                   className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 ${activeTab === "cover"
                     ? `${darkMode ? 'text-indigo-400 border-b-2 border-indigo-400 bg-indigo-500/10' : 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50'}`
-                    : `${getSecondaryTextColor()} hover:text-indigo-600 dark:hover:text-indigo-400 hover:${darkMode ? 'bg-gray-800' : 'bg-gray-50'}`
+                    : `${getSecondaryTextColor()} hover:text-indigo-600 dark:hover:text-indigo-400 hover:${darkMode ? 'bg-slate-800' : 'bg-violet-50'}`
                     }`}
                 >
                   <FiBriefcase className="inline-block w-4 h-4 mr-2" />
@@ -425,8 +430,8 @@ const ApplicationDetails = () => {
                             {/* Professional Details */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                               {(cvSummary.currentRole || cvSummary.currentCompany) && (
-                                <div className={`${darkMode ? 'bg-gray-800' : 'bg-gray-50'} rounded-xl p-4 border ${getBorderColor()}`}>
-                                  <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Current Position</h4>
+                              <div className={`${darkMode ? 'bg-slate-900/75' : 'bg-slate-50'} rounded-xl p-4 border ${getBorderColor()}`}>
+                                  <h4 className={`text-xs font-semibold ${getSecondaryTextColor()} uppercase tracking-wide mb-1`}>Current Position</h4>
                                   <p className={`${getTextColor()} font-medium`}>
                                     {cvSummary.currentRole || 'Not specified'}
                                     {cvSummary.currentCompany && <span className={`${getSecondaryTextColor()}`}> at {cvSummary.currentCompany}</span>}
@@ -435,15 +440,15 @@ const ApplicationDetails = () => {
                               )}
 
                               {cvSummary.experience && (
-                                <div className={`${darkMode ? 'bg-gray-800' : 'bg-gray-50'} rounded-xl p-4 border ${getBorderColor()}`}>
-                                  <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Experience</h4>
+                                <div className={`${darkMode ? 'bg-slate-900/75' : 'bg-slate-50'} rounded-xl p-4 border ${getBorderColor()}`}>
+                                  <h4 className={`text-xs font-semibold ${getSecondaryTextColor()} uppercase tracking-wide mb-1`}>Experience</h4>
                                   <p className={`${getTextColor()} font-medium`}>{cvSummary.experience}</p>
                                 </div>
                               )}
 
                               {cvSummary.education && (
-                                <div className={`${darkMode ? 'bg-gray-800' : 'bg-gray-50'} rounded-xl p-4 border ${getBorderColor()} md:col-span-2`}>
-                                  <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Education</h4>
+                                <div className={`${darkMode ? 'bg-slate-900/75' : 'bg-slate-50'} rounded-xl p-4 border ${getBorderColor()} md:col-span-2`}>
+                                  <h4 className={`text-xs font-semibold ${getSecondaryTextColor()} uppercase tracking-wide mb-1`}>Education</h4>
                                   <p className={`${getTextColor()} font-medium`}>{cvSummary.education}</p>
                                 </div>
                               )}
@@ -475,7 +480,7 @@ const ApplicationDetails = () => {
                                 <h4 className={`text-sm font-semibold ${getTextColor()} uppercase tracking-wide mb-3`}>Key Strengths</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                   {cvSummary.strengths.map((strength, idx) => (
-                                    <div key={idx} className={`flex items-start gap-3 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'} rounded-lg p-3 border ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                                    <div key={idx} className={`flex items-start gap-3 ${darkMode ? 'bg-slate-900/75' : 'bg-slate-50'} rounded-lg p-3 border ${darkMode ? 'border-slate-700/70' : 'border-slate-200'}`}>
                                       <span className="text-emerald-500 font-bold">✓</span>
                                       <span className={`${getSecondaryTextColor()} text-sm`}>{strength}</span>
                                     </div>
@@ -515,7 +520,7 @@ const ApplicationDetails = () => {
                       </div>
                     ) : (
                       <div className="text-center py-16">
-                        <div className={`w-16 h-16 ${darkMode ? 'bg-gray-800' : 'bg-gray-100'} rounded-2xl flex items-center justify-center mx-auto mb-4`}>
+                        <div className={`w-16 h-16 ${darkMode ? 'bg-slate-900/75' : 'bg-slate-100'} rounded-2xl flex items-center justify-center mx-auto mb-4`}>
                           <FiFileText className={`w-8 h-8 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
                         </div>
                         <h4 className={`text-lg font-bold ${getTextColor()} mb-2`}>No AI Analysis Yet</h4>
@@ -545,7 +550,7 @@ const ApplicationDetails = () => {
           <div className="space-y-6">
             {/* Status Card */}
             <div className={`${getCardBg()} rounded-2xl shadow-sm border ${getBorderColor()} overflow-hidden`}>
-              <div className={`px-6 py-5 border-b ${getBorderColor()} ${darkMode ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
+              <div className={`px-6 py-5 border-b ${getBorderColor()} ${darkMode ? 'bg-gradient-to-r from-slate-900/90 to-violet-900/20' : 'bg-gradient-to-r from-violet-50 to-indigo-50'}`}>
                 <h3 className={`text-lg font-bold ${getTextColor()}`}>Application Status</h3>
               </div>
 
@@ -571,7 +576,7 @@ const ApplicationDetails = () => {
                         onClick={() => handleStatusChange(statusOption)}
                         className={`w-full px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${status === statusOption
                           ? "bg-indigo-600 text-white shadow-sm"
-                          : `${darkMode ? 'bg-gray-800' : 'bg-gray-50'} ${getTextColor()} border ${getBorderColor()} hover:${darkMode ? 'bg-gray-700' : 'bg-gray-100'} hover:${darkMode ? 'border-gray-600' : 'border-gray-300'}`
+                          : `${darkMode ? 'bg-slate-900/70' : 'bg-slate-50'} ${getTextColor()} border ${getBorderColor()} hover:${darkMode ? 'bg-slate-800' : 'bg-slate-100'} hover:${darkMode ? 'border-slate-600' : 'border-slate-300'}`
                           }`}
                       >
                         {statusOption}
@@ -584,7 +589,7 @@ const ApplicationDetails = () => {
 
             {/* Application Info */}
             <div className={`${getCardBg()} rounded-2xl shadow-sm border ${getBorderColor()} overflow-hidden`}>
-              <div className={`px-6 py-5 border-b ${getBorderColor()} ${darkMode ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
+              <div className={`px-6 py-5 border-b ${getBorderColor()} ${darkMode ? 'bg-gradient-to-r from-slate-900/90 to-violet-900/20' : 'bg-gradient-to-r from-violet-50 to-indigo-50'}`}>
                 <h3 className={`text-lg font-bold ${getTextColor()}`}>Application Info</h3>
               </div>
 

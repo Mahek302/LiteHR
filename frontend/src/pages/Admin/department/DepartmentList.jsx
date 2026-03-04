@@ -1,264 +1,191 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { FiGrid, FiList, FiPlus, FiSearch, FiUsers, FiEdit2 } from "react-icons/fi";
+import { HiOutlineOfficeBuilding, HiOutlineCheckCircle } from "react-icons/hi";
 import { useTheme, getThemeClasses } from "../../../contexts/ThemeContext";
 
-// Simple icons as SVG components
-const PlusIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-  </svg>
-);
-
-const SearchIcon = ({ className }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-  </svg>
-);
-
-const EditIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-  </svg>
-);
-
-const GridIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-  </svg>
-);
-
-const ListIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-  </svg>
-);
-
-const BuildingIcon = ({ className }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-  </svg>
-);
-
-const UsersIcon = () => (
-  <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-  </svg>
-);
-
-const CheckCircleIcon = () => (
-  <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-);
-
 const DepartmentList = () => {
+  const darkMode = useTheme();
+  const theme = getThemeClasses(darkMode);
   const [departments, setDepartments] = useState([]);
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState("grid");
 
-  // Use global theme context if available, otherwise default to context or local
-  // The user introduced local state 'darkMode' but we should use the context
-  const contextDarkMode = useTheme();
-  // If the user wants to toggle locally, it might conflict with global. 
-  // I'll stick to global theme context as it's the standard for this app. 
-  // If the user explicitly added a toggle button here, I should probably wire it to the global toggle 
-  // BUT the global context provided `useTheme` which returns boolean. 
-  // It doesn't seem to export a toggle function in the line `const darkMode = useTheme();`. 
-  // I'll assume for now I use the global state properly. 
-  // Actually, looking at previous files, `useTheme` returns the boolean `darkMode`.
-  // The user added `const [darkMode, setDarkMode] = useState(false);` which overrides global.
-  // I will use local state for now to preserve their UI exactly as they pasted it, 
-  // but I will fetch REAL data.
-  const [darkMode, setDarkMode] = useState(false);
-
-  // 🔹 Fetch departments
-  const getDepartments = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/departments", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setDepartments(res.data);
-    } catch (error) {
-      console.error(error.response?.data || error.message);
-    }
-  };
-
   useEffect(() => {
-    getDepartments();
+    const fetchDepartments = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("/api/departments", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setDepartments(Array.isArray(res.data) ? res.data : []);
+      } catch (error) {
+        console.error("Failed to load departments:", error);
+      }
+    };
+    fetchDepartments();
   }, []);
 
-  // Search filter
-  const filteredDepartments = departments.filter(
-    (dept) =>
-      dept.name.toLowerCase().includes(search.toLowerCase()) ||
-      (dept.head?.fullName &&
-        dept.head.fullName.toLowerCase().includes(search.toLowerCase()))
+  const filteredDepartments = useMemo(
+    () =>
+      departments.filter((dept) => {
+        const query = search.trim().toLowerCase();
+        if (!query) return true;
+        return (
+          String(dept.name || "").toLowerCase().includes(query) ||
+          String(dept.head?.fullName || "").toLowerCase().includes(query) ||
+          String(dept.code || "").toLowerCase().includes(query)
+        );
+      }),
+    [departments, search]
   );
 
+  const totalEmployees = departments.reduce((sum, d) => sum + Number(d.employeeCount || 0), 0);
+  const activeDepartments = departments.filter((d) => d.isActive).length;
+
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} p-6 transition-colors duration-200`}>
+    <div className={`min-h-screen ${theme.bg.primary} p-6`}>
       <div className="max-w-7xl mx-auto">
-
-
-        {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
+        <div
+          className={`mb-8 rounded-2xl border ${theme.border.primary} p-6 md:p-8 relative overflow-hidden ${
+            darkMode
+              ? "bg-gradient-to-br from-slate-900/90 via-violet-900/20 to-emerald-900/20"
+              : "bg-gradient-to-br from-violet-100 via-indigo-50 to-emerald-100/70"
+          }`}
+        >
+          <div className={`absolute -top-8 -right-8 w-36 h-36 rounded-full blur-3xl ${darkMode ? "bg-violet-500/20" : "bg-violet-300/45"}`} />
+          <div className={`absolute -bottom-10 -left-10 w-40 h-40 rounded-full blur-3xl ${darkMode ? "bg-emerald-500/20" : "bg-emerald-300/45"}`} />
+          <div className="relative z-10 flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
-                Departments
-              </h1>
-              <p className={`text-sm ${darkMode ? 'text-white-400' : 'text-white-600'}`}>
-                Manage and organize your organization's departments
-              </p>
+              <h1 className={`text-3xl font-bold ${theme.text.primary} mb-1`}>Departments</h1>
+              <p className={theme.text.secondary}>Manage and organize all departments.</p>
             </div>
             <Link
               to="/admin/departments/add"
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-green-600 hover:from-purple-500 hover:to-green-500 text-white font-medium transition-colors shadow-sm"
             >
-              <PlusIcon />
+              <FiPlus className="w-5 h-5" />
               Add Department
             </Link>
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className={`${darkMode ? 'bg-white-800 border-white-700' : 'bg-white border-white-200'} rounded-xl border p-6 shadow-sm hover:shadow-md transition-shadow duration-200`}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+          <div className={`rounded-xl border ${theme.border.secondary} ${theme.bg.secondary} p-5`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className={`text-sm font-medium ${darkMode ? 'text-white-400' : 'text-white-600'} mb-1`}>
-                  Total Departments
-                </p>
-                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-white-900'}`}>
-                  {departments.length}
-                </p>
+                <p className={`text-sm ${theme.text.muted}`}>Total Departments</p>
+                <p className={`text-3xl font-bold ${theme.text.primary}`}>{departments.length}</p>
               </div>
-              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                <BuildingIcon className="w-7 h-7 text-white" />
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
+                <HiOutlineOfficeBuilding className="w-6 h-6 text-white" />
               </div>
             </div>
           </div>
-
-          <div className={`${darkMode ? 'bg-white-800 border-white-700' : 'bg-white border-white-200'} rounded-xl border p-6 shadow-sm hover:shadow-md transition-shadow duration-200`}>
+          <div className={`rounded-xl border ${theme.border.secondary} ${theme.bg.secondary} p-5`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className={`text-sm font-medium ${darkMode ? 'text-white-400' : 'text-white-600'} mb-1`}>
-                  Total Employees
-                </p>
-                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-white-900'}`}>
-                  {departments.reduce((sum, d) => sum + (d.employeeCount || 0), 0)}
-                </p>
+                <p className={`text-sm ${theme.text.muted}`}>Total Employees</p>
+                <p className={`text-3xl font-bold ${theme.text.primary}`}>{totalEmployees}</p>
               </div>
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg">
-                <UsersIcon />
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                <FiUsers className="w-6 h-6 text-white" />
               </div>
             </div>
           </div>
-
-          <div className={`${darkMode ? 'bg-white-800 border-white-700' : 'bg-white border-white-200'} rounded-xl border p-6 shadow-sm hover:shadow-md transition-shadow duration-200`}>
+          <div className={`rounded-xl border ${theme.border.secondary} ${theme.bg.secondary} p-5`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className={`text-sm font-medium ${darkMode ? 'text-white-400' : 'text-white-600'} mb-1`}>
-                  Active Departments
-                </p>
-                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-white-900'}`}>
-                  {departments.filter((d) => d.isActive).length}
-                </p>
+                <p className={`text-sm ${theme.text.muted}`}>Active Departments</p>
+                <p className={`text-3xl font-bold ${theme.text.primary}`}>{activeDepartments}</p>
               </div>
-              <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                <CheckCircleIcon />
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center">
+                <HiOutlineCheckCircle className="w-6 h-6 text-white" />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Search and View Toggle */}
-        <div className={`${darkMode ? 'bg-white-800 border-white-700' : 'bg-white border-white-200'} rounded-xl border p-5 mb-6 shadow-sm`}>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="relative flex-1 max-w-md">
-              <SearchIcon className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+        <div className={`rounded-xl border ${theme.border.secondary} ${theme.bg.secondary} p-5 mb-6`}>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="relative flex-1 min-w-[260px] max-w-xl">
+              <FiSearch className={`absolute left-4 top-1/2 -translate-y-1/2 ${theme.text.muted}`} />
               <input
                 type="text"
-                placeholder="Search departments or heads..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className={`w-full pl-12 pr-4 py-2.5 rounded-lg border ${darkMode
-                  ? 'bg-white-700 border-white-600 text-white placeholder-white-400'
-                  : 'bg-white-50 border-white-300 text-white-900 placeholder-white-500'
-                  } focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200`}
+                placeholder="Search departments, heads, or code..."
+                className={`w-full pl-11 pr-4 py-3 rounded-lg border ${theme.input.border} ${theme.input.bg} ${theme.input.text} focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all`}
               />
             </div>
-
-            <div className={`flex items-center gap-2 p-1 rounded-lg ${darkMode ? 'bg-white-700' : 'bg-white-100'}`}>
+            <div className={`inline-flex items-center gap-1 p-1 rounded-lg border ${theme.border.primary} ${theme.bg.tertiary}`}>
               <button
                 onClick={() => setViewMode("grid")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${viewMode === "grid"
-                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md"
-                  : darkMode ? "text-white-400 hover:text-white" : "text-white-600 hover:text-white-900"
-                  }`}
+                className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === "grid"
+                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white"
+                    : `${theme.text.secondary} hover:text-purple-600`
+                }`}
               >
-                <GridIcon />
-                <span className="font-medium">Grid</span>
+                <FiGrid className="w-4 h-4" />
+                Grid
               </button>
               <button
                 onClick={() => setViewMode("list")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${viewMode === "list"
-                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md"
-                  : darkMode ? "text-white-400 hover:text-white" : "text-white-600 hover:text-white-900"
-                  }`}
+                className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === "list"
+                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white"
+                    : `${theme.text.secondary} hover:text-purple-600`
+                }`}
               >
-                <ListIcon />
-                <span className="font-medium">List</span>
+                <FiList className="w-4 h-4" />
+                List
               </button>
             </div>
           </div>
         </div>
 
-        {/* Grid View */}
-        {viewMode === "grid" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredDepartments.length === 0 && (
+          <div className={`rounded-xl border ${theme.border.primary} ${theme.bg.secondary} p-12 text-center`}>
+            <h3 className={`text-lg font-semibold ${theme.text.primary} mb-2`}>No departments found</h3>
+            <p className={theme.text.secondary}>{search ? "Try a different search query." : "Create your first department to get started."}</p>
+          </div>
+        )}
+
+        {filteredDepartments.length > 0 && viewMode === "grid" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredDepartments.map((dept) => (
-              <div
-                key={dept.id}
-                className={`${darkMode ? 'bg-white-800 border-white-700' : 'bg-white border-white-200'} rounded-xl border p-6 shadow-sm hover:shadow-lg transition-all duration-200 group`}
-              >
+              <div key={dept.id} className={`rounded-xl border ${theme.border.primary} ${theme.bg.secondary} p-5 shadow-sm`}>
                 <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
-                    <BuildingIcon className="w-6 h-6 text-white" />
+                  <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
+                    <HiOutlineOfficeBuilding className="w-6 h-6 text-white" />
                   </div>
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${dept.isActive
-                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                      : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400"
-                      }`}
+                    className={`text-xs font-semibold px-3 py-1 rounded-full border ${
+                      dept.isActive
+                        ? darkMode
+                          ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
+                          : "bg-emerald-100 border-emerald-300 text-emerald-700"
+                        : darkMode
+                        ? "bg-slate-700 border-slate-600 text-slate-300"
+                        : "bg-slate-100 border-slate-300 text-slate-700"
+                    }`}
                   >
                     {dept.isActive ? "Active" : "Inactive"}
                   </span>
                 </div>
-
-                <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  {dept.name}
-                </h3>
-
-                <div className="space-y-2 mb-5">
-                  <p className={`text-sm ${darkMode ? 'text-white-400' : 'text-white-600'}`}>
-                    <span className="font-medium">Code:</span> {dept.code || "N/A"}
-                  </p>
-                  <p className={`text-sm ${darkMode ? 'text-white-400' : 'text-white-600'}`}>
-                    <span className="font-medium">Head:</span> {dept.head?.fullName || "Not Assigned"}
-                  </p>
-                  <p className={`text-sm ${darkMode ? 'text-white-400' : 'text-white-600'}`}>
-                    <span className="font-medium">Employees:</span> {dept.employeeCount}
-                  </p>
+                <h3 className={`text-xl font-bold ${theme.text.primary} mb-2`}>{dept.name}</h3>
+                <div className={`space-y-1 text-sm ${theme.text.secondary} mb-4`}>
+                  <p>Code: {dept.code || "N/A"}</p>
+                  <p>Head: {dept.head?.fullName || "Not Assigned"}</p>
+                  <p>Employees: {dept.employeeCount || 0}</p>
                 </div>
-
                 <Link
                   to={`/admin/departments/edit/${dept.id}`}
-                  className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg"
+                  className="inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium transition-colors"
                 >
-                  <EditIcon />
+                  <FiEdit2 className="w-4 h-4" />
                   Edit Department
                 </Link>
               </div>
@@ -266,70 +193,56 @@ const DepartmentList = () => {
           </div>
         )}
 
-        {/* List View */}
-        {viewMode === "list" && (
-          <div className={`${darkMode ? 'bg-white-800 border-white-700' : 'bg-white border-white-200'} rounded-xl border shadow-sm overflow-hidden`}>
+        {filteredDepartments.length > 0 && viewMode === "list" && (
+          <div className={`rounded-xl border ${theme.border.primary} ${theme.bg.secondary} overflow-hidden shadow-sm`}>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className={`${darkMode ? 'bg-white-700' : 'bg-white-50'}`}>
+                <thead className={darkMode ? "bg-slate-800/80" : "bg-gradient-to-r from-violet-50 to-indigo-50"}>
                   <tr>
-                    <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-white-300' : 'text-white-700'}`}>
-                      Department
-                    </th>
-                    <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-white-300' : 'text-white-700'}`}>
-                      Head
-                    </th>
-                    <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-white-300' : 'text-white-700'}`}>
-                      Employees
-                    </th>
-                    <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-white-300' : 'text-white-700'}`}>
-                      Status
-                    </th>
-                    <th className={`px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-white-300' : 'text-white-700'}`}>
-                      Actions
-                    </th>
+                    {["Department", "Head", "Employees", "Status", "Actions"].map((head) => (
+                      <th key={head} className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${theme.text.secondary}`}>
+                        {head}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody className={`${darkMode ? 'divide-white-700' : 'divide-white-200'} divide-y`}>
+                <tbody>
                   {filteredDepartments.map((dept) => (
-                    <tr key={dept.id} className={`${darkMode ? 'hover:bg-white-750' : 'hover:bg-white-50'} transition-colors duration-150`}>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                    <tr key={dept.id} className={darkMode ? "hover:bg-slate-800/40" : "hover:bg-violet-50/40"}>
+                      <td className={`px-6 py-4 border-t ${theme.border.primary}`}>
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
-                            <BuildingIcon className="w-5 h-5 text-white" />
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
+                            <HiOutlineOfficeBuilding className="w-5 h-5 text-white" />
                           </div>
                           <div>
-                            <div className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                              {dept.name}
-                            </div>
-                            <div className={`text-xs ${darkMode ? 'text-white-400' : 'text-white-500'}`}>
-                              {dept.code || "N/A"}
-                            </div>
+                            <p className={`font-semibold ${theme.text.primary}`}>{dept.name}</p>
+                            <p className={`text-xs ${theme.text.muted}`}>{dept.code || "N/A"}</p>
                           </div>
                         </div>
                       </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-white-300' : 'text-white-700'}`}>
-                        {dept.head?.fullName || "Not Assigned"}
-                      </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-white-300' : 'text-white-700'}`}>
-                        {dept.employeeCount}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className={`px-6 py-4 border-t ${theme.border.primary} ${theme.text.secondary}`}>{dept.head?.fullName || "Not Assigned"}</td>
+                      <td className={`px-6 py-4 border-t ${theme.border.primary} ${theme.text.secondary}`}>{dept.employeeCount || 0}</td>
+                      <td className={`px-6 py-4 border-t ${theme.border.primary}`}>
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${dept.isActive
-                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                            : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400"
-                            }`}
+                          className={`text-xs font-semibold px-3 py-1 rounded-full border ${
+                            dept.isActive
+                              ? darkMode
+                                ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
+                                : "bg-emerald-100 border-emerald-300 text-emerald-700"
+                              : darkMode
+                              ? "bg-slate-700 border-slate-600 text-slate-300"
+                              : "bg-slate-100 border-slate-300 text-slate-700"
+                          }`}
                         >
                           {dept.isActive ? "Active" : "Inactive"}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                      <td className={`px-6 py-4 border-t ${theme.border.primary}`}>
                         <Link
                           to={`/admin/departments/edit/${dept.id}`}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-medium"
                         >
-                          <EditIcon />
+                          <FiEdit2 className="w-4 h-4" />
                           Edit
                         </Link>
                       </td>
@@ -338,30 +251,6 @@ const DepartmentList = () => {
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {filteredDepartments.length === 0 && (
-          <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border p-12 text-center shadow-sm`}>
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <BuildingIcon className="w-8 h-8 text-white" />
-            </div>
-            <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              No departments found
-            </h3>
-            <p className={`text-sm mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              {search ? "Try adjusting your search criteria" : "Get started by creating your first department"}
-            </p>
-            {!search && (
-              <Link
-                to="/admin/departments/add"
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
-              >
-                <PlusIcon />
-                Add Department
-              </Link>
-            )}
           </div>
         )}
       </div>

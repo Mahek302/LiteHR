@@ -101,7 +101,7 @@ const VaultList = () => {
       case "Legal": return darkMode ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-amber-100 text-amber-800 border border-amber-200";
       case "HR": return darkMode ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" : "bg-blue-100 text-blue-800 border border-blue-200";
       case "Verification": return darkMode ? "bg-pink-500/20 text-pink-300 border border-pink-500/30" : "bg-pink-100 text-pink-800 border border-pink-200";
-      default: return darkMode ? "bg-gray-500/20 text-gray-300 border border-gray-500/30" : "bg-gray-100 text-gray-800 border border-gray-200";
+      default: return darkMode ? "bg-violet-500/20 text-gray-300 border border-gray-500/30" : "bg-gray-100 text-gray-800 border border-gray-200";
     }
   };
 
@@ -112,12 +112,12 @@ const VaultList = () => {
   };
 
   const getBgColor = () => darkMode ? "bg-gray-800" : "bg-white";
-  const getBorderColor = () => darkMode ? "border-gray-700" : "border-gray-200";
+  const getBorderColor = () => darkMode ? "border-slate-700" : "border-gray-200";
   const getTextColor = () => darkMode ? "text-white" : "text-gray-800";
   const getSecondaryTextColor = () => darkMode ? "text-gray-400" : "text-gray-600";
-  const getInputBg = () => darkMode ? "bg-gray-900" : "bg-gray-50";
+  const getInputBg = () => darkMode ? "bg-slate-900" : "bg-violet-50";
   const getCardBg = () => darkMode ? "bg-gray-700/50" : "bg-gray-100";
-  const getHeaderBg = () => darkMode ? "bg-gray-900/50" : "bg-gray-50";
+  const getHeaderBg = () => darkMode ? "bg-slate-900/60" : "bg-violet-50";
 
   return (
     <div className="w-full">
@@ -207,7 +207,7 @@ const VaultList = () => {
           <table className="w-full">
             <thead className={getHeaderBg()}>
               <tr>
-                <th className="p-4 border-b border-gray-700 text-left">
+                <th className="p-4 border-b border-slate-700 text-left">
                   <input
                     type="checkbox"
                     checked={selectedDocs.length === filtered.length && filtered.length > 0}
@@ -237,8 +237,8 @@ const VaultList = () => {
             </thead>
             <tbody>
               {filtered.map((doc) => (
-                <tr key={doc.id} className={darkMode ? "hover:bg-gray-900/30 transition-colors" : "hover:bg-gray-50/50 transition-colors"}>
-                  <td className="p-4 border-b border-gray-700">
+                <tr key={doc.id} className={darkMode ? "hover:bg-slate-900/30 transition-colors" : "hover:bg-violet-50/50 transition-colors"}>
+                  <td className="p-4 border-b border-slate-700">
                     <input
                       type="checkbox"
                       checked={selectedDocs.includes(doc.id)}
@@ -246,9 +246,9 @@ const VaultList = () => {
                       className="rounded border-gray-600 bg-gray-800 text-purple-500 focus:ring-purple-500/20"
                     />
                   </td>
-                  <td className="p-4 border-b border-gray-700">
+                  <td className="p-4 border-b border-slate-700">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg ${darkMode ? 'bg-gray-900' : 'bg-gray-100'} flex items-center justify-center border ${darkMode ? 'border-purple-500/30' : 'border-purple-200'}`}>
+                      <div className={`w-10 h-10 rounded-lg ${darkMode ? 'bg-slate-900' : 'bg-gray-100'} flex items-center justify-center border ${darkMode ? 'border-purple-500/30' : 'border-purple-200'}`}>
                         <FiFileText className={`w-5 h-5 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`} />
                       </div>
                       <div>
@@ -261,30 +261,30 @@ const VaultList = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="p-4 border-b border-gray-700">
+                  <td className="p-4 border-b border-slate-700">
                     <div>
                       <p className={`font-medium ${getTextColor()}`}>{doc.employee}</p>
                       <p className={`text-sm ${getSecondaryTextColor()}`}>{doc.employeeId}</p>
                     </div>
                   </td>
-                  <td className="p-4 border-b border-gray-700">
+                  <td className="p-4 border-b border-slate-700">
                     <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm ${getCategoryColor(doc.category)}`}>
                       {doc.category}
                     </span>
                   </td>
-                  <td className="p-4 border-b border-gray-700">
+                  <td className="p-4 border-b border-slate-700">
                     <div>
                       <p className={`text-sm ${getTextColor()}`}>{doc.uploadedBy}</p>
                       <p className={`text-xs ${getSecondaryTextColor()}`}>{doc.uploadDate}</p>
                     </div>
                   </td>
-                  <td className="p-4 border-b border-gray-700">
+                  <td className="p-4 border-b border-slate-700">
                     <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium ${getStatusColor(doc.status)}`}>
                       <span className={`w-2 h-2 rounded-full ${doc.status === "Active" ? (darkMode ? 'bg-emerald-500' : 'bg-emerald-600') : (darkMode ? 'bg-rose-500' : 'bg-rose-600')}`}></span>
                       {doc.status}
                     </span>
                   </td>
-                  <td className="p-4 border-b border-gray-700">
+                  <td className="p-4 border-b border-slate-700">
                     <div className="flex gap-2">
                       <button
                         onClick={() => window.open(doc.fileUrl, '_blank')}
@@ -415,3 +415,4 @@ const VaultList = () => {
 };
 
 export default VaultList;
+

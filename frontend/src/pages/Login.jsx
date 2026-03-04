@@ -1,6 +1,7 @@
 import axios from "axios";
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import WFELogo from "../images/WFE_logo.png";
 import {
   FiMail,
   FiLock,
@@ -98,15 +99,12 @@ const Login = ({ setUser }) => {
           <div className="max-w-md mx-auto relative">
             {/* BRANDING */}
             <div className="flex items-center gap-3 mb-8">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-500 flex items-center justify-center">
-                <span className="text-2xl font-bold text-white">HR</span>
-              </div>
-              <h1 className="text-3xl font-bold text-white">LiteHR</h1>
+              <img src={WFELogo} alt="WORKFORCEDGE" className="h-12 w-auto object-contain" />
             </div>
 
             {/* WELCOME MESSAGE */}
             <h2 className="text-4xl font-bold mb-6 leading-tight text-white">
-              Welcome Back to <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-purple-300">LiteHR</span>
+              Welcome Back to <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-purple-300">WORKFORCEDGE</span>
             </h2>
 
             <p className="text-slate-300 text-lg mb-8 leading-relaxed">

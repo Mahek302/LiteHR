@@ -28,6 +28,9 @@ const AttendanceReports = () => {
     end: new Date().toISOString().split('T')[0]
   });
   const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [departmentOptions, setDepartmentOptions] = useState([
+    { id: "all", name: "All Departments" }
+  ]);
   const [loading, setLoading] = useState(false);
   const [dashboard, setDashboard] = useState(null);
   const [charts, setCharts] = useState(null);
@@ -37,14 +40,6 @@ const AttendanceReports = () => {
   const themeClasses = getThemeClasses(darkMode);
 
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-  const departments = [
-    { id: "all", name: "All Departments" },
-    { id: "IT", name: "IT" },
-    { id: "HR", name: "HR" },
-    { id: "Finance", name: "Finance" },
-    { id: "Operations", name: "Operations" }
-  ];
 
   // Color palette based on theme
   const colors = darkMode ? {
@@ -78,11 +73,16 @@ const AttendanceReports = () => {
   };
 
   // Transform charts data for reports
-  const trendData = charts?.attendance?.map((item) => ({
-    month: item.month,
-    attendance: item.present,
-    late: Number(item.late || 0)
-  })) || [];
+  const trendData = charts?.attendance?.map((item) => {
+    const totalEmployees = Number(dashboard?.totalEmployees || 0);
+    const presentCount = Number(item.present || 0);
+    const lateCount = Number(item.late || 0);
+    return {
+      month: item.month,
+      attendance: totalEmployees > 0 ? Math.round((presentCount / totalEmployees) * 100) : null,
+      late: totalEmployees > 0 ? Math.round((lateCount / totalEmployees) * 100) : null
+    };
+  }) || [];
 
   const lateToday = Number(
     dashboard?.lateToday ??
@@ -106,12 +106,64 @@ const AttendanceReports = () => {
     { name: "Absent", value: absentPercent, color: "#ef4444" },
     { name: "Leave", value: leavePercent, color: "#3b82f6" },
   ];
+  const attendanceDistributionForChart = attendanceDistribution.filter((item) => item.value > 0);
 
-  // Overtime data from API - Now using real data from charts
-  const overtimeData = charts?.overtime?.map(item => ({
-    department: item.department,
-    hours: item.hours
-  })) || [];
+  const isValidDepartmentName = (value) => {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (!normalized) return false;
+    if (
+      normalized === "n/a" ||
+      normalized === "na" ||
+      normalized === "unknown" ||
+      normalized.includes("n/a") ||
+      normalized.includes("trial")
+    ) {
+      return false;
+    }
+    return true;
+  };
+
+  const masterDepartmentSet = new Set(
+    (departmentOptions || [])
+      .filter((dept) => dept.id !== "all")
+      .map((dept) => String(dept.name || "").trim().toLowerCase())
+      .filter(Boolean)
+  );
+
+  const validDepartmentSet = new Set(
+    masterDepartmentSet.size > 0
+      ? Array.from(masterDepartmentSet)
+      : (charts?.departments || [])
+          .map((dept) => dept?.department)
+          .filter(isValidDepartmentName)
+          .map((name) => String(name).trim().toLowerCase())
+  );
+
+  const isAllowedDepartment = (value) => {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (!isValidDepartmentName(normalized)) return false;
+    if (validDepartmentSet.size > 0) return validDepartmentSet.has(normalized);
+    return true;
+  };
+
+  // Overtime data from API, filtered to real departments only and aggregated.
+  const overtimeData = Array.from(
+    (charts?.overtime || [])
+      .filter((item) => {
+        const name = String(item?.department || "").trim().toLowerCase();
+        return isAllowedDepartment(name);
+      })
+      .reduce((acc, item) => {
+        const department = String(item?.department || "").trim();
+        const key = department.toLowerCase();
+        const hours = Number(item?.hours || 0);
+        const existing = acc.get(key) || { department, hours: 0 };
+        existing.hours += Number.isFinite(hours) ? hours : 0;
+        acc.set(key, existing);
+        return acc;
+      }, new Map())
+      .values()
+  );
 
   // Weekly performance (derived from attendance data)
   const weeklyPerformance = charts?.attendance?.slice(0, 7).map((item, index) => ({
@@ -120,25 +172,62 @@ const AttendanceReports = () => {
     target: 95
   })) || [];
 
-  // Department stats for table - Using real attendance data
-  const departmentStats = charts?.departments?.map(dept => {
-    // Calculate attendance rate based on actual attendance data
-    const deptAttendance = charts?.attendance?.reduce((acc, item) => acc + item.present, 0) || 0;
-    const totalPossible = (charts?.attendance?.length || 1) * (dept.count || 1);
-    const attendanceRate = Math.min(100, Math.round((deptAttendance / totalPossible) * 100)) || 85;
-    
-    return {
-      name: dept.department,
-      employees: dept.count,
-      attendance: attendanceRate,
-      late: Number(dept.late || dept.lateCount || 0),
-      absent: Number(
-        dept.absent ||
-        dept.absentCount ||
-        Math.max(0, (dept.count || 0) - Math.round(((attendanceRate || 0) / 100) * (dept.count || 0)))
-      )
-    };
-  }) || [];
+  // Department stats for table - backfilled with master department list.
+  const departmentStats = (() => {
+    const statsMap = new Map();
+
+    (charts?.departments || []).forEach((dept) => {
+      const name = String(dept.department || "").trim();
+      if (!isAllowedDepartment(name)) return;
+
+      const employees = Number(dept.count ?? dept.employees ?? 0);
+
+      const hasLate = dept.late != null || dept.lateCount != null;
+      const hasAbsent = dept.absent != null || dept.absentCount != null;
+      const hasPresent = dept.present != null || dept.presentCount != null;
+
+      const late = hasLate ? Number(dept.late ?? dept.lateCount) : null;
+      const absent = hasAbsent ? Number(dept.absent ?? dept.absentCount) : null;
+      const present = hasPresent ? Number(dept.present ?? dept.presentCount) : null;
+
+      const explicitRateRaw = dept.attendanceRate ?? dept.attendance_percentage ?? dept.attendance;
+      const explicitRate = explicitRateRaw != null ? Number(explicitRateRaw) : null;
+
+      let attendance = null;
+      if (Number.isFinite(explicitRate) && explicitRate >= 0 && explicitRate <= 100) {
+        attendance = Math.round(explicitRate);
+      } else if (employees > 0 && Number.isFinite(present)) {
+        attendance = Math.round((present / employees) * 100);
+      } else if (employees > 0 && Number.isFinite(absent)) {
+        attendance = Math.round(((employees - absent) / employees) * 100);
+      }
+
+      statsMap.set(name.toLowerCase(), {
+        name,
+        employees,
+        attendance,
+        late,
+        absent,
+      });
+    });
+
+    const masterRows = (departmentOptions || [])
+      .filter((dept) => dept.id !== "all" && isAllowedDepartment(dept.name))
+      .map((dept) => {
+        const key = String(dept.name).trim().toLowerCase();
+        return (
+          statsMap.get(key) || {
+            name: dept.name,
+            employees: 0,
+            attendance: null,
+            late: null,
+            absent: null,
+          }
+        );
+      });
+
+    return masterRows.length > 0 ? masterRows : Array.from(statsMap.values());
+  })();
 
   const topPerformers = (() => {
     const worklogs = dashboard?.recentWorklogs || [];
@@ -146,7 +235,8 @@ const AttendanceReports = () => {
     const employeeCounts = new Map();
     for (const item of worklogs) {
       const name = item.employee?.fullName || "Unknown";
-      const department = item.employee?.department || "N/A";
+      const department = String(item.employee?.department || "").trim();
+      if (!isAllowedDepartment(department)) continue;
       const key = `${name}__${department}`;
       employeeCounts.set(key, (employeeCounts.get(key) || 0) + 1);
     }
@@ -188,9 +278,10 @@ const AttendanceReports = () => {
         department: departmentFilter === 'all' ? '' : departmentFilter
       }).toString();
 
-      const [dashRes, chartsRes] = await Promise.all([
+      const [dashRes, chartsRes, departmentsRes] = await Promise.all([
         axios.get(`/api/dashboard/admin?${query}`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`/api/dashboard/charts/admin?${query}`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get("/api/departments", { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
       setDashboard(dashRes.data);
@@ -227,6 +318,18 @@ const AttendanceReports = () => {
         training: chartsRes.data.training || null,
         leaves: chartsRes.data.leaves || null
       };
+
+      const masterDepartments = Array.isArray(departmentsRes?.data) ? departmentsRes.data : [];
+      const normalizedDepartmentOptions = [
+        { id: "all", name: "All Departments" },
+        ...masterDepartments
+          .map((dept) => String(dept?.name || dept?.department || dept?.departmentName || "").trim())
+          .filter(isValidDepartmentName)
+          .filter((name, index, arr) => arr.findIndex((n) => n.toLowerCase() === name.toLowerCase()) === index)
+          .sort((a, b) => a.localeCompare(b))
+          .map((name) => ({ id: name, name }))
+      ];
+      setDepartmentOptions(normalizedDepartmentOptions);
       
       setCharts(chartData);
       toast.success("Report data loaded successfully");
@@ -276,9 +379,9 @@ const AttendanceReports = () => {
           body: departmentStats.map((dept) => ([
             dept.name || "N/A",
             String(dept.employees || 0),
-            `${dept.attendance || 0}%`,
-            String(dept.late || 0),
-            String(dept.absent || 0),
+            dept.attendance != null ? `${dept.attendance}%` : "N/A",
+            dept.late != null ? String(dept.late) : "N/A",
+            dept.absent != null ? String(dept.absent) : "N/A",
           ])),
           theme: "striped",
           headStyles: { fillColor: [30, 58, 138] },
@@ -292,8 +395,8 @@ const AttendanceReports = () => {
           head: [["Month", "Attendance %", "Late %"]],
           body: trendData.map((item) => ([
             item.month || "N/A",
-            `${item.attendance || 0}%`,
-            `${item.late || 0}%`,
+            item.attendance != null ? `${item.attendance}%` : "N/A",
+            item.late != null ? `${item.late}%` : "N/A",
           ])),
           theme: "striped",
           headStyles: { fillColor: [30, 58, 138] },
@@ -308,28 +411,40 @@ const AttendanceReports = () => {
         return;
       }
 
-      if (format === "csv" || format === "excel") {
+      if (format === "excel") {
         const headers = ["Department", "Employees", "AttendanceRate", "LateArrivals", "Absences"];
         const rows = departmentStats.map((dept) => ([
-          escapeCsvValue(dept.name || "N/A"),
-          escapeCsvValue(dept.employees || 0),
-          escapeCsvValue(dept.attendance || 0),
-          escapeCsvValue(dept.late || 0),
-          escapeCsvValue(dept.absent || 0),
-        ].join(",")));
+          dept.name || "N/A",
+          String(dept.employees || 0),
+          dept.attendance != null ? `${dept.attendance}%` : "N/A",
+          dept.late != null ? String(dept.late) : "N/A",
+          dept.absent != null ? String(dept.absent) : "N/A",
+        ]));
 
-        const csvData = [headers.join(","), ...rows].join("\n");
-        const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+        const tableHtml = `
+          <table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:12px;">
+            <thead>
+              <tr>
+                ${headers.map((h) => `<th style="background:#8B5CF6;color:#FFFFFF;font-weight:700;">${h}</th>`).join("")}
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map((row) => `<tr>${row.map((col) => `<td>${escapeCsvValue(col)}</td>`).join("")}</tr>`).join("")}
+            </tbody>
+          </table>
+        `;
+        const excelHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8" /></head><body>${tableHtml}</body></html>`;
+        const blob = new Blob([excelHtml], { type: "application/vnd.ms-excel;charset=utf-8;" });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `attendance_report_${dateRange.start}_to_${dateRange.end}.csv`;
+        a.download = `attendance_report_${dateRange.start}_to_${dateRange.end}.xls`;
         document.body.appendChild(a);
         a.click();
         a.remove();
         window.URL.revokeObjectURL(url);
         toast.dismiss(loadingToast);
-        toast.success(`${format === "excel" ? "Excel" : "CSV"} exported successfully`);
+        toast.success("Excel exported successfully");
       }
     } catch (err) {
       console.error("Export failed:", err);
@@ -341,6 +456,15 @@ const AttendanceReports = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (
+      departmentFilter !== "all" &&
+      !departmentOptions.some((dept) => dept.id === departmentFilter)
+    ) {
+      setDepartmentFilter("all");
+    }
+  }, [departmentOptions, departmentFilter]);
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -441,8 +565,8 @@ const AttendanceReports = () => {
               onChange={(e) => setDepartmentFilter(e.target.value)}
               className={`w-full px-4 py-3 ${themeClasses.input.bg} border ${themeClasses.input.border} ${themeClasses.input.text} rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500`}
             >
-              {departments.map(dept => (
-                <option key={dept.id} value={dept.id} className={darkMode ? 'bg-gray-900' : 'bg-white'}>{dept.name}</option>
+              {departmentOptions.map(dept => (
+                <option key={dept.id} value={dept.id} className={darkMode ? 'bg-slate-900' : 'bg-white'}>{dept.name}</option>
               ))}
             </select>
           </div>
@@ -462,24 +586,17 @@ const AttendanceReports = () => {
           <div className="flex gap-2">
             <button
               onClick={() => exportReport("pdf")}
-              className={`flex items-center gap-2 px-4 py-3 ${themeClasses.input.bg} border ${themeClasses.input.border} ${themeClasses.text.primary} rounded-lg hover:${darkMode ? 'bg-gray-800' : 'bg-gray-200'} font-medium`}
+              className={`flex items-center gap-2 px-4 py-3 ${themeClasses.input.bg} border ${themeClasses.input.border} ${themeClasses.text.primary} rounded-lg ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-violet-200'} font-medium`}
             >
               <FiDownload className="w-4 h-4" />
               PDF
             </button>
             <button
               onClick={() => exportReport("excel")}
-              className={`flex items-center gap-2 px-4 py-3 ${themeClasses.input.bg} border ${themeClasses.input.border} ${themeClasses.text.primary} rounded-lg hover:${darkMode ? 'bg-gray-800' : 'bg-gray-200'} font-medium`}
+              className={`flex items-center gap-2 px-4 py-3 ${themeClasses.input.bg} border ${themeClasses.input.border} ${themeClasses.text.primary} rounded-lg ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-violet-200'} font-medium`}
             >
               <FiDownload className="w-4 h-4" />
               Excel
-            </button>
-            <button
-              onClick={() => exportReport("csv")}
-              className={`flex items-center gap-2 px-4 py-3 ${themeClasses.input.bg} border ${themeClasses.input.border} ${themeClasses.text.primary} rounded-lg hover:${darkMode ? 'bg-gray-800' : 'bg-gray-200'} font-medium`}
-            >
-              <FiDownload className="w-4 h-4" />
-              CSV
             </button>
           </div>
         </div>
@@ -493,7 +610,7 @@ const AttendanceReports = () => {
           { label: "Late Arrivals", value: lateToday, icon: MdTimer, color: "amber" },
           { label: "Total Absences", value: dashboard ? dashboard.totalEmployees - dashboard.presentToday : 0, icon: FaCalendarXmark, color: "rose" },
           { label: "Leave Days", value: dashboard?.onLeaveToday || 0, icon: FaCalendarMinus, color: "cyan" },
-          { label: "Overtime Hours", value: charts?.overtime ? `${charts.overtime.reduce((acc, curr) => acc + curr.hours, 0)}h` : '0h', icon: FiClock, color: "purple" },
+          { label: "Overtime Hours", value: `${overtimeData.reduce((acc, curr) => acc + Number(curr.hours || 0), 0)}h`, icon: FiClock, color: "purple" },
         ].map((metric, index) => (
           <div key={index} className={`${themeClasses.bg.secondary} p-5 rounded-xl border ${themeClasses.border.primary}`}>
             <div className="flex items-center justify-between">
@@ -634,7 +751,7 @@ const AttendanceReports = () => {
             </ResponsiveContainer>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-gray-200 dark:border-slate-700">
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
               <span className={`text-sm ${themeClasses.text.secondary}`}>Average Attendance</span>
@@ -666,16 +783,20 @@ const AttendanceReports = () => {
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <PieChart>
                 <Pie
-                  data={attendanceDistribution}
+                  data={attendanceDistributionForChart}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => {
+                    const pct = Math.round((percent || 0) * 100);
+                    if (pct < 6) return "";
+                    return `${name}: ${pct}%`;
+                  }}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {attendanceDistribution.map((entry, index) => (
+                  {attendanceDistributionForChart.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -770,7 +891,7 @@ const AttendanceReports = () => {
           </ResponsiveContainer>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-4 border-t border-gray-200 dark:border-slate-700">
           <div className="text-center">
             <p className={`text-sm ${themeClasses.text.muted}`}>Best Day</p>
             <p className={`text-sm font-semibold ${themeClasses.text.primary}`}>
@@ -815,14 +936,14 @@ const AttendanceReports = () => {
             </thead>
             <tbody>
               {departmentStats.map((dept, index) => (
-                <tr key={index} className={`${darkMode ? 'hover:bg-slate-700' : 'hover:bg-gray-50'} transition-colors border-t ${themeClasses.border.primary}`}>
+                <tr key={index} className={`${darkMode ? 'hover:bg-slate-700' : 'hover:bg-violet-50'} transition-colors border-t ${themeClasses.border.primary}`}>
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-purple-600 to-purple-400 flex items-center justify-center text-white font-bold">
                         {dept.name?.charAt(0) || 'D'}
                       </div>
                       <div>
-                        <p className={`font-medium ${themeClasses.text.primary}`}>{dept.name} Department</p>
+                        <p className={`font-medium ${themeClasses.text.primary}`}>{dept.name}</p>
                       </div>
                     </div>
                   </td>
@@ -833,30 +954,40 @@ const AttendanceReports = () => {
                     <div className="flex items-center justify-center gap-3">
                       <div className="flex-1 max-w-[150px]">
                         <div className={`h-2 ${darkMode ? 'bg-gray-700' : 'bg-gray-300'} rounded-full overflow-hidden`}>
-                          <div
-                            className={`h-full rounded-full ${dept.attendance >= 95 ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' :
-                              dept.attendance >= 90 ? 'bg-gradient-to-r from-amber-500 to-amber-400' : 'bg-gradient-to-r from-rose-500 to-rose-400'
-                              }`}
-                            style={{ width: `${dept.attendance}%` }}
-                          ></div>
+                          {dept.attendance != null ? (
+                            <div
+                              className={`h-full rounded-full ${dept.attendance >= 95 ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' :
+                                dept.attendance >= 90 ? 'bg-gradient-to-r from-amber-500 to-amber-400' : 'bg-gradient-to-r from-rose-500 to-rose-400'
+                                }`}
+                              style={{ width: `${dept.attendance}%` }}
+                            ></div>
+                          ) : (
+                            <div className="h-full rounded-full bg-slate-500/30" style={{ width: `0%` }}></div>
+                          )}
                         </div>
                       </div>
-                      <span className={`font-bold ${themeClasses.text.primary}`}>{dept.attendance}%</span>
+                      <span className={`font-bold ${themeClasses.text.primary}`}>{dept.attendance != null ? `${dept.attendance}%` : "N/A"}</span>
                     </div>
                   </td>
                   <td className="p-4 text-center">
-                    <span className="font-bold text-amber-400">{dept.late}</span>
+                    <span className="font-bold text-amber-400">{dept.late != null ? dept.late : "N/A"}</span>
                   </td>
                   <td className="p-4 text-center">
-                    <span className="font-bold text-rose-400">{dept.absent}</span>
+                    <span className="font-bold text-rose-400">{dept.absent != null ? dept.absent : "N/A"}</span>
                   </td>
                   <td className="p-4 text-center">
-                    <span className={`px-3 py-1.5 rounded-full text-sm font-medium border ${dept.attendance >= 95 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
-                      dept.attendance >= 90 ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-rose-500/20 text-rose-400 border-rose-500/30'
-                      }`}>
-                      {dept.attendance >= 95 ? 'Excellent' :
-                        dept.attendance >= 90 ? 'Good' : 'Needs Improvement'}
-                    </span>
+                    {dept.attendance != null ? (
+                      <span className={`px-3 py-1.5 rounded-full text-sm font-medium border ${dept.attendance >= 95 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                        dept.attendance >= 90 ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                        }`}>
+                        {dept.attendance >= 95 ? 'Excellent' :
+                          dept.attendance >= 90 ? 'Good' : 'Needs Improvement'}
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1.5 rounded-full text-sm font-medium border border-slate-400/30 text-slate-400">
+                        N/A
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -883,7 +1014,7 @@ const AttendanceReports = () => {
 
           <div className="space-y-4">
             {topPerformers.map((emp, index) => (
-              <div key={index} className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-gray-50'} transition-colors border ${themeClasses.border.primary}`}>
+              <div key={index} className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-violet-50'} transition-colors border ${themeClasses.border.primary}`}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 flex items-center justify-center text-white font-bold">
                     {emp.name.split(' ').map(n => n[0]).join('')}
@@ -981,7 +1112,7 @@ const AttendanceReports = () => {
           </div>
 
           {/* Overtime Statistics */}
-          <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-gray-200 dark:border-slate-700">
             <div className="text-center">
               <p className={`text-sm ${themeClasses.text.muted}`}>Total Overtime</p>
               <p className={`text-lg font-bold ${themeClasses.text.primary}`}>
@@ -1019,3 +1150,6 @@ const AttendanceReports = () => {
 };
 
 export default AttendanceReports;
+
+
+

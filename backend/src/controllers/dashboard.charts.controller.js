@@ -10,10 +10,25 @@ import {
   adminPerformanceMetricsService,
   adminTrainingService
 } from "../services/dashboard.charts.service.js";
+import { getMockLicensingScope } from "../services/licensingScope.service.js";
 
 // ADMIN
 export const adminChartsController = async (req, res) => {
   try {
+    const licensingScope = await getMockLicensingScope(req.user);
+    if (licensingScope && licensingScope.employeeIds.length === 0) {
+      return res.json({
+        attendance: [],
+        leaves: [],
+        departments: [],
+        hiring: [],
+        leaveStats: [],
+        overtime: [],
+        performance: [],
+        training: { completion: 0, total: 0, completed: 0 },
+      });
+    }
+
     const attendance = await adminMonthlyAttendanceService();
     const leaves = await adminMonthlyLeaveService();
     const departments = await departmentEmployeeCountService();

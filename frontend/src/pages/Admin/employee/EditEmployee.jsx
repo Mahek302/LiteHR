@@ -14,6 +14,7 @@ const EditEmployee = () => {
 
 const darkMode = useTheme() || false; // Default to false if undefined
 const theme = useThemeClasses();
+  const [departments, setDepartments] = useState([]);
   const [formData, setFormData] = useState({
     employeeId: "EMP001",
     firstName: "Rahul",
@@ -21,7 +22,7 @@ const theme = useThemeClasses();
     email: "rahul.sharma@example.com",
     personalEmail: "rahul.personal@example.com",
     phone: "+91 98765 43210",
-    department: "IT",
+    department: "",
     role: "Senior Software Engineer",
     managerId: "2",
     status: "Active",
@@ -56,11 +57,18 @@ const theme = useThemeClasses();
       if (!token) return alert("You must be logged in to edit employees.");
 
       try {
-        const res = await axios.get(`/api/admin/employees/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const [res, departmentsRes] = await Promise.all([
+          axios.get(`/api/admin/employees/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get("/api/departments", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
 
         const emp = res.data;
+        const deptList = Array.isArray(departmentsRes?.data) ? departmentsRes.data : [];
+        setDepartments(deptList);
 
         // Map backend fields to form fields
         const fullName = emp.fullName || "";
@@ -307,7 +315,7 @@ const theme = useThemeClasses();
 
       {/* Form */}
       <div className={`${theme.bg.secondary} rounded-xl border ${theme.border.primary} shadow-sm mb-8 overflow-hidden`}>
-        <div className={`p-6 border-b ${theme.border.primary} ${darkMode ? 'bg-gray-900/50' : 'bg-gray-100'}`}>
+        <div className={`p-6 border-b ${theme.border.primary} ${darkMode ? 'bg-slate-900/60' : 'bg-violet-50'}`}>
           <div className="flex items-center gap-4">
             <div className="relative">
               <div className={`w-16 h-16 rounded-full border-2 ${darkMode ? 'border-gray-600' : 'border-gray-300'} shadow-md overflow-hidden`}>
@@ -508,11 +516,26 @@ const theme = useThemeClasses();
                     errors.department ? "border-rose-500" : theme.input.border
                   } rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 ${theme.input.text} transition-all`}
                 >
-                  <option value="IT" className={darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800"}>Information Technology</option>
-                  <option value="HR" className={darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800"}>Human Resources</option>
-                  <option value="Finance" className={darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800"}>Finance & Accounting</option>
-                  <option value="Marketing" className={darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800"}>Marketing</option>
-                  <option value="Operations" className={darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800"}>Operations</option>
+                  {!formData.department && (
+                    <option value="" className={darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800"}>
+                      Select Department
+                    </option>
+                  )}
+                  {formData.department &&
+                    !departments.some((d) => String(d.name || "").trim() === String(formData.department).trim()) && (
+                      <option value={formData.department} className={darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800"}>
+                        {formData.department}
+                      </option>
+                    )}
+                  {departments.map((dept) => (
+                    <option
+                      key={dept.id || dept.name}
+                      value={dept.name}
+                      className={darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800"}
+                    >
+                      {dept.name}
+                    </option>
+                  ))}
                 </select>
                 {errors.department && (
                   <p className="mt-1 text-sm text-rose-400">{errors.department}</p>
@@ -627,7 +650,7 @@ const theme = useThemeClasses();
                       onChange={handleChange}
                       className="text-purple-500 focus:ring-purple-500/20"
                     />
-                    <span className={`px-4 py-2 rounded-lg border ${theme.border.primary} ${darkMode ? 'bg-gray-900/50' : 'bg-gray-100'} ${theme.text.secondary} font-medium`}>
+                    <span className={`px-4 py-2 rounded-lg border ${theme.border.primary} ${darkMode ? 'bg-slate-900/60' : 'bg-violet-50'} ${theme.text.secondary} font-medium`}>
                       Inactive
                     </span>
                   </label>
@@ -766,3 +789,4 @@ const theme = useThemeClasses();
 };
 
 export default EditEmployee;
+

@@ -27,6 +27,21 @@ const EmployeeList = () => {
 
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [deactivating, setDeactivating] = useState(false);
+
+  const normalizeDepartmentName = (value) => {
+    const raw = String(value || "").trim();
+    if (!raw) return "Unassigned";
+
+    const lower = raw.toLowerCase();
+    if (lower === "it" || lower === "information technology") return "Information Technology";
+    if (lower === "hr" || lower === "human resources") return "Human Resources";
+    if (lower === "finance" || lower === "finance & accounting") return "Finance";
+    if (lower === "ops" || lower === "operations") return "Operations";
+    if (lower.includes("trial") || lower.includes("unknown") || lower === "n/a" || lower === "na") return "Unassigned";
+
+    return raw;
+  };
 
   /* ================= FETCH EMPLOYEES ================= */
   const fetchEmployees = async () => {
@@ -34,25 +49,48 @@ const EmployeeList = () => {
       setLoading(true);
       const token = localStorage.getItem("token");
 
-      const res = await axios.get(
-        "/api/admin/employees",
-        {
+      const [res, departmentsRes] = await Promise.all([
+        axios.get(
+          "/api/admin/employees",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        ),
+        axios.get("/api/departments", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        }),
+      ]);
+
+      const departmentById = new Map(
+        (Array.isArray(departmentsRes?.data) ? departmentsRes.data : []).map((d) => [
+          String(d.id),
+          String(d.name || "").trim(),
+        ])
       );
 
       const normalizedEmployees = res.data
         .filter(item => item.role !== "ADMIN")
         .filter(item => item.employee !== null)
-        .map(item => ({
+        .map(item => {
+          const employee = item.employee || {};
+          const mappedById = employee.departmentId ? departmentById.get(String(employee.departmentId)) : null;
+          const inferredDepartment =
+            mappedById ||
+            employee.departmentName ||
+            employee.department?.name ||
+            employee.department;
+
+          return ({
           id: item.employee.id,
           userId: item.id,
           name: item.employee.fullName,
           email: item.email,
           employeeId: item.employee.employeeCode,
-          department: item.employee.department,
+          department: normalizeDepartmentName(inferredDepartment),
           role: item.employee.designation,
           joinDate: item.employee.dateOfJoining,
           status: item.employee.status || "Active",
@@ -64,7 +102,7 @@ const EmployeeList = () => {
             .map(n => n[0])
             .join(""),
           performance: 4.5,
-        }));
+        })});
 
       setEmployees(normalizedEmployees);
     } catch (error) {
@@ -123,14 +161,59 @@ const EmployeeList = () => {
     }
   };
 
+  const handleBulkDeactivate = async () => {
+    if (!selectedEmployees.length || deactivating) return;
+
+    const confirmDeactivate = window.confirm(
+      `Deactivate ${selectedEmployees.length} selected employee${selectedEmployees.length > 1 ? "s" : ""}?`
+    );
+    if (!confirmDeactivate) return;
+
+    try {
+      setDeactivating(true);
+      const token = localStorage.getItem("token");
+
+      const results = await Promise.allSettled(
+        selectedEmployees.map((employeeId) =>
+          axios.post(
+            `/api/admin/employees/${employeeId}/deactivate`,
+            {},
+            { headers: { Authorization: `Bearer ${token}` } }
+          )
+        )
+      );
+
+      const successCount = results.filter((r) => r.status === "fulfilled").length;
+      const failedCount = results.length - successCount;
+
+      await fetchEmployees();
+      setSelectedEmployees([]);
+
+      if (failedCount === 0) {
+        alert(`Deactivated ${successCount} employee${successCount > 1 ? "s" : ""} successfully.`);
+      } else {
+        alert(
+          `Deactivated ${successCount} employee${successCount > 1 ? "s" : ""}. ${failedCount} failed.`
+        );
+      }
+    } catch (error) {
+      console.error("Bulk deactivate failed:", error);
+      alert(error.response?.data?.message || "Failed to deactivate selected employees.");
+    } finally {
+      setDeactivating(false);
+    }
+  };
+
   /* ================= UI HELPERS ================= */
   const getDepartmentColor = department => {
     switch (department) {
       case "IT":
+      case "Information Technology":
         return darkMode
           ? "bg-purple-500/20 text-purple-400 border-purple-500/30"
           : "bg-purple-100 text-purple-700 border-purple-300";
       case "HR":
+      case "Human Resources":
         return darkMode
           ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
           : "bg-emerald-100 text-emerald-700 border-emerald-300";
@@ -146,10 +229,10 @@ const EmployeeList = () => {
   };
 
   const getRowHoverClass = () =>
-    darkMode ? "hover:bg-gray-900/30" : "hover:bg-gray-100";
+    darkMode ? "hover:bg-slate-800/35" : "hover:bg-violet-50/40";
 
   const getHeaderBgClass = () =>
-    darkMode ? "bg-gray-900/50" : "bg-gray-100";
+    darkMode ? "bg-slate-800/80" : "bg-gradient-to-r from-violet-50 to-indigo-50";
 
   const getCheckboxClasses = () =>
     `rounded border-gray-400 ${darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-200"
@@ -158,8 +241,16 @@ const EmployeeList = () => {
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
+      <div
+        className={`flex justify-between items-center mb-8 p-6 rounded-2xl border ${theme.border.primary} relative overflow-hidden ${
+          darkMode
+            ? "bg-gradient-to-br from-slate-900/90 via-violet-900/20 to-emerald-900/20"
+            : "bg-gradient-to-br from-violet-100 via-indigo-50 to-emerald-100/70"
+        }`}
+      >
+        <div className={`absolute -top-8 -right-8 w-36 h-36 rounded-full blur-3xl ${darkMode ? "bg-violet-500/20" : "bg-violet-300/40"}`} />
+        <div className={`absolute -bottom-10 -left-10 w-40 h-40 rounded-full blur-3xl ${darkMode ? "bg-emerald-500/20" : "bg-emerald-300/40"}`} />
+        <div className="relative z-10">
           <h1 className={`text-3xl font-bold ${theme.text.primary} mb-2`}>
             Employee Management
           </h1>
@@ -169,7 +260,7 @@ const EmployeeList = () => {
         </div>
         <Link
           to="/admin/employees/add"
-          className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+          className="relative z-10 flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
         >
           <FiPlus className="w-5 h-5" />
           Add Employee
@@ -201,10 +292,11 @@ const EmployeeList = () => {
                 value={departmentFilter}
                 onChange={(e) => setDepartmentFilter(e.target.value)}
               >
-                <option value="All">All Departments</option>
-                <option value="IT">IT</option>
-                <option value="HR">HR</option>
-                <option value="Finance">Finance</option>
+                {uniqueDepartments.map((dept) => (
+                  <option key={dept} value={dept}>
+                    {dept === "All" ? "All Departments" : dept}
+                  </option>
+                ))}
               </select>
               <HiOutlineOfficeBuilding className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             </div>
@@ -236,7 +328,7 @@ const EmployeeList = () => {
 
         {/* Batch Actions */}
         {selectedEmployees.length > 0 && (
-          <div className={`mt-4 p-4 ${darkMode ? 'bg-gray-900/50' : 'bg-purple-50'} rounded-lg border border-purple-500/30 flex items-center justify-between`}>
+          <div className={`mt-4 p-4 ${darkMode ? 'bg-slate-900/60' : 'bg-purple-50'} rounded-lg border border-purple-500/30 flex items-center justify-between`}>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-purple-500 text-white flex items-center justify-center">
                 {selectedEmployees.length}
@@ -249,8 +341,12 @@ const EmployeeList = () => {
               <button className={`px-4 py-2 ${theme.bg.secondary} border ${theme.border.primary} rounded-lg text-sm ${theme.text.secondary} hover:text-purple-600 hover:border-purple-500 transition-colors`}>
                 Bulk Edit
               </button>
-              <button className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm">
-                Deactivate
+              <button
+                onClick={handleBulkDeactivate}
+                disabled={deactivating}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {deactivating ? "Deactivating..." : "Deactivate"}
               </button>
             </div>
           </div>
@@ -358,7 +454,7 @@ const EmployeeList = () => {
                   <td className={`p-4 border-b ${theme.border.primary}`}>
                     <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium border ${emp.status === "Active"
                       ? `${darkMode ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-emerald-100 text-emerald-700 border-emerald-300'}`
-                      : `${darkMode ? 'bg-gray-900/50 text-gray-300 border-gray-700' : 'bg-gray-100 text-gray-600 border-gray-300'}`
+                      : `${darkMode ? 'bg-slate-900/60 text-gray-300 border-gray-700' : 'bg-violet-50 text-gray-600 border-gray-300'}`
                       }`}>
                       <span className={`w-2 h-2 rounded-full ${emp.status === "Active" ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`}></span>
                       {emp.status}
@@ -443,3 +539,4 @@ const EmployeeList = () => {
 };
 
 export default EmployeeList;
+

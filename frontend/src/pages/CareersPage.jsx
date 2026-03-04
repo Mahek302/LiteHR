@@ -8,7 +8,7 @@ import {
   ExternalLink, Menu, X, LogIn, Users, TrendingUp, Shield,
   Zap, ChevronRight, BarChart3, Calendar, X as XIcon, IndianRupee
 } from 'lucide-react';
-import LiteHRLogo from '../images/LiteHR_logo.png';
+import LiteHRLogo from '../images/WFE_logo.png';
 import { toast } from 'react-hot-toast';
 import jobService from '../services/jobService';
 import Chatbot from '../components/Chatbot';
@@ -221,7 +221,7 @@ export default function CareersPage() {
         >
           <img
             src={LiteHRLogo}
-            alt="LiteHR"
+            alt="WORKFORCEDGE"
             className="h-10 w-26 object-contain rounded-md"
           />
         </div>
@@ -495,7 +495,7 @@ export default function CareersPage() {
         <section className="py-20 px-6 md:px-20">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-14">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Join LiteHR</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Join WORKFORCEDGE</h2>
               <p className="text-lg text-[#9CA3AF] max-w-2xl mx-auto">
                 We're building more than software - we're building a culture
               </p>
@@ -548,11 +548,11 @@ export default function CareersPage() {
               <div className="h-10 w-10 bg-gradient-to-r from-[#8B5CF6] to-[#10B981] rounded-lg flex items-center justify-center">
                 <Briefcase size={20} />
               </div>
-              <span className="text-xl font-semibold">LiteHR Careers</span>
+              <span className="text-xl font-semibold">WORKFORCEDGE Careers</span>
             </div>
 
             <p className="text-sm text-[#9CA3AF] text-center">
-              © 2025 LiteHR. All rights reserved. | Privacy Policy | Terms of Service
+              © 2025 WORKFORCEDGE. All rights reserved. | Privacy Policy | Terms of Service
             </p>
 
             <button
@@ -569,8 +569,8 @@ export default function CareersPage() {
       {/* Public FAQ Chatbot */}
       <Chatbot
         endpoint="/api/chatbot/public-ask"
-        welcomeMessage={`👋 Welcome to LiteHR Careers!\nHave questions about our culture, benefits, or open roles?\nI’m here to help 😊`}
-        title="LiteHR Assistant"
+        welcomeMessage={`Welcome to WORKFORCEDGE Careers!\nHave questions about our culture, benefits, or open roles?\nI'm here to help.`}
+        title="WORKFORCEDGE Assistant"
         subtitle="Careers & Hiring Support"
       />
 

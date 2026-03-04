@@ -135,20 +135,25 @@ const AddJob = () => {
   const experienceOptions = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10+"];
 
   // Theme helper functions
-  const getBgColor = () => darkMode ? "bg-gray-900" : "bg-white";
-  const getBorderColor = () => darkMode ? "border-gray-700" : "border-gray-200";
-  const getTextColor = () => darkMode ? "text-white" : "text-gray-800";
-  const getSecondaryTextColor = () => darkMode ? "text-gray-400" : "text-gray-600";
-  const getInputBg = () => darkMode ? "bg-gray-800" : "bg-gray-50";
-  const getCardBg = () => darkMode ? "bg-gray-800/50" : "bg-white";
-  const getHeaderBg = () => darkMode ? "from-gray-900 via-gray-800 to-gray-900" : "from-blue-50 via-indigo-50 to-purple-50";
-  const getHeaderTextColor = () => darkMode ? "text-white" : "text-gray-900";
-  const getHeaderSubTextColor = () => darkMode ? "text-gray-300" : "text-gray-600";
+  const getBgColor = () => darkMode ? "bg-slate-950" : "bg-white";
+  const getBorderColor = () => darkMode ? "border-slate-700/70" : "border-slate-200";
+  const getTextColor = () => darkMode ? "text-slate-100" : "text-slate-800";
+  const getSecondaryTextColor = () => darkMode ? "text-slate-300" : "text-slate-600";
+  const getInputBg = () => darkMode ? "bg-slate-900/80" : "bg-slate-50";
+  const getCardBg = () => darkMode ? "bg-slate-900/75" : "bg-white/95";
+  const getHeaderBg = () =>
+    darkMode
+      ? "from-slate-950 via-indigo-950/20 to-emerald-950/20"
+      : "from-violet-100 via-indigo-50 to-emerald-100/70";
+  const getHeaderTextColor = () => darkMode ? "text-slate-100" : "text-slate-900";
+  const getHeaderSubTextColor = () => darkMode ? "text-slate-300" : "text-slate-600";
 
   return (
     <div className="w-full">
       {/* Header */}
       <div className={`relative mb-10 overflow-hidden rounded-2xl bg-gradient-to-br ${getHeaderBg()} p-8 border ${getBorderColor()}`}>
+        <div className={`absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl ${darkMode ? "bg-violet-500/20" : "bg-violet-300/40"}`} />
+        <div className={`absolute -bottom-12 -left-10 w-44 h-44 rounded-full blur-3xl ${darkMode ? "bg-emerald-500/20" : "bg-emerald-300/40"}`} />
         <div className={`absolute inset-0 ${darkMode ? 'opacity-20' : 'opacity-10'}`} style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='${darkMode ? '0.1' : '0.05'}'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
         }}></div>
@@ -179,8 +184,8 @@ const AddJob = () => {
 
           {/* ===================== BASIC INFORMATION ===================== */}
           <div className="relative">
-            <div className={`relative ${getCardBg()} rounded-2xl p-6 border ${getBorderColor()} shadow-sm`}>
-              <h3 className={`text-lg font-semibold ${getTextColor()} mb-6 border-b ${getBorderColor()} pb-3`}>
+            <div className={`relative ${getCardBg()} rounded-2xl p-6 border ${getBorderColor()} shadow-sm  `}>
+              <h3 className={`text-lg font-semibold ${getTextColor()} mb-6 border-b ${getBorderColor()} pb-3  `}>
                 Basic Information
               </h3>
 
@@ -392,7 +397,7 @@ const AddJob = () => {
         <div className="space-y-6">
           {/* Preview Card */}
           <div className="relative group">
-            <div className={`absolute -inset-1 ${darkMode ? 'bg-gradient-to-r from-blue-500 to-purple-500' : 'bg-gradient-to-r from-blue-400 to-purple-400'} rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000`}></div>
+            <div className="hidden"></div>
             <div className={`relative ${getCardBg()} rounded-2xl p-6 border ${darkMode ? 'border-white/10' : 'border-gray-200'}`}>
               <h3 className={`text-xl font-bold ${getTextColor()} mb-4`}>Job Preview</h3>
               <div className="space-y-4">
@@ -406,12 +411,12 @@ const AddJob = () => {
                   <p className="text-sm text-gray-500 mb-1">Department & Type</p>
                   <div className="flex gap-2">
                     {formData.department && (
-                      <span className="px-2 py-1 text-xs bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded">
+                      <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300 rounded border border-blue-200 dark:border-blue-500/30">
                         {formData.department}
                       </span>
                     )}
                     {formData.jobType && (
-                      <span className="px-2 py-1 text-xs bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded">
+                      <span className="px-2 py-1 text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 rounded border border-emerald-200 dark:border-emerald-500/30">
                         {formData.jobType}
                       </span>
                     )}
@@ -441,7 +446,7 @@ const AddJob = () => {
 
           {/* Status & Actions Card */}
           <div className="relative group">
-            <div className={`absolute -inset-1 ${darkMode ? 'bg-gradient-to-r from-emerald-500 to-blue-500' : 'bg-gradient-to-r from-emerald-400 to-blue-400'} rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000`}></div>
+            <div className="hidden"></div>
             <div className={`relative ${getCardBg()} rounded-2xl p-6 border ${darkMode ? 'border-white/10' : 'border-gray-200'}`}>
               <h3 className={`text-xl font-bold ${getTextColor()} mb-4`}>Status & Actions</h3>
 
@@ -486,7 +491,7 @@ const AddJob = () => {
                     type="submit"
                     onClick={handleSubmit}
                     disabled={isSubmitting}
-                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg shadow hover:shadow-md font-medium transition-all ${isSubmitting ? "opacity-75 cursor-not-allowed" : ""
+                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm font-medium transition-all ${isSubmitting ? "opacity-75 cursor-not-allowed" : ""
                       }`}
                   >
                     {isSubmitting ? (
@@ -517,7 +522,7 @@ const AddJob = () => {
           </div>
 
           {/* Tips Card */}
-          <div className={`${darkMode ? 'bg-gradient-to-r from-blue-500/10 to-blue-500/10' : 'bg-gradient-to-r from-blue-50 to-indigo-50'} border ${darkMode ? 'border-blue-500/20' : 'border-blue-200'} rounded-2xl p-6`}>
+          <div className={`${darkMode ? 'bg-slate-800/60' : 'bg-slate-50'} border ${darkMode ? 'border-slate-700' : 'border-slate-200'} rounded-2xl p-6`}>
             <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-800'} mb-3`}>Tips for Better Job Postings</h4>
             <ul className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'} space-y-2`}>
               <li className="flex items-start gap-2">

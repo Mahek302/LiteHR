@@ -90,7 +90,7 @@ const Register = ({ setUser }) => {
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-500 flex items-center justify-center">
                   <FiBriefcase className="w-6 h-6 text-white" />
                 </div>
-                <h1 className="text-3xl font-bold text-white">LiteHR</h1>
+                <h1 className="text-3xl font-bold text-white">WORKFORCEDGE</h1>
               </div>
               <h2 className="text-4xl font-bold mb-6 leading-tight text-white">
                 Join Our <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-purple-300">HR Platform</span>

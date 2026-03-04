@@ -126,12 +126,20 @@ const EditDepartment = () => {
   return (
     <div className="w-full">
       {/* Enhanced Header */}
-      <div className="mb-8">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+      <div
+        className={`mb-8 p-6 rounded-2xl border ${themeClasses.border.primary} relative overflow-hidden ${
+          darkMode
+            ? "bg-gradient-to-br from-slate-900/90 via-violet-900/20 to-emerald-900/20"
+            : "bg-gradient-to-br from-violet-100 via-indigo-50 to-emerald-100/70"
+        }`}
+      >
+        <div className={`absolute -top-8 -right-8 w-36 h-36 rounded-full blur-3xl ${darkMode ? "bg-violet-500/20" : "bg-violet-300/40"}`} />
+        <div className={`absolute -bottom-10 -left-10 w-40 h-40 rounded-full blur-3xl ${darkMode ? "bg-emerald-500/20" : "bg-emerald-300/40"}`} />
+        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div className="flex items-center gap-4">
             <Link
               to="/admin/departments"
-              className={`p-3 rounded-lg ${themeClasses.bg.secondary} hover:${darkMode ? "bg-gray-700" : "bg-gray-300"} ${themeClasses.text.muted} hover:${themeClasses.text.primary} border ${themeClasses.border.primary} hover:border-purple-500 transition-colors`}
+              className={`p-3 rounded-lg ${themeClasses.bg.secondary} hover:${darkMode ? "bg-slate-700" : "bg-violet-100"} ${themeClasses.text.muted} border ${themeClasses.border.primary} hover:border-purple-500 transition-colors`}
             >
               <FiArrowLeft className="w-5 h-5" />
             </Link>
@@ -147,7 +155,7 @@ const EditDepartment = () => {
 
           <button
             onClick={() => setShowDeleteModal(true)}
-            className={`flex items-center gap-2 px-5 py-3 ${themeClasses.bg.secondary} hover:${darkMode ? "bg-gray-700" : "bg-gray-300"} border border-red-500/30 text-red-400 hover:text-red-300 rounded-lg font-medium transition-colors mt-4 lg:mt-0`}
+            className={`flex items-center gap-2 px-5 py-3 ${themeClasses.bg.secondary} hover:${darkMode ? "bg-slate-700" : "bg-violet-100"} border border-red-500/30 text-red-400 hover:text-red-300 rounded-lg font-medium transition-colors mt-4 lg:mt-0`}
           >
             <FiTrash2 className="w-5 h-5" />
             Delete Department
@@ -157,7 +165,7 @@ const EditDepartment = () => {
 
       {/* Enhanced Form Container */}
       <div className={`rounded-xl p-6 border ${themeClasses.border.primary} ${themeClasses.bg.secondary} shadow-sm mb-6`}>
-        <div className={`p-6 border-b ${themeClasses.border.primary} ${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"}`}>
+        <div className={`p-6 border-b ${themeClasses.border.primary} ${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"}`}>
           <div className="flex items-center gap-4">
             <div className={`w-14 h-14 rounded-xl bg-blue-500 flex items-center justify-center`}>
               <HiOutlineOfficeBuilding className="w-8 h-8 text-white" />

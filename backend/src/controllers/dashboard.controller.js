@@ -6,7 +6,7 @@ import {
 
 export const adminDashboardController = async (req, res) => {
   try {
-    const data = await getAdminDashboardService();
+    const data = await getAdminDashboardService(req.user);
     res.json(data);
   } catch (err) {
     console.error("Admin dashboard error:", err.message);

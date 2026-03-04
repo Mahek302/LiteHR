@@ -13,6 +13,9 @@ import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./components/NotFound";
 import Homepage from "./pages/Homepage";
 import CareersPage from "./pages/CareersPage";
+import LicensingCheckout from "./pages/LicensingCheckout";
+import LicensingPaymentEmail from "./pages/LicensingPaymentEmail";
+import LicensingAdminSetup from "./pages/LicensingAdminSetup";
 
 /* Layouts */
 import AdminLayout from "./layouts/AdminLayout";
@@ -185,7 +188,7 @@ function App() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
-        Loading LiteHR...
+        Loading WORKFORCEDGE...
       </div>
     );
   }
@@ -199,6 +202,9 @@ function App() {
           {/* Public */}
           <Route path="/" element={<Homepage />} />
           <Route path="/careers" element={<CareersPage />} />
+          <Route path="/licensing/checkout" element={<LicensingCheckout />} />
+          <Route path="/licensing/payment-email" element={<LicensingPaymentEmail />} />
+          <Route path="/licensing/admin-setup" element={<LicensingAdminSetup />} />
           <Route
             path="/login"
             element={localStorage.getItem("token") && user ? <Navigate to={getRoleRedirect(user.role)} /> : <Login setUser={setUser} />}

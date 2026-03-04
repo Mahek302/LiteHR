@@ -3,18 +3,42 @@ import { MessageCircle, X, Send, UserRound, Headset, Minimize2 } from "lucide-re
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
+import { useTheme } from "../contexts/ThemeContext";
 
 const Chatbot = ({
     endpoint = "/api/chatbot/ask",
-    welcomeMessage = "Hello! I am LiteHR's AI Assistant. How can I help you today?",
+    welcomeMessage = "Hello! I am WORKFORCEDGE's AI Assistant. How can I help you today?",
     title = "HR Assistant",
-    subtitle = "Powered by LiteHR AI",
+    subtitle = "Powered by WORKFORCEDGE AI",
+    autoOpen = false,
+    teaserMessage = "",
+    openSignal = 0,
+    onTeaserVisibilityChange = () => {},
 }) => {
+    const resolveStoredTheme = () => {
+        if (typeof window === "undefined") return false;
+        const adminTheme = localStorage.getItem("litehr-theme");
+        if (adminTheme) return adminTheme === "dark";
+        const homepageTheme = localStorage.getItem("theme");
+        if (homepageTheme) return homepageTheme === "dark";
+        return (
+            document.documentElement.classList.contains("dark-mode") ||
+            document.documentElement.classList.contains("dark") ||
+            document.body.classList.contains("dark")
+        );
+    };
+
+    const themeValue = useTheme();
+    const [fallbackDarkMode, setFallbackDarkMode] = useState(() => resolveStoredTheme());
+    const darkMode = themeValue === true || fallbackDarkMode;
     const [isOpen, setIsOpen] = useState(false);
+    const [showWelcomeBubble, setShowWelcomeBubble] = useState(autoOpen);
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
+    const welcomePreview =
+        teaserMessage?.trim() || welcomeMessage?.split("\n")[0] || welcomeMessage;
 
     // Initialize/Reset messages when welcomeMessage changes
     useEffect(() => {
@@ -25,6 +49,49 @@ const Chatbot = ({
             },
         ]);
     }, [welcomeMessage]);
+
+    useEffect(() => {
+        if (autoOpen) {
+            setShowWelcomeBubble(true);
+        }
+    }, [autoOpen]);
+
+    useEffect(() => {
+        if (openSignal > 0) {
+            setIsOpen(true);
+            setShowWelcomeBubble(false);
+        }
+    }, [openSignal]);
+
+    useEffect(() => {
+        onTeaserVisibilityChange(!isOpen && showWelcomeBubble);
+    }, [isOpen, showWelcomeBubble, onTeaserVisibilityChange]);
+
+    // Fallback dark mode tracking for contexts where ThemeWrapper is not mounted.
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const syncFallbackTheme = () => setFallbackDarkMode(resolveStoredTheme());
+
+        syncFallbackTheme();
+        window.addEventListener("storage", syncFallbackTheme);
+
+        const observer = new MutationObserver(syncFallbackTheme);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+
+        return () => {
+            window.removeEventListener("storage", syncFallbackTheme);
+            observer.disconnect();
+        };
+    }, [themeValue]);
+
+    const toggleChat = () => {
+        if (!isOpen) {
+            setIsOpen(true);
+            setShowWelcomeBubble(false);
+            return;
+        }
+        setIsOpen(false);
+    };
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -44,16 +111,7 @@ const Chatbot = ({
         setIsLoading(true);
 
         try {
-            // Use relative path if starts with / otherwise keep as is (though here we expect relative mostly)
-            // But strict requirement: use the passed endpoint.
-            // If endpoint is relative, we might need full URL if frontend/backend are on different ports in dev?
-            // Usually vite proxy handles /api.
-            // Let's assume vite proxy is set up or we need to prepend http://localhost:5000 if strictly needed.
-            // Given previous code used direct http://localhost:5000, let's keep that pattern or use relative if proxy is set.
-            // The previous code had: http://localhost:5000/api/chatbot/ask
-            // So we should construct the full URL or rely on proxy. 
-            // Better to keep it flexible. If endpoint starts with http, use it, else prepend.
-
+            
             let url = endpoint;
             if (!url.startsWith("http")) {
                 url = `http://localhost:5000${endpoint}`;
@@ -92,7 +150,9 @@ const Chatbot = ({
             {/* Chat Window */}
             {isOpen && (
                 <div
-                    className="mb-4 w-[350px] md:w-[400px] h-[500px] max-h-[80vh] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300"
+                    className={`mb-4 w-[350px] md:w-[400px] h-[500px] max-h-[80vh] rounded-2xl shadow-2xl border flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300 ${
+                        darkMode ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"
+                    }`}
                     style={{ boxShadow: "0 10px 40px -10px rgba(0,0,0,0.2)" }}
                 >
                     {/* Header */}
@@ -118,7 +178,11 @@ const Chatbot = ({
                     </div>
 
                     {/* Messages Area */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900/50 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                    <div className={`flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-track-transparent ${
+                        darkMode
+                            ? "bg-slate-950/70 scrollbar-thumb-slate-600"
+                            : "bg-slate-50 scrollbar-thumb-slate-300"
+                    }`}>
                         {messages.map((msg, idx) => (
                             <div
                                 key={idx}
@@ -127,7 +191,9 @@ const Chatbot = ({
                                 <div
                                     className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${msg.isUser
                                         ? "bg-indigo-600 text-white rounded-br-none"
-                                        : "bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-700 rounded-bl-none"
+                                        : darkMode
+                                            ? "bg-slate-900 text-slate-100 border border-slate-700 rounded-bl-none"
+                                            : "bg-white text-slate-800 border border-slate-200 rounded-bl-none"
                                         } ${msg.isError ? "border-red-500 text-red-600 bg-red-50" : ""}`}
                                 >
                                     {/* Basic markdown-like parsing could go here, but keeping it simple text for now */}
@@ -147,7 +213,9 @@ const Chatbot = ({
                         ))}
                         {isLoading && (
                             <div className="flex justify-start">
-                                <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm flex gap-1.5 items-center">
+                                <div className={`rounded-2xl rounded-bl-none px-4 py-3 shadow-sm flex gap-1.5 items-center border ${
+                                    darkMode ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"
+                                }`}>
                                     <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
                                     <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
                                     <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
@@ -160,7 +228,7 @@ const Chatbot = ({
                     {/* Input Area */}
                     <form
                         onSubmit={handleSend}
-                        className="p-3 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 shrink-0"
+                        className={`p-3 border-t shrink-0 ${darkMode ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"}`}
                     >
                         <div className="relative flex items-center">
                             <input
@@ -168,7 +236,11 @@ const Chatbot = ({
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 placeholder="Ask me anything..."
-                                className="w-full pl-4 pr-12 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400"
+                                className={`w-full pl-4 pr-12 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm ${
+                                    darkMode
+                                        ? "bg-slate-950 border-slate-700 text-slate-100 placeholder-slate-500"
+                                        : "bg-slate-50 border-slate-200 text-slate-700 placeholder-slate-400"
+                                }`}
                             />
                             <button
                                 type="submit"
@@ -182,9 +254,32 @@ const Chatbot = ({
                 </div>
             )}
 
+            {!isOpen && showWelcomeBubble && (
+                <div className="relative mb-3 mr-1 max-w-[280px] animate-in slide-in-from-bottom-5 fade-in duration-300">
+                    <div className={`rounded-2xl border px-4 pr-9 py-2.5 text-xs leading-relaxed shadow-lg ${
+                        darkMode ? "border-slate-700 bg-slate-900 text-slate-100" : "border-slate-200 bg-white text-slate-700"
+                    }`}>
+                        <button
+                            type="button"
+                            aria-label="Close welcome message"
+                            onClick={() => setShowWelcomeBubble(false)}
+                            className={`absolute top-2 right-2 p-1 rounded-full transition-colors ${
+                                darkMode ? "text-slate-300 hover:bg-slate-800 hover:text-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                            }`}
+                        >
+                            <X size={14} />
+                        </button>
+                        {welcomePreview}
+                    </div>
+                    <div className={`absolute -bottom-1.5 right-5 h-3 w-3 rotate-45 border-b border-r ${
+                        darkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-white"
+                    }`} />
+                </div>
+            )}
+
             {/* Floating Toggle Button */}
             <button
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={toggleChat}
                 className={`group p-4 rounded-full shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center ${isOpen
                     ? "bg-gray-800 text-white rotate-90"
                     : "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-indigo-500/30"

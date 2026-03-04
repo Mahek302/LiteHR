@@ -165,11 +165,11 @@ const Notifications = () => {
   // Updated with darker colors for light mode
   const getTypeColor = (type) => {
     switch (type) {
-      case "success": return darkMode ? "from-emerald-400 to-green-500" : "from-emerald-600 to-emerald-700";
-      case "error": return darkMode ? "from-rose-400 to-red-500" : "from-rose-600 to-rose-700";
-      case "warning": return darkMode ? "from-amber-400 to-orange-500" : "from-amber-600 to-amber-700";
+      case "success": return darkMode ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-emerald-100 text-emerald-700 border border-emerald-300";
+      case "error": return darkMode ? "bg-rose-500/20 text-rose-300 border border-rose-500/30" : "bg-rose-100 text-rose-700 border border-rose-300";
+      case "warning": return darkMode ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-amber-100 text-amber-700 border border-amber-300";
       case "info":
-      default: return darkMode ? "from-cyan-400 to-blue-500" : "from-blue-600 to-blue-700";
+      default: return darkMode ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" : "bg-blue-100 text-blue-700 border border-blue-300";
     }
   };
 
@@ -191,7 +191,7 @@ const Notifications = () => {
   const getCardBg = () => darkMode ? "bg-gray-700/50" : "bg-gray-50";
 
   // Updated header gradient for light mode to be more subtle
-  const getHeaderGradient = () => darkMode ? "from-gray-900 via-gray-800 to-gray-900" : "from-gray-50 via-blue-50 to-gray-100";
+  const getHeaderGradient = () => darkMode ? "from-gray-900 via-gray-800 to-gray-900" : "from-gray-50 via-slate-50 to-gray-100";
   const getHeaderTextColor = () => darkMode ? "text-gray-300" : "text-gray-600";
 
   // Darker text colors for better visibility
@@ -221,34 +221,34 @@ const Notifications = () => {
                 icon: <FiBell className="w-6 h-6" />,
                 label: "Total",
                 value: notifications.length.toString(),
-                color: darkMode ? "from-blue-400 to-blue-500" : "from-blue-600 to-blue-700",
+                color: darkMode ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" : "bg-blue-100 text-blue-700 border border-blue-300",
                 textColor: getAccentTextColor()
               },
               {
                 icon: <div className="relative"><FiBell className="w-6 h-6" /><div className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full"></div></div>,
                 label: "Unread",
                 value: unreadCount.toString(),
-                color: darkMode ? "from-amber-400 to-orange-500" : "from-amber-600 to-amber-700",
+                color: darkMode ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-amber-100 text-amber-700 border border-amber-300",
                 textColor: getWarningTextColor()
               },
               {
                 icon: <FiCalendar className="w-6 h-6" />,
                 label: "Today",
                 value: todayCount.toString(),
-                color: darkMode ? "from-emerald-400 to-green-500" : "from-emerald-600 to-emerald-700",
+                color: darkMode ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-emerald-100 text-emerald-700 border border-emerald-300",
                 textColor: getSuccessTextColor()
               },
               {
                 icon: <FiAlertCircle className="w-6 h-6" />,
                 label: "Alerts",
                 value: alertCount.toString(),
-                color: darkMode ? "from-rose-400 to-red-500" : "from-rose-600 to-rose-700",
+                color: darkMode ? "bg-rose-500/20 text-rose-300 border border-rose-500/30" : "bg-rose-100 text-rose-700 border border-rose-300",
                 textColor: getErrorTextColor()
               },
             ].map((stat, index) => (
               <div key={index} className={`${getBgColor()} rounded-lg border ${getBorderColor()} p-4 hover:shadow-sm transition-shadow`}>
                 <div className="flex items-center justify-between">
-                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${stat.color} flex items-center justify-center text-white`}>
+                  <div className={`w-12 h-12 rounded-lg ${stat.color} flex items-center justify-center`}>
                     {stat.icon}
                   </div>
                 </div>
@@ -282,18 +282,18 @@ const Notifications = () => {
       <div className={`${getBgColor()} rounded-xl p-4 border ${getBorderColor()} mb-6`}>
         <div className="flex flex-wrap gap-2">
           {[
-            { label: "All", value: "all", color: darkMode ? "from-blue-400 to-blue-500" : "from-blue-600 to-blue-700" },
-            { label: "Unread", value: "unread", color: darkMode ? "from-amber-400 to-orange-500" : "from-amber-600 to-amber-700", count: unreadCount },
-            { label: "Read", value: "read", color: darkMode ? "from-emerald-400 to-green-500" : "from-emerald-600 to-emerald-700" },
-            { label: "Errors", value: "error", color: darkMode ? "from-rose-400 to-red-500" : "from-rose-600 to-rose-700" },
-            { label: "Success", value: "success", color: darkMode ? "from-emerald-400 to-green-500" : "from-emerald-600 to-emerald-700" },
-            { label: "Warnings", value: "warning", color: darkMode ? "from-amber-400 to-orange-500" : "from-amber-600 to-amber-700" },
+            { label: "All", value: "all", color: darkMode ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" : "bg-blue-100 text-blue-700 border border-blue-300" },
+            { label: "Unread", value: "unread", color: darkMode ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-amber-100 text-amber-700 border border-amber-300", count: unreadCount },
+            { label: "Read", value: "read", color: darkMode ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-emerald-100 text-emerald-700 border border-emerald-300" },
+            { label: "Errors", value: "error", color: darkMode ? "bg-rose-500/20 text-rose-300 border border-rose-500/30" : "bg-rose-100 text-rose-700 border border-rose-300" },
+            { label: "Success", value: "success", color: darkMode ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-emerald-100 text-emerald-700 border border-emerald-300" },
+            { label: "Warnings", value: "warning", color: darkMode ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-amber-100 text-amber-700 border border-amber-300" },
           ].map((btn) => (
             <button
               key={btn.value}
               onClick={() => setFilter(btn.value)}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === btn.value
-                ? `bg-gradient-to-br ${btn.color} text-white`
+                ? `${btn.color}`
                 : `${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} ${darkMode ? 'text-gray-300' : 'text-gray-700'} border ${getBorderColor()}`
                 }`}
             >
@@ -320,7 +320,7 @@ const Notifications = () => {
                 className={`p-6 hover:${darkMode ? 'bg-gray-700/50' : 'bg-gray-50'} transition-colors ${!notification.read ? getTypeBg(notification.type) : ''}`}
               >
                 <div className="flex items-start gap-4">
-                  <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${getTypeColor(notification.type)} flex items-center justify-center text-white`}>
+                  <div className={`w-12 h-12 rounded-full ${getTypeColor(notification.type)} flex items-center justify-center`}>
                     {notification.icon}
                   </div>
 
@@ -329,7 +329,7 @@ const Notifications = () => {
                       <div className="flex items-center gap-2">
                         <h4 className={`font-semibold ${getTextColor()}`}>{notification.title}</h4>
                         {!notification.read && (
-                          <span className={`inline-block w-2 h-2 ${darkMode ? 'bg-blue-500' : 'bg-blue-600'} rounded-full animate-pulse`}></span>
+                          <span className={`inline-block w-2 h-2 ${darkMode ? 'bg-blue-500' : 'bg-blue-600'} rounded-full`}></span>
                         )}
                       </div>
                       <span className={`text-sm ${getSecondaryTextColor()}`}>

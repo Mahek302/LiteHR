@@ -9,24 +9,67 @@ import {
   Task,
   Payslip,
 } from "../models/index.js";
+import { getMockLicensingScope } from "./licensingScope.service.js";
 
 const getTodayDateString = () => new Date().toISOString().slice(0, 10);
 
 // Admin dashboard summary
-export const getAdminDashboardService = async () => {
+export const getAdminDashboardService = async (requestingUser = null) => {
   const today = getTodayDateString();
+  const licensingScope = await getMockLicensingScope(requestingUser);
+  const isScoped = !!licensingScope;
+
+  if (isScoped && licensingScope.employeeIds.length === 0) {
+    return {
+      totalEmployees: 0,
+      totalActiveUsers: 0,
+      presentToday: 0,
+      onLeaveToday: 0,
+      pendingLeaves: 0,
+      avgPerformance: 0,
+      recentWorklogs: [],
+      totalPayrollDue: 0,
+      payrollDueDate: new Date().toLocaleDateString("en-US", { day: "numeric", month: "short" }),
+    };
+  }
+
+  const employeeIdFilter = isScoped
+    ? { id: { [Op.in]: licensingScope.employeeIds } }
+    : undefined;
+
+  const userIdFilter = isScoped
+    ? { id: { [Op.in]: licensingScope.userIds }, isActive: true }
+    : { isActive: true };
 
   const [totalEmployees, totalActiveUsers, presentToday, onLeaveToday, pendingLeaves, recentWorklogs, totalPayrollDue] =
     await Promise.all([
-      Employee.count(),
+      Employee.count(employeeIdFilter ? { where: employeeIdFilter } : {}),
 
-      User.count({ where: { isActive: true } }),
+      User.count({ where: userIdFilter }),
 
       Attendance.count({
+        include: isScoped
+          ? [
+            {
+              model: Employee,
+              as: "employee",
+              where: employeeIdFilter,
+            },
+          ]
+          : undefined,
         where: { date: today, markIn: { [Op.ne]: null } },
       }),
 
       LeaveRequest.count({
+        include: isScoped
+          ? [
+            {
+              model: Employee,
+              as: "employee",
+              where: employeeIdFilter,
+            },
+          ]
+          : undefined,
         where: {
           status: "APPROVED",
           fromDate: { [Op.lte]: today },
@@ -35,6 +78,15 @@ export const getAdminDashboardService = async () => {
       }),
 
       LeaveRequest.count({
+        include: isScoped
+          ? [
+            {
+              model: Employee,
+              as: "employee",
+              where: employeeIdFilter,
+            },
+          ]
+          : undefined,
         where: { status: "PENDING" },
       }),
 
@@ -43,6 +95,7 @@ export const getAdminDashboardService = async () => {
           {
             model: Employee,
             as: "employee",
+            ...(isScoped ? { where: employeeIdFilter } : {}),
           },
         ],
         order: [["date", "DESC"]],
@@ -50,7 +103,16 @@ export const getAdminDashboardService = async () => {
       }),
 
       Payslip.sum('netSalary', {
-        where: { status: 'PUBLISHED' } // Changed 'pending' to 'PUBLISHED' as pending is not a valid status in model
+        where: { status: 'PUBLISHED' },
+        include: isScoped
+          ? [
+            {
+              model: Employee,
+              as: "employee",
+              where: employeeIdFilter,
+            },
+          ]
+          : undefined,
       }),
     ]);
 
@@ -72,8 +134,14 @@ export const getAdminDashboardService = async () => {
   // Compute average performance as task completion rate (scaled to 5)
   // If there are no tasks, default to 0
   const [totalTasks, completedTasks] = await Promise.all([
-    Task.count(),
-    Task.count({ where: { status: "COMPLETED" } }),
+    Task.count(
+      isScoped ? { where: { assignedToEmployeeId: licensingScope.employeeIds } } : {}
+    ),
+    Task.count({
+      where: isScoped
+        ? { assignedToEmployeeId: licensingScope.employeeIds, status: "COMPLETED" }
+        : { status: "COMPLETED" },
+    }),
   ]);
 
   const completionRate = totalTasks ? completedTasks / totalTasks : 0;

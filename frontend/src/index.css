@@ -120,3 +120,25 @@ html {
 .light-mode .bg-gray-900 {
   background-color: #ffffff !important; /* white */
 }
+/* Admin: force pointer cursor on interactive/clickable UI */
+.admin-cursor-scope button:not(:disabled),
+.admin-cursor-scope [role='button']:not([aria-disabled='true']),
+.admin-cursor-scope a,
+.admin-cursor-scope summary,
+.admin-cursor-scope input[type='button']:not(:disabled),
+.admin-cursor-scope input[type='submit']:not(:disabled),
+.admin-cursor-scope input[type='reset']:not(:disabled),
+.admin-cursor-scope select:not(:disabled),
+.admin-cursor-scope label[for],
+.admin-cursor-scope .cursor-pointer,
+.admin-cursor-scope [onclick],
+.admin-cursor-scope [data-clickable='true'] {
+  cursor: pointer !important;
+}
+
+.admin-cursor-scope button:disabled,
+.admin-cursor-scope [aria-disabled='true'],
+.admin-cursor-scope input:disabled,
+.admin-cursor-scope select:disabled {
+  cursor: not-allowed !important;
+}

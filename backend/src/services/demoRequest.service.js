@@ -173,6 +173,23 @@ const buildAdminMessage = (request, status = "PENDING", trialAccessRole = null) 
   return message;
 };
 
+const isLicensingRequest = (interests = []) =>
+  Array.isArray(interests) &&
+  interests.some((item) => String(item || "").toLowerCase().includes("licens"));
+
+const getRequestLabels = (interests = []) => {
+  if (isLicensingRequest(interests)) {
+    return {
+      singular: "Licensing Request",
+      plural: "licensing request",
+    };
+  }
+  return {
+    singular: "Demo Request",
+    plural: "demo request",
+  };
+};
+
 export const createDemoRequestService = async (payload) => {
   const { fullName, email, companyName, companyWebsite, role, employees, interests } =
     payload;
@@ -203,19 +220,20 @@ export const createDemoRequestService = async (payload) => {
 
   const actionLink = getAdminActionLink(request.id);
   const detailsMessage = buildAdminMessage(request, "PENDING");
-  const title = `Request for Demo #${request.id}`;
+  const labels = getRequestLabels(request.interests);
+  const title = `Request for ${labels.singular} #${request.id}`;
 
   // Send submit confirmation to requester first.
   // This should not depend on admin-notification email success.
   await sendEmail({
     to: request.email,
-    subject: "We received your LiteHR demo request",
-    text: `Hi ${request.fullName}, we have received your demo request. Our admin team will review it and contact you soon.`,
+    subject: `We received your WORKFORCEDGE ${labels.plural}`,
+    text: `Hi ${request.fullName}, we have received your ${labels.plural}. Our admin team will review it and contact you soon.`,
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-        <h2>Demo Request Received</h2>
+        <h2>${labels.singular} Received</h2>
         <p>Hi ${request.fullName},</p>
-        <p>Thanks for requesting a LiteHR demo. Your request is now in review.</p>
+        <p>Thanks for contacting WORKFORCEDGE. Your request is now in review.</p>
         <p><strong>Request ID:</strong> #${request.id}</p>
         <p><strong>Status:</strong> Pending Admin Approval</p>
         <p>We will email you once approved.</p>
@@ -240,11 +258,11 @@ export const createDemoRequestService = async (payload) => {
     try {
       await sendEmail({
         to: adminEmails.join(","),
-        subject: `New Demo Request #${request.id} - LiteHR`,
-        text: `New demo request received from ${request.fullName} (${request.email}).\nCompany: ${request.companyName}\nRole: ${request.role}\nEmployees: ${request.employees}\nInterests: ${interestsText}\nAction link: ${actionLink}`,
+        subject: `New ${labels.singular} #${request.id} - WORKFORCEDGE`,
+        text: `New ${labels.plural} received from ${request.fullName} (${request.email}).\nCompany: ${request.companyName}\nRole: ${request.role}\nEmployees: ${request.employees}\nInterests: ${interestsText}\nAction link: ${actionLink}`,
         html: `
           <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-            <h2>New LiteHR Demo Request</h2>
+            <h2>New WORKFORCEDGE ${labels.singular}</h2>
             <p><strong>Request ID:</strong> #${request.id}</p>
             <p><strong>Name:</strong> ${request.fullName}</p>
             <p><strong>Email:</strong> ${request.email}</p>
@@ -294,6 +312,15 @@ export const approveDemoRequestService = async ({
   if (!request) {
     throw new Error("Demo request not found");
   }
+  const labels = getRequestLabels(request.interests);
+  const requestNotificationTitles = [
+    `Request for ${labels.singular} #${request.id}`,
+    `${labels.singular} #${request.id}`,
+    `Request for Demo #${request.id}`,
+    `Demo Request #${request.id}`,
+    `Request for Licensing Request #${request.id}`,
+    `Licensing Request #${request.id}`,
+  ];
 
   if (request.status === "REJECTED") {
     throw new Error("Rejected demo request cannot be approved");
@@ -326,10 +353,7 @@ export const approveDemoRequestService = async ({
       {
         where: {
           type: "SYSTEM",
-          [Op.or]: [
-            { title: `Request for Demo #${request.id}` },
-            { title: `Demo Request #${request.id}` },
-          ],
+          title: { [Op.in]: requestNotificationTitles },
         },
       }
     );
@@ -355,10 +379,7 @@ export const approveDemoRequestService = async ({
     {
       where: {
         type: "SYSTEM",
-        [Op.or]: [
-          { title: `Request for Demo #${request.id}` },
-          { title: `Demo Request #${request.id}` },
-        ],
+        title: { [Op.in]: requestNotificationTitles },
       },
     }
   );

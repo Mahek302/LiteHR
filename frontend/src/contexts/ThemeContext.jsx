@@ -28,29 +28,29 @@ export const getThemeClasses = (darkMode) => {
   return {
     // Backgrounds
     bg: {
-      primary: isDark ? 'bg-gray-900' : 'bg-gray-50',
-      secondary: isDark ? 'bg-gray-800' : 'bg-white',
-      tertiary: isDark ? 'bg-gray-700' : 'bg-gray-100',
+      primary: isDark ? 'bg-slate-950' : 'bg-slate-50',
+      secondary: isDark ? 'bg-slate-900/80 backdrop-blur-sm' : 'bg-gradient-to-br from-white to-violet-50/60',
+      tertiary: isDark ? 'bg-slate-800/80' : 'bg-violet-50',
     },
     
     // Text
     text: {
-      primary: isDark ? 'text-white' : 'text-gray-800',
-      secondary: isDark ? 'text-gray-300' : 'text-gray-600',
-      muted: isDark ? 'text-gray-400' : 'text-gray-500',
+      primary: isDark ? 'text-slate-100' : 'text-slate-800',
+      secondary: isDark ? 'text-slate-300' : 'text-slate-600',
+      muted: isDark ? 'text-slate-400' : 'text-slate-500',
     },
     
     // Borders
     border: {
-      primary: isDark ? 'border-gray-700' : 'border-gray-200',
-      secondary: isDark ? 'border-gray-600' : 'border-gray-300',
+      primary: isDark ? 'border-slate-700/70' : 'border-violet-100',
+      secondary: isDark ? 'border-slate-600/70' : 'border-slate-300',
     },
     
     // Inputs
     input: {
-      bg: isDark ? 'bg-gray-900' : 'bg-gray-100',
-      border: isDark ? 'border-gray-700' : 'border-gray-300',
-      text: isDark ? 'text-white' : 'text-gray-800',
+      bg: isDark ? 'bg-slate-900/90' : 'bg-white',
+      border: isDark ? 'border-slate-700/70' : 'border-slate-300',
+      text: isDark ? 'text-slate-100' : 'text-slate-800',
     },
   };
 };

@@ -4,6 +4,7 @@ import { hashPassword } from "../utils/password.js";
 import { LeaveType, EmployeeLeaveBalance } from "../models/index.js";
 import { sendEmployeeCredentials } from "../utils/email.js";
 import { sequelize } from "../config/db.js";
+import { getMockLicensingScope } from "./licensingScope.service.js";
 
 // Generate password from lastname + 4 random digits
 const generatePassword = (fullName) => {
@@ -189,8 +190,18 @@ export const createEmployeeService = async (data) => {
 };
 
 export const getEmployeesService = async (requestingUser = null) => {
+  const licensingScope = await getMockLicensingScope(requestingUser);
+  if (licensingScope && licensingScope.userIds.length === 0) {
+    return [];
+  }
+
+  const userWhere = { isActive: true };
+  if (licensingScope) {
+    userWhere.id = { [Op.in]: licensingScope.userIds };
+  }
+
   const employees = await User.findAll({
-    where: { isActive: true },
+    where: userWhere,
     include: [
       {
         model: Employee,

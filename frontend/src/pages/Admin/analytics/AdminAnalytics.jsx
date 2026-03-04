@@ -25,6 +25,14 @@ const AdminAnalytics = () => {
 
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+  const isBlockedDepartment = (value) => {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (!normalized) return true;
+    if (normalized === "unknown" || normalized === "trial" || normalized === "n/a" || normalized === "na") return true;
+    if (normalized.includes("unknown") || normalized.includes("trial") || normalized.includes("n/a")) return true;
+    return false;
+  };
+
   // Add this mapping function for leave types
   const getLeaveTypeName = (code) => {
     const leaveTypes = {
@@ -73,12 +81,44 @@ const AdminAnalytics = () => {
   // Attendance data for bar chart (monthly present counts)
   const attendanceData = charts?.attendance || [];
 
+  const filteredDepartments = (charts?.departments || []).filter(
+    (d) => !isBlockedDepartment(d?.department)
+  );
+
   // Department distribution for pie chart
-  const departmentData = charts?.departments?.map((d, i) => ({
+  const departmentData = filteredDepartments.map((d, i) => ({
     name: d.department || 'Unknown',
     value: Number(d.count),
     color: [colors.primary, colors.secondary, colors.warning, colors.tertiary, '#EC4899'][i % 5]
-  })) || [];
+  }));
+
+  const splitPieLabel = (name) => {
+    const raw = String(name || "").trim();
+    if (!raw) return [raw, ""];
+    if (raw.toLowerCase() === "information technology") return ["Information", "Technology"];
+    if (raw.length <= 14 || !raw.includes(" ")) return [raw, ""];
+    const words = raw.split(" ");
+    const mid = Math.ceil(words.length / 2);
+    return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
+  };
+
+  const renderDepartmentDistributionLabel = ({ x, y, name, percent }) => {
+    const pct = Math.round((percent || 0) * 100);
+    if (pct < 5) return null;
+    const [line1, line2] = splitPieLabel(name);
+
+    return (
+      <text x={x} y={y} fill={colors.text} textAnchor="middle" dominantBaseline="central" fontSize={10}>
+        <tspan x={x} dy={line2 ? "-0.45em" : "0"}>{line1}</tspan>
+        {line2 ? <tspan x={x} dy="1.1em">{line2}</tspan> : null}
+        <tspan x={x} dy="1.1em">{`${pct}%`}</tspan>
+      </text>
+    );
+  };
+
+  const filteredOvertime = (charts?.overtime || []).filter(
+    (d) => !isBlockedDepartment(d?.department)
+  );
 
   // Hiring trends for area chart
   const hiringData = charts?.hiring || [];
@@ -94,7 +134,7 @@ const AdminAnalytics = () => {
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div className={`${darkMode ? 'bg-gray-900' : 'bg-white'} p-3 border ${darkMode ? 'border-gray-700' : 'border-gray-200'} rounded-lg shadow-lg`}>
+        <div className={`${darkMode ? 'bg-slate-900' : 'bg-white'} p-3 border ${darkMode ? 'border-slate-700' : 'border-gray-200'} rounded-lg shadow-lg`}>
           <p className={`${darkMode ? 'text-gray-300' : 'text-gray-700'} font-medium`}>{label}</p>
           {payload.map((entry, index) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
@@ -119,9 +159,9 @@ const AdminAnalytics = () => {
   const cardBorder = darkMode ? 'border-slate-700' : 'border-gray-200';
   const textPrimary = darkMode ? 'text-white' : 'text-gray-900';
   const textSecondary = darkMode ? 'text-gray-400' : 'text-gray-600';
-  const inputBg = darkMode ? 'bg-slate-800' : 'bg-gray-50';
-  const inputBorder = darkMode ? 'border-slate-700' : 'border-gray-300';
-  const hoverBg = darkMode ? 'hover:bg-slate-700' : 'hover:bg-gray-50';
+  const inputBg = darkMode ? 'bg-slate-800' : 'bg-violet-50';
+  const inputBorder = darkMode ? 'border-slate-700' : 'border-slate-300';
+  const hoverBg = darkMode ? 'hover:bg-slate-700' : 'hover:bg-violet-50';
 
   // Fetch dashboard & charts
   useEffect(() => {
@@ -186,229 +226,136 @@ const AdminAnalytics = () => {
   }, []);
 
   const handleExportPDF = async () => {
-    try {
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
+  try {
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageHeight = pdf.internal.pageSize.getHeight();
 
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      let yPosition = await addCorporatePdfHeader(pdf, {
-        title: "Admin Dashboard Report",
-        subtitle: "Organization-level summary and trend data",
-      });
+    let yPosition = await addCorporatePdfHeader(pdf, {
+      title: "Analytics Dashboard Report",
+      subtitle: `Time Range: ${timeRange.toUpperCase()} | Organization insights`,
+    });
 
-      // Add stats summary
-      pdf.setFontSize(12);
-      pdf.text("Key Metrics Summary", 15, yPosition);
-      yPosition += 8;
+    const headStyles = { fillColor: [139, 92, 246], textColor: 255, fontStyle: "bold" };
+    const bodyStyles = { textColor: darkMode ? 255 : 0, fontSize: 9, cellPadding: 2.5 };
+    const alternateRowStyles = { fillColor: darkMode ? [30, 41, 59] : [246, 248, 252] };
 
-      pdf.setFontSize(10);
-      const stats = [
-        `Total Employees: ${dashboard?.totalEmployees || "—"}`,
-        `Active Users: ${dashboard?.totalActiveUsers || "—"}`,
-        `Today's Attendance: ${dashboard?.presentToday || "—"} (${dashboard?.totalEmployees ? ((dashboard.presentToday / dashboard.totalEmployees) * 100).toFixed(1) : "—"}%)`,
-        `Pending Leaves: ${dashboard?.pendingLeaves || "—"}`,
-        `On Leave Today: ${dashboard?.onLeaveToday || "—"}`,
-        `Departments: ${charts?.departments?.length || "—"}`,
-        `Active Jobs: ${activeJobsCount || "—"}`,
-      ];
-
-      for (const stat of stats) {
-        if (yPosition > pageHeight - 20) {
-          pdf.addPage();
-          yPosition = await addCorporatePdfHeader(pdf, {
-            title: "Admin Dashboard Report",
-          });
-        }
-        pdf.text(stat, 15, yPosition);
-        yPosition += 6;
-      }
-
-      yPosition += 4;
-
-      // Add Department Data Table
-      if (charts?.departments && charts.departments.length > 0) {
-        if (yPosition > pageHeight - 40) {
-          pdf.addPage();
-          yPosition = await addCorporatePdfHeader(pdf, {
-            title: "Department Overview",
-          });
-        }
-
-        pdf.setFontSize(12);
-        pdf.text("Department Overview", 15, yPosition);
-        yPosition += 8;
-
-        pdf.setFontSize(9);
-        const deptTableData = [
-          ["Department", "Employee Count"],
-          ...charts.departments.map((d) => [
-            d.department || "N/A",
-            String(d.count || 0),
-          ]),
-        ];
-
-        autoTable(pdf, {
-          head: [deptTableData[0]],
-          body: deptTableData.slice(1),
-          startY: yPosition,
-          margin: { left: 15, right: 15 },
-          theme: "grid",
-          headStyles: {
-            fillColor: [139, 92, 246],
-            textColor: 255,
-            fontStyle: "bold",
-          },
-          bodyStyles: {
-            textColor: darkMode ? 255 : 0,
-          },
-          alternateRowStyles: {
-            fillColor: darkMode ? [45, 45, 60] : [240, 240, 245],
-          },
-        });
-
-        yPosition = pdf.internal.pageSize.getHeight() - 20;
-      }
-
-      // Add Attendance Data
-      if (charts?.attendance && charts.attendance.length > 0) {
-        if (yPosition > pageHeight - 40) {
-          pdf.addPage();
-          yPosition = await addCorporatePdfHeader(pdf, {
-            title: "Monthly Attendance Summary",
-          });
-        }
-
-        pdf.setFontSize(12);
-        pdf.text("Monthly Attendance Summary", 15, yPosition);
-        yPosition += 8;
-
-        pdf.setFontSize(9);
-        const attendanceTableData = [
-          ["Month", "Present Count"],
-          ...charts.attendance.map((a) => [
-            monthNames[(Number(a.month) - 1) % 12] || "N/A",
-            String(a.present || 0),
-          ]),
-        ];
-
-        autoTable(pdf, {
-          head: [attendanceTableData[0]],
-          body: attendanceTableData.slice(1),
-          startY: yPosition,
-          margin: { left: 15, right: 15 },
-          theme: "grid",
-          headStyles: {
-            fillColor: [139, 92, 246],
-            textColor: 255,
-            fontStyle: "bold",
-          },
-          bodyStyles: {
-            textColor: darkMode ? 255 : 0,
-          },
-          alternateRowStyles: {
-            fillColor: darkMode ? [45, 45, 60] : [240, 240, 245],
-          },
-        });
-
-        yPosition = pdf.internal.pageSize.getHeight() - 20;
-      }
-
-      // Add Leave Data
-      if (charts?.leaves && charts.leaves.length > 0) {
-        if (yPosition > pageHeight - 40) {
-          pdf.addPage();
-          yPosition = await addCorporatePdfHeader(pdf, {
-            title: "Leave Request Summary",
-          });
-        }
-
-        pdf.setFontSize(12);
-        pdf.text("Leave Request Summary", 15, yPosition);
-        yPosition += 8;
-
-        pdf.setFontSize(9);
-        const leaveTableData = [
-          ["Leave Type", "Count"],
-          ...charts.leaves.map((l) => [getLeaveTypeName(l.type) || "N/A", String(l.count || 0)]),
-        ];
-
-        autoTable(pdf, {
-          head: [leaveTableData[0]],
-          body: leaveTableData.slice(1),
-          startY: yPosition,
-          margin: { left: 15, right: 15 },
-          theme: "grid",
-          headStyles: {
-            fillColor: [139, 92, 246],
-            textColor: 255,
-            fontStyle: "bold",
-          },
-          bodyStyles: {
-            textColor: darkMode ? 255 : 0,
-          },
-          alternateRowStyles: {
-            fillColor: darkMode ? [45, 45, 60] : [240, 240, 245],
-          },
-        });
-      }
-
-      // Add recent activities
-      if (dashboard?.recentWorklogs && dashboard.recentWorklogs.length > 0) {
+    const ensureSpace = async (needed = 42, pageTitle = "Analytics Dashboard Report") => {
+      if (yPosition > pageHeight - needed) {
         pdf.addPage();
-        yPosition = await addCorporatePdfHeader(pdf, {
-          title: "Recent Activities",
-        });
-
-        pdf.setFontSize(12);
-        pdf.text("Recent Activities", 15, yPosition);
-        yPosition += 8;
-
-        pdf.setFontSize(9);
-        const activitiesTableData = [
-          ["Employee", "Action", "Date"],
-          ...dashboard.recentWorklogs
-            .slice(0, 10)
-            .map((w) => [
-              w.employee?.fullName || "Unknown",
-              w.description || "Activity",
-              w.date || "N/A",
-            ]),
-        ];
-
-        autoTable(pdf, {
-          head: [activitiesTableData[0]],
-          body: activitiesTableData.slice(1),
-          startY: yPosition,
-          margin: { left: 15, right: 15 },
-          theme: "grid",
-          headStyles: {
-            fillColor: [139, 92, 246],
-            textColor: 255,
-            fontStyle: "bold",
-          },
-          bodyStyles: {
-            textColor: darkMode ? 255 : 0,
-          },
-          alternateRowStyles: {
-            fillColor: darkMode ? [45, 45, 60] : [240, 240, 245],
-          },
-        });
+        yPosition = await addCorporatePdfHeader(pdf, { title: pageTitle });
       }
+    };
 
-      addCorporatePdfFooters(pdf);
+    const addSectionTitle = (title, rgb = [15, 23, 42]) => {
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.setTextColor(rgb[0], rgb[1], rgb[2]);
+      pdf.text(title, 15, yPosition);
+      yPosition += 7;
+    };
 
-      // Save the PDF
-      const fileName = `Admin_Dashboard_Report_${new Date().getTime()}.pdf`;
-      pdf.save(fileName);
-    } catch (err) {
-      console.error("Error generating PDF:", err);
-      alert("Failed to generate PDF. Please try again.");
-    }
-  };
+    addSectionTitle("Key Metrics Summary", [79, 70, 229]);
+    autoTable(pdf, {
+      startY: yPosition,
+      head: [["Metric", "Value"]],
+      body: [
+        ["Total Employees", String(dashboard?.totalEmployees || "-")],
+        ["Active Users", String(dashboard?.totalActiveUsers || "-")],
+        ["Today's Attendance", `${dashboard?.presentToday || 0} (${dashboard?.totalEmployees ? ((dashboard.presentToday / dashboard.totalEmployees) * 100).toFixed(1) : "0"}%)`],
+        ["Pending Leaves", String(dashboard?.pendingLeaves || "-")],
+        ["On Leave Today", String(dashboard?.onLeaveToday || "-")],
+        ["Departments", String(filteredDepartments.length || "-")],
+        ["Active Jobs", String(activeJobsCount || "-")],
+      ],
+      theme: "grid",
+      margin: { left: 15, right: 15 },
+      headStyles,
+      bodyStyles,
+      alternateRowStyles,
+    });
+    yPosition = (pdf.lastAutoTable?.finalY || yPosition) + 8;
 
+    await ensureSpace(70, "Department Performance");
+    addSectionTitle("Department Performance", [30, 64, 175]);
+    autoTable(pdf, {
+      startY: yPosition,
+      head: [["Department", "Employees", "Attendance %", "Late Arrivals", "Absences"]],
+      body: departmentData.map((dept) => [
+        dept.name,
+        String(dept.value || 0),
+        `${dept.value || 0}%`,
+        String(Math.floor((dept.value || 0) / 5)),
+        String(Math.floor((dept.value || 0) / 8)),
+      ]),
+      theme: "striped",
+      margin: { left: 15, right: 15 },
+      headStyles,
+      bodyStyles,
+      alternateRowStyles,
+    });
+    yPosition = (pdf.lastAutoTable?.finalY || yPosition) + 8;
+
+    await ensureSpace(70, "Employee Distribution");
+    addSectionTitle("Employee Distribution", [5, 150, 105]);
+    const totalDepartmentEmployees = departmentData.reduce((sum, row) => sum + (row.value || 0), 0) || 1;
+    autoTable(pdf, {
+      startY: yPosition,
+      head: [["Department", "Employees", "Share %"]],
+      body: departmentData.map((row) => [
+        row.name,
+        String(row.value || 0),
+        `${(((row.value || 0) / totalDepartmentEmployees) * 100).toFixed(1)}%`,
+      ]),
+      theme: "striped",
+      margin: { left: 15, right: 15 },
+      headStyles,
+      bodyStyles,
+      alternateRowStyles,
+    });
+    yPosition = (pdf.lastAutoTable?.finalY || yPosition) + 8;
+
+    await ensureSpace(70, "Leave Statistics");
+    addSectionTitle("Leave Statistics", [217, 119, 6]);
+    autoTable(pdf, {
+      startY: yPosition,
+      head: [["Leave Type", "Count"]],
+      body: leaveData.map((row) => [row.type || "N/A", String(row.count || 0)]),
+      theme: "grid",
+      margin: { left: 15, right: 15 },
+      headStyles,
+      bodyStyles,
+      alternateRowStyles,
+    });
+    yPosition = (pdf.lastAutoTable?.finalY || yPosition) + 8;
+
+    await ensureSpace(80, "Recent Activities Timeline");
+    addSectionTitle("Recent Activities Timeline", [15, 118, 110]);
+    autoTable(pdf, {
+      startY: yPosition,
+      head: [["Employee", "Activity", "Date", "Hours"]],
+      body: (dashboard?.recentWorklogs || []).slice(0, 12).map((w) => [
+        w.employee?.fullName || "Unknown",
+        w.description || "Activity",
+        w.date ? new Date(w.date).toLocaleDateString() : "N/A",
+        w.hoursWorked ? String(w.hoursWorked) : "-",
+      ]),
+      theme: "striped",
+      margin: { left: 15, right: 15 },
+      headStyles,
+      bodyStyles,
+      alternateRowStyles,
+    });
+
+    addCorporatePdfFooters(pdf);
+    const fileName = `Analytics_Dashboard_Report_${new Date().getTime()}.pdf`;
+    pdf.save(fileName);
+  } catch (err) {
+    console.error("Error generating PDF:", err);
+    alert("Failed to generate PDF. Please try again.");
+  }
+};
+
+  // Chart styling based on theme
   return (
     <div className="w-full">
       {/* Header */}
@@ -527,7 +474,7 @@ const AdminAnalytics = () => {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={renderDepartmentDistributionLabel}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
@@ -548,7 +495,7 @@ const AdminAnalytics = () => {
           {dashboard?.recentWorklogs && dashboard.recentWorklogs.length > 0 ? (
             <div className="space-y-3">
               {dashboard.recentWorklogs.map((w) => (
-                <div key={w.id} className={`p-3 rounded ${darkMode ? 'bg-slate-900/50' : 'bg-gray-50'}`}>
+                <div key={w.id} className={`p-3 rounded ${darkMode ? 'bg-slate-900/50' : 'bg-violet-50'}`}>
                   <div className="flex justify-between items-center">
                     <div>
                       <div className={`font-semibold ${textPrimary}`}>{w.employee?.fullName || 'Unknown'}</div>
@@ -581,7 +528,7 @@ const AdminAnalytics = () => {
 
           <div className="space-y-3">
             {(leaveData).map((item, idx) => (
-              <div key={idx} className={`flex justify-between items-center p-3 ${darkMode ? 'bg-slate-900/50' : 'bg-gray-50'} rounded-lg`}>
+              <div key={idx} className={`flex justify-between items-center p-3 ${darkMode ? 'bg-slate-900/50' : 'bg-violet-50'} rounded-lg`}>
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color || (idx === 0 ? colors.success : idx === 1 ? colors.warning : colors.danger) }}></div>
                   <span className={`${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -606,14 +553,14 @@ const AdminAnalytics = () => {
             </div>
           </div>
 
-          {charts?.overtime ? (
+          {filteredOvertime.length > 0 ? (
             <div className="text-center">
               <div className={`text-3xl font-bold ${textPrimary} mb-2`}>
-                {charts.overtime.reduce((acc, curr) => acc + curr.hours, 0)}
+                {filteredOvertime.reduce((acc, curr) => acc + curr.hours, 0)}
               </div>
               <p className={`${textSecondary} mb-4`}>Total hours</p>
               <div>
-                {charts.overtime.slice(0, 3).map((dept, i) => (
+                {filteredOvertime.slice(0, 3).map((dept, i) => (
                   <div key={i} className={`flex justify-between text-sm ${textSecondary} mb-1`}>
                     <span>{dept.department}</span>
                     <span>{dept.hours} hrs</span>
@@ -631,8 +578,8 @@ const AdminAnalytics = () => {
       <div className={`${cardBg} rounded-xl p-6 border ${cardBorder} shadow-sm mb-8`}>
         <h3 className={`text-lg font-semibold ${textPrimary} mb-6`}>Department Performance</h3>
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className={darkMode ? 'bg-slate-700' : 'bg-gray-100'}>
+          <table className="w-full min-w-[920px]">
+            <thead className={darkMode ? 'bg-slate-700' : 'bg-violet-50'}>
               <tr>
                 <th className={`p-4 text-center text-sm font-semibold ${textSecondary}`}>Department</th>
                 <th className={`p-4 text-center text-sm font-semibold ${textSecondary}`}>Employees</th>
@@ -644,7 +591,7 @@ const AdminAnalytics = () => {
             </thead>
             <tbody>
               {departmentData.map((dept, index) => (
-                <tr key={index} className={`${darkMode ? 'hover:bg-slate-700' : 'hover:bg-gray-50'} transition-colors border-t ${cardBorder}`}>
+                <tr key={index} className={`${darkMode ? 'hover:bg-slate-700' : 'hover:bg-violet-50'} transition-colors border-t ${cardBorder}`}>
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-purple-600 to-purple-400 flex items-center justify-center text-white font-bold">
@@ -679,8 +626,8 @@ const AdminAnalytics = () => {
                   <td className="p-4 text-center">
                     <span className="font-bold text-rose-400">{Math.floor(dept.value / 8)}</span>
                   </td>
-                  <td className="p-4 text-center">
-                    <span className={`px-3 py-1.5 rounded-full text-sm font-medium border ${dept.value >= 35 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                  <td className="p-4 text-center min-w-[170px]">
+                    <span className={`inline-flex whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium border ${dept.value >= 35 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
                       dept.value >= 20 ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-rose-500/20 text-rose-400 border-rose-500/30'
                       }`}>
                       {dept.value >= 35 ? 'Excellent' :
@@ -698,3 +645,5 @@ const AdminAnalytics = () => {
 };
 
 export default AdminAnalytics;
+
+

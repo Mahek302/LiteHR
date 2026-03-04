@@ -80,12 +80,12 @@ const ApplicationsList = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "New": return "bg-gradient-to-r from-blue-500 to-blue-600 text-white";
-      case "Reviewed": return "bg-gradient-to-r from-amber-500 to-orange-500 text-white";
-      case "Interview": return "bg-gradient-to-r from-purple-500 to-pink-500 text-white";
-      case "Hired": return "bg-gradient-to-r from-emerald-500 to-green-500 text-white";
-      case "Rejected": return "bg-gradient-to-r from-rose-500 to-red-500 text-white";
-      default: return "bg-gradient-to-r from-gray-500 to-gray-600 text-white";
+      case "New": return darkMode ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" : "bg-blue-100 text-blue-700 border border-blue-300";
+      case "Reviewed": return darkMode ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-amber-100 text-amber-700 border border-amber-300";
+      case "Interview": return darkMode ? "bg-purple-500/20 text-purple-300 border border-purple-500/30" : "bg-purple-100 text-purple-700 border border-purple-300";
+      case "Hired": return darkMode ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-emerald-100 text-emerald-700 border border-emerald-300";
+      case "Rejected": return darkMode ? "bg-rose-500/20 text-rose-300 border border-rose-500/30" : "bg-rose-100 text-rose-700 border border-rose-300";
+      default: return darkMode ? "bg-gray-600/30 text-gray-200 border border-gray-500/40" : "bg-gray-100 text-gray-700 border border-gray-300";
     }
   };
 
@@ -99,20 +99,25 @@ const ApplicationsList = () => {
   const uniqueJobs = ["All", ...new Set(applications.map(app => app.job?.title).filter(Boolean))];
 
   // Theme helper functions
-  const getBgColor = () => darkMode ? "bg-gray-900" : "bg-white";
-  const getBorderColor = () => darkMode ? "border-gray-700" : "border-gray-200";
-  const getTextColor = () => darkMode ? "text-white" : "text-gray-800";
-  const getSecondaryTextColor = () => darkMode ? "text-gray-400" : "text-gray-600";
-  const getInputBg = () => darkMode ? "bg-gray-800" : "bg-gray-50";
-  const getCardBg = () => darkMode ? "bg-gray-800/50" : "bg-white";
-  const getHeaderBg = () => darkMode ? "from-gray-900 via-gray-800 to-gray-900" : "from-blue-50 via-indigo-50 to-purple-50";
-  const getStatsCardBg = () => darkMode ? "bg-gray-800/50" : "bg-white/80";
-  const getStatsBorderColor = () => darkMode ? "border-white/10" : "border-gray-200";
+  const getBgColor = () => darkMode ? "bg-slate-950" : "bg-white";
+  const getBorderColor = () => darkMode ? "border-slate-700/70" : "border-slate-200";
+  const getTextColor = () => darkMode ? "text-slate-100" : "text-slate-800";
+  const getSecondaryTextColor = () => darkMode ? "text-slate-300" : "text-slate-600";
+  const getInputBg = () => darkMode ? "bg-slate-900/80" : "bg-slate-50";
+  const getCardBg = () => darkMode ? "bg-slate-900/75" : "bg-white/95";
+  const getHeaderBg = () =>
+    darkMode
+      ? "from-slate-950 via-indigo-950/20 to-emerald-950/20"
+      : "from-violet-100 via-indigo-50 to-emerald-100/70";
+  const getStatsCardBg = () => darkMode ? "bg-slate-900/70" : "bg-white/90";
+  const getStatsBorderColor = () => darkMode ? "border-slate-700/60" : "border-slate-200/80";
 
   return (
     <div className="w-full">
       {/* Header */}
       <div className={`relative mb-10 overflow-hidden rounded-2xl bg-gradient-to-br ${getHeaderBg()} p-8 border ${getBorderColor()}`}>
+        <div className={`absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl ${darkMode ? "bg-violet-500/20" : "bg-violet-300/40"}`} />
+        <div className={`absolute -bottom-12 -left-10 w-44 h-44 rounded-full blur-3xl ${darkMode ? "bg-emerald-500/20" : "bg-emerald-300/40"}`} />
         <div className={`absolute inset-0 ${darkMode ? 'opacity-20' : 'opacity-10'}`} style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='${darkMode ? '0.1' : '0.05'}'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
         }}></div>
@@ -129,7 +134,7 @@ const ApplicationsList = () => {
             </div>
             <div className="flex gap-3">
               <button className="relative group">
-                <div className={`absolute -inset-1 ${darkMode ? 'bg-gradient-to-r from-blue-500 to-blue-600' : 'bg-gradient-to-r from-blue-400 to-blue-500'} rounded-lg blur opacity-20 group-hover:opacity-30 transition duration-1000`}></div>
+                <div className="hidden"></div>
 
               </button>
             </div>
@@ -138,8 +143,8 @@ const ApplicationsList = () => {
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="relative group">
-              <div className={`absolute -inset-1 ${darkMode ? 'bg-gradient-to-r from-blue-500 to-blue-600' : 'bg-gradient-to-r from-blue-400 to-blue-500'} rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-1000`}></div>
-              <div className={`relative ${getStatsCardBg()} backdrop-blur-sm rounded-xl p-5 border ${getStatsBorderColor()}`}>
+              <div className="hidden"></div>
+              <div className={`relative ${getStatsCardBg()} backdrop-blur-sm rounded-xl p-5 border ${getStatsBorderColor()} ${darkMode ? "bg-gradient-to-br from-blue-500/10 to-slate-900/80" : "bg-gradient-to-br from-blue-50 to-white"}`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className={`text-sm ${getSecondaryTextColor()}`}>Total</p>
@@ -153,8 +158,8 @@ const ApplicationsList = () => {
             </div>
 
             <div className="relative group">
-              <div className={`absolute -inset-1 ${darkMode ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 'bg-gradient-to-r from-amber-400 to-orange-400'} rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-1000`}></div>
-              <div className={`relative ${getStatsCardBg()} backdrop-blur-sm rounded-xl p-5 border ${getStatsBorderColor()}`}>
+              <div className="hidden"></div>
+              <div className={`relative ${getStatsCardBg()} backdrop-blur-sm rounded-xl p-5 border ${getStatsBorderColor()} ${darkMode ? "bg-gradient-to-br from-amber-500/10 to-slate-900/80" : "bg-gradient-to-br from-amber-50 to-white"}`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className={`text-sm ${getSecondaryTextColor()}`}>New</p>
@@ -168,8 +173,8 @@ const ApplicationsList = () => {
             </div>
 
             <div className="relative group">
-              <div className={`absolute -inset-1 ${darkMode ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-gradient-to-r from-purple-400 to-pink-400'} rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-1000`}></div>
-              <div className={`relative ${getStatsCardBg()} backdrop-blur-sm rounded-xl p-5 border ${getStatsBorderColor()}`}>
+              <div className="hidden"></div>
+              <div className={`relative ${getStatsCardBg()} backdrop-blur-sm rounded-xl p-5 border ${getStatsBorderColor()} ${darkMode ? "bg-gradient-to-br from-violet-500/10 to-slate-900/80" : "bg-gradient-to-br from-violet-50 to-white"}`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className={`text-sm ${getSecondaryTextColor()}`}>Interview</p>
@@ -183,8 +188,8 @@ const ApplicationsList = () => {
             </div>
 
             <div className="relative group">
-              <div className={`absolute -inset-1 ${darkMode ? 'bg-gradient-to-r from-emerald-500 to-green-500' : 'bg-gradient-to-r from-emerald-400 to-green-400'} rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-1000`}></div>
-              <div className={`relative ${getStatsCardBg()} backdrop-blur-sm rounded-xl p-5 border ${getStatsBorderColor()}`}>
+              <div className="hidden"></div>
+              <div className={`relative ${getStatsCardBg()} backdrop-blur-sm rounded-xl p-5 border ${getStatsBorderColor()} ${darkMode ? "bg-gradient-to-br from-emerald-500/10 to-slate-900/80" : "bg-gradient-to-br from-emerald-50 to-white"}`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className={`text-sm ${getSecondaryTextColor()}`}>Hired</p>
@@ -198,8 +203,8 @@ const ApplicationsList = () => {
             </div>
 
             <div className="relative group">
-              <div className={`absolute -inset-1 ${darkMode ? 'bg-gradient-to-r from-gray-500 to-gray-600' : 'bg-gradient-to-r from-gray-400 to-gray-500'} rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-1000`}></div>
-              <div className={`relative ${getStatsCardBg()} backdrop-blur-sm rounded-xl p-5 border ${getStatsBorderColor()}`}>
+              <div className="hidden"></div>
+              <div className={`relative ${getStatsCardBg()} backdrop-blur-sm rounded-xl p-5 border ${getStatsBorderColor()} ${darkMode ? "bg-gradient-to-br from-slate-500/10 to-slate-900/80" : "bg-gradient-to-br from-slate-100 to-white"}`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className={`text-sm ${getSecondaryTextColor()}`}>Avg. Match</p>
@@ -217,16 +222,16 @@ const ApplicationsList = () => {
 
       {/* Search & Filter */}
       <div className="relative group mb-6">
-        <div className={`absolute -inset-1 ${darkMode ? 'bg-gradient-to-r from-blue-500 to-purple-500' : 'bg-gradient-to-r from-blue-400 to-purple-400'} rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000`}></div>
-        <div className={`relative ${getCardBg()} rounded-2xl p-6 border ${darkMode ? 'border-white/10' : 'border-gray-200'}`}>
+        <div className="hidden"></div>
+        <div className={`relative ${getCardBg()} rounded-2xl p-6 border ${darkMode ? 'border-slate-700/60' : 'border-indigo-100'} shadow-sm`}>
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <FiSearch className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                <FiSearch className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-slate-400' : 'text-slate-400'}`} />
                 <input
                   type="text"
                   placeholder="Search applications by name or job title..."
-                  className={`w-full pl-12 pr-4 py-3 ${getInputBg()} border ${darkMode ? 'border-white/20' : 'border-gray-300'} rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${getTextColor()} ${darkMode ? 'placeholder-gray-500' : 'placeholder-gray-400'} transition-all`}
+                  className={`w-full pl-12 pr-4 py-3 ${getInputBg()} border ${darkMode ? 'border-slate-700/60' : 'border-slate-300'} rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 ${getTextColor()} ${darkMode ? 'placeholder-slate-500' : 'placeholder-slate-400'} transition-all`}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -234,7 +239,7 @@ const ApplicationsList = () => {
             </div>
             <div className="flex gap-3">
               <select
-                className={`px-4 py-3 ${getInputBg()} border ${darkMode ? 'border-white/20' : 'border-gray-300'} rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${getTextColor()}`}
+                className={`px-4 py-3 ${getInputBg()} border ${darkMode ? 'border-slate-700/60' : 'border-slate-300'} rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 ${getTextColor()}`}
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
@@ -246,7 +251,7 @@ const ApplicationsList = () => {
                 <option value="Rejected" className={darkMode ? "bg-gray-800" : "bg-white"}>Rejected</option>
               </select>
               <select
-                className={`px-4 py-3 ${getInputBg()} border ${darkMode ? 'border-white/20' : 'border-gray-300'} rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${getTextColor()}`}
+                className={`px-4 py-3 ${getInputBg()} border ${darkMode ? 'border-slate-700/60' : 'border-slate-300'} rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 ${getTextColor()}`}
                 value={jobFilter}
                 onChange={(e) => setJobFilter(e.target.value)}
               >
@@ -254,7 +259,7 @@ const ApplicationsList = () => {
                   <option key={job} value={job} className={darkMode ? "bg-gray-800" : "bg-white"}>{job}</option>
                 ))}
               </select>
-              <button className={`flex items-center gap-2 px-4 py-3 ${getInputBg()} border ${darkMode ? 'border-white/20' : 'border-gray-300'} rounded-lg ${darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100'} ${getTextColor()}`}>
+              <button className={`flex items-center gap-2 px-4 py-3 ${getInputBg()} border ${darkMode ? 'border-slate-700/60' : 'border-slate-300'} rounded-lg ${darkMode ? 'hover:bg-slate-800/70' : 'hover:bg-violet-50'} ${getTextColor()}`}>
                 <FiFilter className="w-4 h-4" />
                 More Filters
               </button>
@@ -265,11 +270,11 @@ const ApplicationsList = () => {
 
       {/* Applications Table */}
       <div className="relative group">
-        <div className={`absolute -inset-1 ${darkMode ? 'bg-gradient-to-r from-blue-500 to-purple-500' : 'bg-gradient-to-r from-blue-400 to-purple-400'} rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000`}></div>
-        <div className={`relative ${getCardBg()} rounded-2xl border ${darkMode ? 'border-white/10' : 'border-gray-200'} overflow-hidden`}>
+        <div className="hidden"></div>
+        <div className={`relative ${getCardBg()} rounded-2xl border ${darkMode ? 'border-slate-700/60' : 'border-indigo-100'} overflow-hidden shadow-sm`}>
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className={darkMode ? "bg-gray-800/50" : "bg-gray-50"}>
+              <thead className={darkMode ? "bg-slate-800/70" : "bg-gradient-to-r from-violet-50 to-indigo-50"}>
                 <tr>
                   <th className={`p-4 border-b ${darkMode ? 'border-white/10' : 'border-gray-200'} text-left text-sm font-semibold ${getTextColor()}`}>
                     Candidate
@@ -314,10 +319,10 @@ const ApplicationsList = () => {
                     </td>
                   </tr>
                 ) : filtered.map((app) => (
-                  <tr key={app.id} className={`${darkMode ? 'hover:bg-gray-800/30' : 'hover:bg-gray-50'} transition-colors group/row`}>
+                  <tr key={app.id} className={`${darkMode ? 'hover:bg-slate-800/35' : 'hover:bg-violet-50/40'} transition-colors group/row`}>
                     <td className={`p-4 border-b ${darkMode ? 'border-white/10' : 'border-gray-200'}`}>
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold">
+                        <div className="w-10 h-10 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white font-bold">
                           {app.name.charAt(0)}
                         </div>
                         <div>
@@ -387,7 +392,7 @@ const ApplicationsList = () => {
               <button className={`px-3 py-2 ${getInputBg()} border ${darkMode ? 'border-white/20' : 'border-gray-300'} ${getSecondaryTextColor()} rounded-lg ${darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100'} disabled:opacity-50`} disabled>
                 Previous
               </button>
-              <button className="px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:shadow-md">
+              <button className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
                 1
               </button>
               <button className={`px-3 py-2 ${getInputBg()} border ${darkMode ? 'border-white/20' : 'border-gray-300'} ${getSecondaryTextColor()} rounded-lg ${darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100'}`}>

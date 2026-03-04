@@ -171,8 +171,16 @@ const theme = useThemeClasses();
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
-        <div className="flex items-center gap-4">
+      <div
+        className={`flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8 p-6 rounded-2xl border ${theme.border.primary} relative overflow-hidden ${
+          darkMode
+            ? "bg-gradient-to-br from-slate-900/90 via-violet-900/20 to-emerald-900/20"
+            : "bg-gradient-to-br from-violet-100 via-indigo-50 to-emerald-100/70"
+        }`}
+      >
+        <div className={`absolute -top-8 -right-8 w-36 h-36 rounded-full blur-3xl ${darkMode ? "bg-violet-500/20" : "bg-violet-300/40"}`} />
+        <div className={`absolute -bottom-10 -left-10 w-40 h-40 rounded-full blur-3xl ${darkMode ? "bg-emerald-500/20" : "bg-emerald-300/40"}`} />
+        <div className="flex items-center gap-4 relative z-10">
           <Link
             to="/admin/employees"
             className={`p-2 rounded-lg ${theme.bg.secondary} border ${theme.border.primary} ${theme.text.secondary} hover:text-purple-600 hover:border-purple-500 transition-colors`}
@@ -188,8 +196,8 @@ const theme = useThemeClasses();
             </p>
           </div>
         </div>
-        <div className="flex gap-3">
-          <button className={`flex items-center gap-2 px-4 py-2.5 ${theme.bg.secondary} hover:${darkMode ? 'bg-gray-700' : 'bg-gray-100'} ${theme.text.primary} rounded-lg border ${theme.border.primary} transition-colors`}>
+        <div className="flex gap-3 relative z-10">
+          <button className={`flex items-center gap-2 px-4 py-2.5 ${theme.bg.secondary} hover:${darkMode ? 'bg-slate-700' : 'bg-violet-100'} ${theme.text.primary} rounded-lg border ${theme.border.primary} transition-colors`}>
             <FiDownload className="w-4 h-4" />
             Export Chart
           </button>
@@ -220,7 +228,7 @@ const theme = useThemeClasses();
               </div>
             </div>
 
-              <div className={`mb-6 p-4 ${darkMode ? 'bg-gray-900/50' : 'bg-gray-100'} rounded-lg border ${theme.border.primary}`}>
+              <div className={`mb-6 p-4 ${darkMode ? 'bg-slate-900/60' : 'bg-violet-50'} rounded-lg border ${theme.border.primary}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-500 dark:text-purple-400 font-bold text-lg">
@@ -290,7 +298,16 @@ const theme = useThemeClasses();
                     <XAxis dataKey="level" stroke={darkMode ? "#9CA3AF" : "#6B7280"} />
                     <YAxis stroke={darkMode ? "#9CA3AF" : "#6B7280"} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="count" name="Employees" radius={[4, 4, 0, 0]}>
+                    <Bar
+                      dataKey="count"
+                      name="Employees"
+                      radius={[4, 4, 0, 0]}
+                      label={{
+                        position: "top",
+                        fill: darkMode ? "#9CA3AF" : "#4B5563",
+                        fontSize: 11,
+                      }}
+                    >
                       {reportingLevelsData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
@@ -398,7 +415,7 @@ const theme = useThemeClasses();
             <h3 className={`text-lg font-semibold ${theme.text.primary} mb-4`}>Hierarchy Statistics</h3>
             
             <div className="space-y-4">
-              <div className={`flex items-center justify-between p-3 ${darkMode ? 'bg-gray-900/50' : 'bg-gray-100'} rounded-lg`}>
+              <div className={`flex items-center justify-between p-3 ${darkMode ? 'bg-slate-900/60' : 'bg-violet-50'} rounded-lg`}>
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-lg ${darkMode ? 'bg-purple-500/20' : 'bg-purple-100'} flex items-center justify-center`}>
                     <FiUsers className="w-5 h-5 text-purple-500 dark:text-purple-400" />
@@ -413,7 +430,7 @@ const theme = useThemeClasses();
                 </div>
               </div>
               
-              <div className={`flex items-center justify-between p-3 ${darkMode ? 'bg-gray-900/50' : 'bg-gray-100'} rounded-lg`}>
+              <div className={`flex items-center justify-between p-3 ${darkMode ? 'bg-slate-900/60' : 'bg-violet-50'} rounded-lg`}>
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-lg ${darkMode ? 'bg-emerald-500/20' : 'bg-emerald-100'} flex items-center justify-center`}>
                     <svg className="w-5 h-5 text-emerald-500 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -430,7 +447,7 @@ const theme = useThemeClasses();
                 </div>
               </div>
               
-              <div className={`flex items-center justify-between p-3 ${darkMode ? 'bg-gray-900/50' : 'bg-gray-100'} rounded-lg`}>
+              <div className={`flex items-center justify-between p-3 ${darkMode ? 'bg-slate-900/60' : 'bg-violet-50'} rounded-lg`}>
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-lg ${darkMode ? 'bg-amber-500/20' : 'bg-amber-100'} flex items-center justify-center`}>
                     <FiUserPlus className="w-5 h-5 text-amber-500 dark:text-amber-400" />
@@ -455,3 +472,4 @@ const theme = useThemeClasses();
 };
 
 export default ReportingHierarchy;
+

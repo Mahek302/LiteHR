@@ -71,229 +71,154 @@ const AdminHome = () => {
     "Dec",
   ];
 
-  const handleExportPDF = async () => {
-    try {
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      let yPosition = await addCorporatePdfHeader(pdf, {
-        title: "Admin Dashboard Report",
-        subtitle: "Organization-level summary and trend data",
-      });
-
-      // Add stats summary
-      pdf.setFontSize(12);
-      pdf.text("Key Metrics Summary", 15, yPosition);
-      yPosition += 8;
-
-      pdf.setFontSize(10);
-      const stats = [
-        `Total Employees: ${dashboard?.totalEmployees || "—"}`,
-        `Active Users: ${dashboard?.totalActiveUsers || "—"}`,
-        `Today's Attendance: ${dashboard?.presentToday || "—"} (${dashboard?.totalEmployees ? ((dashboard.presentToday / dashboard.totalEmployees) * 100).toFixed(1) : "—"}%)`,
-        `Pending Leaves: ${dashboard?.pendingLeaves || "—"}`,
-        `On Leave Today: ${dashboard?.onLeaveToday || "—"}`,
-        `Departments: ${charts?.departments?.length || "—"}`,
-        `Active Jobs: ${activeJobsCount || "—"}`,
-      ];
-
-      for (const stat of stats) {
-        if (yPosition > pageHeight - 20) {
-          pdf.addPage();
-          yPosition = await addCorporatePdfHeader(pdf, {
-            title: "Admin Dashboard Report",
-          });
-        }
-        pdf.text(stat, 15, yPosition);
-        yPosition += 6;
-      }
-
-      yPosition += 4;
-
-      // Add Department Data Table
-      if (charts?.departments && charts.departments.length > 0) {
-        if (yPosition > pageHeight - 40) {
-          pdf.addPage();
-          yPosition = await addCorporatePdfHeader(pdf, {
-            title: "Department Overview",
-          });
-        }
-
-        pdf.setFontSize(12);
-        pdf.text("Department Overview", 15, yPosition);
-        yPosition += 8;
-
-        pdf.setFontSize(9);
-        const deptTableData = [
-          ["Department", "Employee Count"],
-          ...charts.departments.map((d) => [
-            d.department || "N/A",
-            String(d.count || 0),
-          ]),
-        ];
-
-        autoTable(pdf, {
-          head: [deptTableData[0]],
-          body: deptTableData.slice(1),
-          startY: yPosition,
-          margin: { left: 15, right: 15 },
-          theme: "grid",
-          headStyles: {
-            fillColor: [139, 92, 246],
-            textColor: 255,
-            fontStyle: "bold",
-          },
-          bodyStyles: {
-            textColor: darkMode ? 255 : 0,
-          },
-          alternateRowStyles: {
-            fillColor: darkMode ? [45, 45, 60] : [240, 240, 245],
-          },
-        });
-
-        yPosition = pdf.internal.pageSize.getHeight() - 20;
-      }
-
-      // Add Attendance Data
-      if (charts?.attendance && charts.attendance.length > 0) {
-        if (yPosition > pageHeight - 40) {
-          pdf.addPage();
-          yPosition = await addCorporatePdfHeader(pdf, {
-            title: "Monthly Attendance Summary",
-          });
-        }
-
-        pdf.setFontSize(12);
-        pdf.text("Monthly Attendance Summary", 15, yPosition);
-        yPosition += 8;
-
-        pdf.setFontSize(9);
-        const attendanceTableData = [
-          ["Month", "Present Count"],
-          ...charts.attendance.map((a) => [
-            monthNames[(Number(a.month) - 1) % 12] || "N/A",
-            String(a.count || 0),
-          ]),
-        ];
-
-        autoTable(pdf, {
-          head: [attendanceTableData[0]],
-          body: attendanceTableData.slice(1),
-          startY: yPosition,
-          margin: { left: 15, right: 15 },
-          theme: "grid",
-          headStyles: {
-            fillColor: [139, 92, 246],
-            textColor: 255,
-            fontStyle: "bold",
-          },
-          bodyStyles: {
-            textColor: darkMode ? 255 : 0,
-          },
-          alternateRowStyles: {
-            fillColor: darkMode ? [45, 45, 60] : [240, 240, 245],
-          },
-        });
-
-        yPosition = pdf.internal.pageSize.getHeight() - 20;
-      }
-
-      // Add Leave Data
-      if (charts?.leaves && charts.leaves.length > 0) {
-        if (yPosition > pageHeight - 40) {
-          pdf.addPage();
-          yPosition = await addCorporatePdfHeader(pdf, {
-            title: "Leave Request Summary",
-          });
-        }
-
-        pdf.setFontSize(12);
-        pdf.text("Leave Request Summary", 15, yPosition);
-        yPosition += 8;
-
-        pdf.setFontSize(9);
-        const leaveTableData = [
-          ["Leave Type", "Count"],
-          ...charts.leaves.map((l) => [l.type || "N/A", String(l.count || 0)]),
-        ];
-
-        autoTable(pdf, {
-          head: [leaveTableData[0]],
-          body: leaveTableData.slice(1),
-          startY: yPosition,
-          margin: { left: 15, right: 15 },
-          theme: "grid",
-          headStyles: {
-            fillColor: [139, 92, 246],
-            textColor: 255,
-            fontStyle: "bold",
-          },
-          bodyStyles: {
-            textColor: darkMode ? 255 : 0,
-          },
-          alternateRowStyles: {
-            fillColor: darkMode ? [45, 45, 60] : [240, 240, 245],
-          },
-        });
-      }
-
-      // Add recent activities
-      if (dashboard?.recentWorklogs && dashboard.recentWorklogs.length > 0) {
-        pdf.addPage();
-        yPosition = await addCorporatePdfHeader(pdf, {
-          title: "Recent Activities",
-        });
-
-        pdf.setFontSize(12);
-        pdf.text("Recent Activities", 15, yPosition);
-        yPosition += 8;
-
-        pdf.setFontSize(9);
-        const activitiesTableData = [
-          ["Employee", "Action", "Date"],
-          ...dashboard.recentWorklogs
-            .slice(0, 10)
-            .map((w) => [
-              w.employee?.fullName || "Unknown",
-              w.description || "Activity",
-              w.date || "N/A",
-            ]),
-        ];
-
-        autoTable(pdf, {
-          head: [activitiesTableData[0]],
-          body: activitiesTableData.slice(1),
-          startY: yPosition,
-          margin: { left: 15, right: 15 },
-          theme: "grid",
-          headStyles: {
-            fillColor: [139, 92, 246],
-            textColor: 255,
-            fontStyle: "bold",
-          },
-          bodyStyles: {
-            textColor: darkMode ? 255 : 0,
-          },
-          alternateRowStyles: {
-            fillColor: darkMode ? [45, 45, 60] : [240, 240, 245],
-          },
-        });
-      }
-
-      addCorporatePdfFooters(pdf);
-
-      // Save the PDF
-      const fileName = `Admin_Dashboard_Report_${new Date().getTime()}.pdf`;
-      pdf.save(fileName);
-    } catch (err) {
-      console.error("Error generating PDF:", err);
-      alert("Failed to generate PDF. Please try again.");
-    }
+  const isBlockedDepartment = (value) => {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (!normalized) return true;
+    if (normalized === "unknown" || normalized === "trial" || normalized === "n/a" || normalized === "na") return true;
+    if (normalized.includes("unknown") || normalized.includes("trial") || normalized.includes("n/a")) return true;
+    return false;
   };
+
+  const handleExportPDF = async () => {
+  try {
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    let yPosition = await addCorporatePdfHeader(pdf, {
+      title: "Admin Dashboard Report",
+      subtitle: "Organization-level summary and trend data",
+    });
+
+    const headStyles = { fillColor: [139, 92, 246], textColor: 255, fontStyle: "bold" };
+    const bodyStyles = { textColor: darkMode ? 255 : 0, fontSize: 9, cellPadding: 2.5 };
+    const alternateRowStyles = { fillColor: darkMode ? [30, 41, 59] : [246, 248, 252] };
+
+    const ensureSpace = async (needed = 42, pageTitle = "Admin Dashboard Report") => {
+      if (yPosition > pageHeight - needed) {
+        pdf.addPage();
+        yPosition = await addCorporatePdfHeader(pdf, { title: pageTitle });
+      }
+    };
+
+    const addSectionTitle = (title, rgb = [15, 23, 42]) => {
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.setTextColor(rgb[0], rgb[1], rgb[2]);
+      pdf.text(title, 15, yPosition);
+      yPosition += 7;
+    };
+
+    addSectionTitle("Key Metrics Summary", [79, 70, 229]);
+    autoTable(pdf, {
+      startY: yPosition,
+      head: [["Metric", "Value"]],
+      body: [
+        ["Total Employees", String(dashboard?.totalEmployees || "-")],
+        ["Active Users", String(dashboard?.totalActiveUsers || "-")],
+        ["Today's Attendance", `${dashboard?.presentToday || 0} (${dashboard?.totalEmployees ? ((dashboard.presentToday / dashboard.totalEmployees) * 100).toFixed(1) : "0"}%)`],
+        ["Pending Leaves", String(dashboard?.pendingLeaves || "-")],
+        ["On Leave Today", String(dashboard?.onLeaveToday || "-")],
+        ["Departments", String(filteredDepartments.length || "-")],
+        ["Active Jobs", String(activeJobsCount || "-")],
+      ],
+      theme: "grid",
+      margin: { left: 15, right: 15 },
+      headStyles,
+      bodyStyles,
+      alternateRowStyles,
+    });
+    yPosition = (pdf.lastAutoTable?.finalY || yPosition) + 8;
+
+    await ensureSpace(70, "Department Performance");
+    addSectionTitle("Department Performance", [30, 64, 175]);
+    autoTable(pdf, {
+      startY: yPosition,
+      head: [["Department", "Employees", "Attendance %", "Productivity %"]],
+      body: departmentData.map((d) => [d.name, String(d.employees || 0), `${d.attendance || 0}%`, `${d.productivity || 0}%`]),
+      theme: "striped",
+      margin: { left: 15, right: 15 },
+      headStyles,
+      bodyStyles,
+      alternateRowStyles,
+    });
+    yPosition = (pdf.lastAutoTable?.finalY || yPosition) + 8;
+
+    await ensureSpace(70, "Employee Distribution");
+    addSectionTitle("Employee Distribution", [5, 150, 105]);
+    const totalDistribution = employeeDistributionData.reduce((sum, row) => sum + (row.value || 0), 0) || 1;
+    autoTable(pdf, {
+      startY: yPosition,
+      head: [["Department", "Employees", "Share %"]],
+      body: employeeDistributionData.map((row) => [
+        row.name,
+        String(row.value || 0),
+        `${(((row.value || 0) / totalDistribution) * 100).toFixed(1)}%`,
+      ]),
+      theme: "striped",
+      margin: { left: 15, right: 15 },
+      headStyles,
+      bodyStyles,
+      alternateRowStyles,
+    });
+    yPosition = (pdf.lastAutoTable?.finalY || yPosition) + 8;
+
+    await ensureSpace(70, "Leave Statistics");
+    addSectionTitle("Leave Statistics", [217, 119, 6]);
+    autoTable(pdf, {
+      startY: yPosition,
+      head: [["Leave Category", "Count"]],
+      body: leaveData.map((row) => [row.type || "N/A", String(row.count || 0)]),
+      theme: "grid",
+      margin: { left: 15, right: 15 },
+      headStyles,
+      bodyStyles,
+      alternateRowStyles,
+    });
+    yPosition = (pdf.lastAutoTable?.finalY || yPosition) + 8;
+
+    await ensureSpace(80, "Recent Activities Timeline");
+    addSectionTitle("Recent Activities Timeline", [15, 118, 110]);
+    autoTable(pdf, {
+      startY: yPosition,
+      head: [["Employee", "Activity", "Date", "Hours"]],
+      body: (dashboard?.recentWorklogs || []).slice(0, 12).map((w) => [
+        w.employee?.fullName || "Unknown",
+        w.description || "Activity",
+        w.date ? new Date(w.date).toLocaleDateString() : "N/A",
+        w.hoursWorked ? String(w.hoursWorked) : "-",
+      ]),
+      theme: "striped",
+      margin: { left: 15, right: 15 },
+      headStyles,
+      bodyStyles,
+      alternateRowStyles,
+    });
+
+    yPosition = (pdf.lastAutoTable?.finalY || yPosition) + 8;
+    await ensureSpace(70, "Monthly Attendance Summary");
+    addSectionTitle("Monthly Attendance Summary", [37, 99, 235]);
+    autoTable(pdf, {
+      startY: yPosition,
+      head: [["Month", "Present Count"]],
+      body: (charts?.attendance || []).map((a) => [
+        monthNames[(Number(a.month) - 1) % 12] || "N/A",
+        String(a.count || 0),
+      ]),
+      theme: "striped",
+      margin: { left: 15, right: 15 },
+      headStyles,
+      bodyStyles,
+      alternateRowStyles,
+    });
+
+    addCorporatePdfFooters(pdf);
+    const fileName = `Admin_Dashboard_Report_${new Date().getTime()}.pdf`;
+    pdf.save(fileName);
+  } catch (err) {
+    console.error("Error generating PDF:", err);
+    alert("Failed to generate PDF. Please try again.");
+  }
+};
   const colors = {
     primary: "#8B5CF6", // Purple
     secondary: "#10B981", // Emerald (kept for contrast)
@@ -394,9 +319,9 @@ const AdminHome = () => {
     {
       icon: <HiOutlineOfficeBuilding className="w-6 h-6" />,
       label: "Departments",
-      value: charts?.departments ? String(charts.departments.length) : "—",
-      change: charts?.departments
-        ? `Total: ${charts.departments.length}`
+      value: String((charts?.departments || []).filter((d) => !isBlockedDepartment(d?.department)).length || "—"),
+      change: (charts?.departments || []).length
+        ? `Total: ${(charts?.departments || []).filter((d) => !isBlockedDepartment(d?.department)).length}`
         : "+1",
       trend: "up",
       color: darkMode
@@ -425,8 +350,12 @@ const AdminHome = () => {
     },
   ];
 
+  const filteredDepartments = (charts?.departments || []).filter(
+    (d) => !isBlockedDepartment(d?.department)
+  );
+
   // Department performance data for chart (from backend departments counts)
-  const departmentData = charts?.departments?.map((d, i) => ({
+  const departmentData = filteredDepartments.map((d, i) => ({
     name: d.department || `Dept ${i + 1}`,
     attendance: 95, // placeholder - could be refined later with real attendance per dept
     productivity: 90, // placeholder
@@ -455,7 +384,7 @@ const AdminHome = () => {
     ];
 
   // Employee distribution data for pie chart (derived from departments counts)
-  const employeeDistributionData = charts?.departments?.map((d, i) => ({
+  const employeeDistributionData = filteredDepartments.map((d, i) => ({
     name: d.department || `Dept ${i + 1}`,
     value: d.count || 0,
     color: [
@@ -471,6 +400,30 @@ const AdminHome = () => {
       { name: "Contract", value: 8, color: "#F59E0B" }, // Amber
       { name: "Interns", value: 4, color: "#3B82F6" }, // Blue
     ];
+
+  const splitPieLabel = (name) => {
+    const raw = String(name || "").trim();
+    if (!raw) return [raw, ""];
+    if (raw.toLowerCase() === "information technology") return ["Information", "Technology"];
+    if (raw.length <= 14 || !raw.includes(" ")) return [raw, ""];
+    const words = raw.split(" ");
+    const mid = Math.ceil(words.length / 2);
+    return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
+  };
+
+  const renderDepartmentDistributionLabel = ({ x, y, name, percent }) => {
+    const pct = Math.round((percent || 0) * 100);
+    if (pct < 5) return null;
+    const [line1, line2] = splitPieLabel(name);
+
+    return (
+      <text x={x} y={y} fill={colors.text} textAnchor="middle" dominantBaseline="central" fontSize={10}>
+        <tspan x={x} dy={line2 ? "-0.45em" : "0"}>{line1}</tspan>
+        {line2 ? <tspan x={x} dy="1.1em">{line2}</tspan> : null}
+        <tspan x={x} dy="1.1em">{`${pct}%`}</tspan>
+      </text>
+    );
+  };
 
   // Leave statistics data (summary from charts + dashboard)
   const totalLeavesThisYear = charts?.leaves
@@ -578,7 +531,7 @@ const AdminHome = () => {
     if (active && payload && payload.length) {
       return (
         <div
-          className={`${darkMode ? "bg-gray-800" : "bg-white"} p-3 border ${darkMode ? "border-gray-700" : "border-gray-300"} rounded-lg shadow-lg`}
+          className={`${darkMode ? "bg-gray-800" : "bg-white"} p-3 border ${darkMode ? "border-slate-700" : "border-slate-300"} rounded-lg shadow-lg`}
         >
           <p
             className={`font-medium ${darkMode ? "text-gray-300" : "text-gray-900"}`}
@@ -649,7 +602,7 @@ const AdminHome = () => {
           : "bg-amber-100 text-amber-700";
       default:
         return darkMode
-          ? "bg-gray-500/20 text-gray-400"
+          ? "bg-violet-500/20 text-gray-400"
           : "bg-gray-100 text-gray-700";
     }
   };
@@ -793,6 +746,11 @@ const AdminHome = () => {
                   name="Attendance (%)"
                   fill={colors.primary}
                   radius={[4, 4, 0, 0]}
+                  label={{
+                    position: "top",
+                    fill: darkMode ? "#9CA3AF" : "#4B5563",
+                    fontSize: 11,
+                  }}
                 />
                 <Bar
                   yAxisId="left"
@@ -800,6 +758,11 @@ const AdminHome = () => {
                   name="Productivity (%)"
                   fill={colors.secondary}
                   radius={[4, 4, 0, 0]}
+                  label={{
+                    position: "top",
+                    fill: darkMode ? "#9CA3AF" : "#4B5563",
+                    fontSize: 11,
+                  }}
                 />
                 <Line
                   yAxisId="right"
@@ -897,11 +860,9 @@ const AdminHome = () => {
                   data={employeeDistributionData}
                   cx="50%"
                   cy="50%"
-                  labelLine={true}
-                  label={({ name, percent, value }) =>
-                    `${name}: ${value} (${(percent * 100).toFixed(0)}%)`
-                  }
-                  outerRadius={90}
+                  labelLine={false}
+                  label={renderDepartmentDistributionLabel}
+                  outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -978,10 +939,15 @@ const AdminHome = () => {
                     paddingBottom: "20px"
                   }}
                 />
-                <Bar 
-                  dataKey="count" 
+                  <Bar 
+                    dataKey="count" 
                   name="Leave Count" 
                   radius={[4, 4, 0, 0]}
+                  label={{
+                    position: "top",
+                    fill: darkMode ? "#9CA3AF" : "#4B5563",
+                    fontSize: 11,
+                  }}
                 >
                   {leaveData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
@@ -1077,7 +1043,7 @@ const AdminHome = () => {
           <button
             type="button"
             onClick={() => setShowAllActivities(true)}
-            className={`text-sm text-purple-600 dark:text-purple-400 hover:underline px-4 py-2 ${darkMode ? "bg-gray-900/50" : "bg-gray-100"} rounded-lg border ${theme.border.primary} hover:border-purple-500/30 transition-colors`}
+            className={`text-sm text-purple-600 dark:text-purple-400 hover:underline px-4 py-2 ${darkMode ? "bg-slate-900/60" : "bg-gray-100"} rounded-lg border ${theme.border.primary} hover:border-purple-500/30 transition-colors`}
           >
             View All Activities
           </button>
@@ -1087,7 +1053,7 @@ const AdminHome = () => {
           {recentActivities.slice(0, 4).map((activity, index) => (
             <div
               key={index}
-              className={`${darkMode ? "bg-gray-900/50" : "bg-gray-100"} rounded-xl p-4 border ${theme.border.primary} hover:border-purple-500/30 transition-colors`}
+              className={`${darkMode ? "bg-slate-900/60" : "bg-gray-100"} rounded-xl p-4 border ${theme.border.primary} hover:border-purple-500/30 transition-colors`}
             >
               <div className="flex items-center gap-3 mb-3">
                 <div className="relative">
@@ -1156,7 +1122,7 @@ const AdminHome = () => {
               ).map((w, i) => (
                 <div
                   key={i}
-                  className={`p-3 rounded-lg border ${theme.border.primary} ${darkMode ? "bg-gray-900/50" : "bg-white"}`}
+                  className={`p-3 rounded-lg border ${theme.border.primary} ${darkMode ? "bg-slate-900/60" : "bg-white"}`}
                 >
                   <div className="flex justify-between">
                     <div>
@@ -1182,3 +1148,4 @@ const AdminHome = () => {
 };
 
 export default AdminHome;
+

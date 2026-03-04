@@ -195,10 +195,10 @@ const AdminProfile = () => {
 
   // Helper functions for theme
   const getBgColor = () => darkMode ? "bg-gray-800" : "bg-white";
-  const getBorderColor = () => darkMode ? "border-gray-700" : "border-gray-200";
+  const getBorderColor = () => darkMode ? "border-slate-700" : "border-gray-200";
   const getTextColor = () => darkMode ? "text-white" : "text-gray-800";
   const getSecondaryTextColor = () => darkMode ? "text-gray-400" : "text-gray-600";
-  const getInputBg = () => darkMode ? "bg-gray-900" : "bg-gray-50";
+  const getInputBg = () => darkMode ? "bg-slate-900" : "bg-violet-50";
   const getCardBg = () => darkMode ? "bg-gray-700/50" : "bg-gray-100";
 
   return (
@@ -252,7 +252,7 @@ const AdminProfile = () => {
               className={`px-6 py-3 rounded-md text-sm font-medium capitalize transition-all ${
                 activeTab === tab
                   ? "bg-purple-600 text-white"
-                  : `${getSecondaryTextColor()} hover:text-purple-600 hover:${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`
+                  : `${getSecondaryTextColor()} hover:text-purple-600 hover:`
               }`}
             >
               {tab === "profile" ? "Personal Info" : 
@@ -303,7 +303,7 @@ const AdminProfile = () => {
                   <label className={`inline-flex items-center gap-2 px-4 py-3 rounded-lg cursor-pointer ${
                     isEditing
                       ? `${getInputBg()} border ${getBorderColor()} ${getSecondaryTextColor()} hover:border-purple-500 hover:text-purple-600`
-                      : 'opacity-50 cursor-not-allowed border border-gray-300 bg-gray-100 text-gray-500'
+                      : 'opacity-50 cursor-not-allowed border border-slate-300 bg-gray-100 text-gray-500'
                   } transition-colors`}>
                     <FiUpload className="w-5 h-5" />
                     Upload Photo
@@ -457,13 +457,13 @@ const AdminProfile = () => {
                         onChange={(e) => handleChange("security", "emailNotifications", e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                      <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                     </label>
                   ) : (
                     <span className={`px-3 py-1 rounded-full text-sm ${
                       profile.security.emailNotifications 
                         ? 'bg-emerald-500/20 text-emerald-400' 
-                        : 'bg-gray-500/20 text-gray-400'
+                        : 'bg-violet-500/20 text-gray-400'
                     }`}>
                       {profile.security.emailNotifications ? 'Enabled' : 'Disabled'}
                     </span>
@@ -486,13 +486,13 @@ const AdminProfile = () => {
                         onChange={(e) => handleChange("security", "twoFactorAuth", e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                      <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                     </label>
                   ) : (
                     <span className={`px-3 py-1 rounded-full text-sm ${
                       profile.security.twoFactorAuth 
                         ? 'bg-emerald-500/20 text-emerald-400' 
-                        : 'bg-gray-500/20 text-gray-400'
+                        : 'bg-violet-500/20 text-gray-400'
                     }`}>
                       {profile.security.twoFactorAuth ? 'Enabled' : 'Disabled'}
                     </span>
@@ -528,15 +528,15 @@ const AdminProfile = () => {
           <div className={`${darkMode ? 'bg-purple-900/30' : 'bg-purple-50'} border ${darkMode ? 'border-purple-500/30' : 'border-purple-200'} rounded-xl p-6`}>
             <h3 className={`text-lg font-semibold ${darkMode ? 'text-purple-300' : 'text-purple-700'} mb-4`}>Account Summary</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className={`${darkMode ? 'bg-gray-900/50' : 'bg-white/80'} backdrop-blur-sm p-4 rounded-xl border ${getBorderColor()}`}>
+              <div className={`${darkMode ? 'bg-slate-900/60' : 'bg-white/80'} backdrop-blur-sm p-4 rounded-xl border ${getBorderColor()}`}>
                 <p className={`text-sm ${darkMode ? 'text-purple-300' : 'text-purple-600'}`}>Account Age</p>
                 <p className={`text-2xl font-bold ${getTextColor()}`}>1 year</p>
               </div>
-              <div className={`${darkMode ? 'bg-gray-900/50' : 'bg-white/80'} backdrop-blur-sm p-4 rounded-xl border ${getBorderColor()}`}>
+              <div className={`${darkMode ? 'bg-slate-900/60' : 'bg-white/80'} backdrop-blur-sm p-4 rounded-xl border ${getBorderColor()}`}>
                 <p className={`text-sm ${darkMode ? 'text-purple-300' : 'text-purple-600'}`}>Total Logins</p>
                 <p className={`text-2xl font-bold ${getTextColor()}`}>156</p>
               </div>
-              <div className={`${darkMode ? 'bg-gray-900/50' : 'bg-white/80'} backdrop-blur-sm p-4 rounded-xl border ${getBorderColor()}`}>
+              <div className={`${darkMode ? 'bg-slate-900/60' : 'bg-white/80'} backdrop-blur-sm p-4 rounded-xl border ${getBorderColor()}`}>
                 <p className={`text-sm ${darkMode ? 'text-purple-300' : 'text-purple-600'}`}>Security Score</p>
                 <p className={`text-2xl font-bold text-emerald-500`}>85%</p>
               </div>
@@ -568,3 +568,5 @@ const AdminProfile = () => {
 };
 
 export default AdminProfile;
+
+

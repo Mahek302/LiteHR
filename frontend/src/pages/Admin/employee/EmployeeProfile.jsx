@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import { FiMail, FiPhone, FiCalendar, FiMapPin, FiBriefcase, FiUser, FiDownload, FiEdit2, FiClock, FiAward, FiFileText } from "react-icons/fi";
+import { useNavigate, useParams } from "react-router-dom";
+import { FiMail, FiPhone, FiCalendar, FiMapPin, FiBriefcase, FiUser, FiDownload, FiEdit2, FiClock, FiAward, FiFileText, FiArrowLeft } from "react-icons/fi";
 import { HiOutlineOfficeBuilding, HiOutlineUserGroup } from "react-icons/hi";
 import { MdWorkOutline } from "react-icons/md";
 import { useTheme, useThemeClasses } from "../../../contexts/ThemeContext";
 
 const EmployeeProfile = () => {
   const { id: routeId } = useParams();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
 
   // Helper to robustly decode JWT payload (base64url safe)
@@ -431,7 +432,17 @@ const EmployeeProfile = () => {
   }
 
   return (
-    <div className={`min-h-screen ${theme.bg} ${theme.text} p-6`}>
+    <div className={`min-h-screen ${theme.bg} ${theme.text} p-6 ${darkMode ? "dark" : ""}`}>
+      {routeId && (
+        <button
+          onClick={() => navigate("/admin/employees")}
+          className="mb-4 p-2 rounded-lg border border-purple-500/50 text-purple-600 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+          aria-label="Back"
+          title="Back"
+        >
+          <FiArrowLeft className="w-5 h-5" />
+        </button>
+      )}
       {errorMsg && (
         <div className="mb-4 p-3 rounded bg-rose-100 text-rose-800 border border-rose-200">
           <strong className="mr-2">⚠️ Error:</strong> {errorMsg}
@@ -439,7 +450,13 @@ const EmployeeProfile = () => {
       )}
 
       {/* Profile Header */}
-      <div className={`${theme.cardBg} rounded-lg shadow-sm p-6 mb-6`}>
+      <div
+        className={`${theme.cardBg} rounded-2xl shadow-sm p-6 mb-6 border ${
+          darkMode
+            ? "border-purple-500/20 bg-slate-900"
+            : "border-purple-200/60 bg-gradient-to-br from-purple-50/70 via-white to-blue-50/70"
+        }`}
+      >
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-6">
             <div className="relative">
@@ -467,17 +484,17 @@ const EmployeeProfile = () => {
               <h1 className="text-2xl font-bold">{employee.name}</h1>
               <p className={`${theme.subtext} mb-2`}>{employee.jobTitle}</p>
               <div className="flex flex-wrap items-center gap-3 mt-3">
-                <span className="flex items-center text-sm px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                <span className={`flex items-center text-sm px-3 py-1 rounded-full ${darkMode ? "bg-blue-500/20 text-blue-200" : "bg-blue-50 text-blue-700"}`}>
                   <HiOutlineOfficeBuilding className="mr-1" />
                   {employee.department}
                 </span>
-                <span className="flex items-center text-sm px-3 py-1 rounded-full bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+                <span className={`flex items-center text-sm px-3 py-1 rounded-full ${darkMode ? "bg-emerald-500/20 text-emerald-200" : "bg-green-50 text-green-700"}`}>
                   <FiMapPin className="mr-1" />
                   {employee.location}
                 </span>
                 <span className={`px-3 py-1 rounded-full text-xs ${employee.status === 'Active'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                  ? (darkMode ? "bg-emerald-500/20 text-emerald-200" : "bg-green-100 text-green-800")
+                  : (darkMode ? "bg-slate-700 text-slate-200" : "bg-gray-100 text-gray-800")
                   }`}>
                   {employee.status}
                 </span>
@@ -495,65 +512,89 @@ const EmployeeProfile = () => {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className={`${theme.cardBg} p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow`}>
+        <div
+          className={`p-4 rounded-xl shadow-sm border hover:shadow-md transition-shadow ${
+            darkMode
+              ? "bg-slate-900 border-blue-500/25"
+              : "bg-blue-50/70 border-blue-200"
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className={theme.subtext}>Employee ID</p>
-              <p className="text-xl font-semibold">{employee.employeeId}</p>
+              <p className={`text-xl font-semibold ${theme.text.primary}`}>{employee.employeeId}</p>
             </div>
-            <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900">
-              <FiUser className="text-blue-600 dark:text-blue-400 text-xl" />
+            <div className={`p-2 rounded-full ${darkMode ? "bg-blue-500/20" : "bg-blue-100"}`}>
+              <FiUser className={`text-xl ${darkMode ? "text-blue-200" : "text-blue-600"}`} />
             </div>
           </div>
         </div>
-        <div className={`${theme.cardBg} p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow`}>
+        <div
+          className={`p-4 rounded-xl shadow-sm border hover:shadow-md transition-shadow ${
+            darkMode
+              ? "bg-slate-900 border-emerald-500/25"
+              : "bg-emerald-50/70 border-emerald-200"
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className={theme.subtext}>Join Date</p>
-              <p className="text-xl font-semibold">
+              <p className={`text-xl font-semibold ${theme.text.primary}`}>
                 {new Date(employee.joinDate).toLocaleDateString()}
               </p>
             </div>
-            <div className="p-2 rounded-full bg-green-100 dark:bg-green-900">
-              <FiCalendar className="text-green-600 dark:text-green-400 text-xl" />
+            <div className={`p-2 rounded-full ${darkMode ? "bg-emerald-500/20" : "bg-green-100"}`}>
+              <FiCalendar className={`text-xl ${darkMode ? "text-emerald-200" : "text-green-600"}`} />
             </div>
           </div>
         </div>
-        <div className={`${theme.cardBg} p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow`}>
+        <div
+          className={`p-4 rounded-xl shadow-sm border hover:shadow-md transition-shadow ${
+            darkMode
+              ? "bg-slate-900 border-purple-500/25"
+              : "bg-purple-50/70 border-purple-200"
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className={theme.subtext}>Employment Type</p>
-              <p className="text-xl font-semibold">{employee.employmentType}</p>
+              <p className={`text-xl font-semibold ${theme.text.primary}`}>{employee.employmentType}</p>
             </div>
-            <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-900">
-              <FiBriefcase className="text-purple-600 dark:text-purple-400 text-xl" />
+            <div className={`p-2 rounded-full ${darkMode ? "bg-purple-500/20" : "bg-purple-100"}`}>
+              <FiBriefcase className={`text-xl ${darkMode ? "text-purple-200" : "text-purple-600"}`} />
             </div>
           </div>
         </div>
-        <div className={`${theme.cardBg} p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow`}>
+        <div
+          className={`p-4 rounded-xl shadow-sm border hover:shadow-md transition-shadow ${
+            darkMode
+              ? "bg-slate-900 border-amber-500/25"
+              : "bg-amber-50/70 border-amber-200"
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className={theme.subtext}>Reports To</p>
-              <p className="text-xl font-semibold">{employee.reportsTo || 'N/A'}</p>
+              <p className={`text-xl font-semibold ${theme.text.primary}`}>{employee.reportsTo || 'N/A'}</p>
             </div>
-            <div className="p-2 rounded-full bg-orange-100 dark:bg-orange-900">
-              <HiOutlineUserGroup className="text-orange-600 dark:text-orange-400 text-xl" />
+            <div className={`p-2 rounded-full ${darkMode ? "bg-amber-500/20" : "bg-orange-100"}`}>
+              <HiOutlineUserGroup className={`text-xl ${darkMode ? "text-amber-200" : "text-orange-600"}`} />
             </div>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className={`${theme.cardBg} rounded-lg shadow-sm`}>
-        <div className="border-b border-gray-200 dark:border-gray-700">
+      <div className={`${theme.cardBg} rounded-2xl shadow-sm border ${darkMode ? "border-purple-500/20" : "border-purple-200/40"}`}>
+        <div className={`border-b ${darkMode ? "border-purple-500/20" : "border-purple-200/60"}`}>
           <div className="flex space-x-8 px-6">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent hover:border-gray-300'
+                  ? (darkMode ? "border-purple-400 text-purple-200" : "border-purple-600 text-purple-600")
+                  : (darkMode ? "border-transparent hover:border-purple-500 text-slate-300" : "border-transparent hover:border-purple-300 text-slate-500")
                   }`}
               >
                 {tab.label}
@@ -566,83 +607,89 @@ const EmployeeProfile = () => {
           {activeTab === "overview" && (
             <div className="space-y-8">
               {/* Contact Information Box */}
-              <div className={`${theme.cardBg} rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700`}>
+              <div className={`${theme.cardBg} rounded-xl shadow-sm p-6 border ${darkMode ? "border-blue-500/25 bg-slate-900" : "border-blue-200 bg-gradient-to-br from-blue-50/70 to-white"}`}>
                 <div className="flex items-center mb-6">
-                  <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900 mr-3">
-                    <FiMail className="text-blue-600 dark:text-blue-400 text-xl" />
+                  <div className={`p-2 rounded-full mr-3 ${darkMode ? "bg-blue-500/20" : "bg-blue-100"}`}>
+                    <FiMail className={`text-xl ${darkMode ? "text-blue-200" : "text-blue-600"}`} />
                   </div>
-                  <h3 className="text-lg font-semibold">Contact Information</h3>
+                  <h3 className={`text-lg font-semibold ${theme.text.primary}`}>Contact Information</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="flex items-center space-x-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                    <div className="p-2 rounded-full bg-gray-100 dark:bg-gray-700">
-                      <FiMail className="text-gray-600 dark:text-gray-400" />
+                  <div className={`flex items-center space-x-4 p-4 rounded-lg border ${darkMode ? "bg-blue-500/10 border-blue-500/20" : "bg-blue-50 border-blue-100"}`}>
+                    <div className={`p-2 rounded-full ${darkMode ? "bg-blue-500/20" : "bg-blue-100"}`}>
+                      <FiMail className={darkMode ? "text-blue-200" : "text-gray-600"} />
                     </div>
                     <div>
                       <p className={theme.subtext}>Email Address</p>
-                      <p className="font-medium">{employee.email}</p>
+                      <p className={`font-medium ${theme.text.primary}`}>{employee.email}</p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                    <div className="p-2 rounded-full bg-gray-100 dark:bg-gray-700">
-                      <FiPhone className="text-gray-600 dark:text-gray-400" />
+                  <div className={`flex items-center space-x-4 p-4 rounded-lg border ${darkMode ? "bg-cyan-500/10 border-cyan-500/20" : "bg-cyan-50 border-cyan-100"}`}>
+                    <div className={`p-2 rounded-full ${darkMode ? "bg-cyan-500/20" : "bg-cyan-100"}`}>
+                      <FiPhone className={darkMode ? "text-cyan-200" : "text-gray-600"} />
                     </div>
                     <div>
                       <p className={theme.subtext}>Phone Number</p>
-                      <p className="font-medium">{employee.phone}</p>
+                      <p className={`font-medium ${theme.text.primary}`}>{employee.phone}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Work Information Box */}
-              <div className={`${theme.cardBg} rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700`}>
+              <div className={`${theme.cardBg} rounded-xl shadow-sm p-6 border ${darkMode ? "border-emerald-500/25 bg-slate-900" : "border-emerald-200 bg-gradient-to-br from-emerald-50/70 to-white"}`}>
                 <div className="flex items-center mb-6">
-                  <div className="p-2 rounded-full bg-green-100 dark:bg-green-900 mr-3">
-                    <MdWorkOutline className="text-green-600 dark:text-green-400 text-xl" />
+                  <div className={`p-2 rounded-full mr-3 ${darkMode ? "bg-emerald-500/20" : "bg-green-100"}`}>
+                    <MdWorkOutline className={`text-xl ${darkMode ? "text-emerald-200" : "text-green-600"}`} />
                   </div>
-                  <h3 className="text-lg font-semibold">Work Information</h3>
+                  <h3 className={`text-lg font-semibold ${theme.text.primary}`}>Work Information</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                  <div className={`p-4 rounded-lg border ${darkMode ? "bg-emerald-500/10 border-emerald-500/20" : "bg-emerald-50 border-emerald-100"}`}>
                     <p className={theme.subtext}>Shift</p>
-                    <p className="font-medium text-lg flex items-center mt-1">
-                      <FiClock className="mr-2 text-gray-500" />
+                    <p className={`font-medium text-lg flex items-center mt-1 ${theme.text.primary}`}>
+                      <FiClock className={`mr-2 ${darkMode ? "text-emerald-200" : "text-gray-500"}`} />
                       {employee.shift}
                     </p>
                   </div>
-                  <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                  <div className={`p-4 rounded-lg border ${darkMode ? "bg-amber-500/10 border-amber-500/20" : "bg-amber-50 border-amber-100"}`}>
                     <p className={theme.subtext}>Experience</p>
-                    <p className="font-medium text-lg flex items-center mt-1">
-                      <FiAward className="mr-2 text-gray-500" />
+                    <p className={`font-medium text-lg flex items-center mt-1 ${theme.text.primary}`}>
+                      <FiAward className={`mr-2 ${darkMode ? "text-amber-200" : "text-gray-500"}`} />
                       {employee.experience}
                     </p>
                   </div>
-                  <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                  <div className={`p-4 rounded-lg border ${darkMode ? "bg-violet-500/10 border-violet-500/20" : "bg-violet-50 border-violet-100"}`}>
                     <p className={theme.subtext}>Manager</p>
-                    <p className="font-medium text-lg">{employee.manager || 'N/A'}</p>
+                    <p className={`font-medium text-lg ${theme.text.primary}`}>{employee.manager || 'N/A'}</p>
                   </div>
                 </div>
               </div>
 
               {/* Documents Box */}
-              <div className={`${theme.cardBg} rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700`}>
+              <div
+                className={`${theme.cardBg} rounded-xl shadow-sm p-6 border ${
+                  darkMode
+                    ? "border-purple-500/25 bg-slate-900"
+                    : "border-purple-200 bg-gradient-to-br from-purple-50/70 to-white"
+                }`}
+              >
                 <div className="flex items-center mb-6">
-                  <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-900 mr-3">
-                    <FiFileText className="text-purple-600 dark:text-purple-400 text-xl" />
+                  <div className={`p-2 rounded-full mr-3 ${darkMode ? "bg-purple-500/20" : "bg-purple-100"}`}>
+                    <FiFileText className={`text-xl ${darkMode ? "text-purple-200" : "text-purple-600"}`} />
                   </div>
-                  <h3 className="text-lg font-semibold">Documents</h3>
+                  <h3 className={`text-lg font-semibold ${theme.text.primary}`}>Documents</h3>
                 </div>
                 <div className="space-y-4">
-                  <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+                  <div className={`p-4 rounded-lg border ${darkMode ? "bg-purple-500/10 border-purple-500/20" : "bg-purple-50 border-purple-200"}`}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900">
-                          <FiFileText className="text-blue-600 dark:text-blue-400" />
+                        <div className={`p-2 rounded-full ${darkMode ? "bg-blue-500/20" : "bg-blue-100"}`}>
+                          <FiFileText className={darkMode ? "text-blue-200" : "text-blue-600"} />
                         </div>
                         <div>
-                          <p className="font-medium">Resume / CV</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">Upload your professional resume</p>
+                          <p className={`font-medium ${theme.text.primary}`}>Resume / CV</p>
+                          <p className={`text-sm ${theme.subtext}`}>Upload your professional resume</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-3">
@@ -674,7 +721,7 @@ const EmployeeProfile = () => {
                         )}
                       </div>
                     </div>
-                    <p id="resume-status" className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    <p id="resume-status" className={`text-sm mt-2 ${theme.subtext}`}>
                       {/* Status updated via alert now, but keeping container for spacing if needed */}
                       {employee.resumeUrl ? "Resume available" : "No resume uploaded"}
                     </p>

@@ -37,8 +37,8 @@ import {
 } from 'lucide-react';
 import { notificationService } from '../../services/notificationService';
 
-// Import your actual logo file
-import LiteHRLogo from '../../images/LiteHR_logo.png';
+// Import logo
+import WFELogo from '../../images/WFE_logo.png';
 
 export default function MainLayout({ logout }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -514,11 +514,11 @@ export default function MainLayout({ logout }) {
               onClick={handleLogoClick}
               className="flex items-center gap-3 cursor-pointer group"
             >
-              <div className="w-[140px] h-auto flex items-center justify-start">
+              <div className="w-[190px] h-auto flex items-center justify-start">
                 <img
-                  src={LiteHRLogo}
-                  alt="LiteHR Logo"
-                  className="w-[100px] h-auto object-contain hover:opacity-80 transition-opacity"
+                  src={WFELogo}
+                  alt="WORKFORCEDGE Logo"
+                  className="w-[150px] h-auto object-contain hover:opacity-80 transition-opacity"
                   style={{
                     filter: darkMode
                       ? 'invert(0)'  // Keep original logo colors in dark mode
@@ -828,7 +828,7 @@ export default function MainLayout({ logout }) {
               <div>
                 <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-slate-800'
                   }`}>
-                  LiteHR v1.0.0
+                  WORKFORCEDGE v1.0.0
                 </p>
                 <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-slate-500'
                   }`}>
@@ -876,7 +876,7 @@ export default function MainLayout({ logout }) {
               <div>
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-slate-500'
                   }`}>
-                  © 2024 LiteHR Manager Portal
+                  © 2024 WORKFORCEDGE Manager Portal
                 </p>
                 <p className={`text-xs ${darkMode ? 'text-gray-600' : 'text-slate-400'
                   }`}>

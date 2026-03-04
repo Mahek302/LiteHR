@@ -30,6 +30,7 @@ import { HiOutlineOfficeBuilding } from "react-icons/hi";
 import { AiOutlineAudit } from "react-icons/ai";
 import { notificationService } from '../services/notificationService';
 import demoRequestService from "../services/demoRequestService";
+import WFELogo from "../images/WFE_logo.png";
 
 const AdminLayout = ({ children, logout }) => {
   const location = useLocation();
@@ -216,19 +217,13 @@ useEffect(() => {
       label: "Analytics",
       icon: <VscGraph />,
       path: "/admin/analytics",
-      subItems: [
-        { label: "Dashboard", path: "/admin/analytics" },
-      ]
     },
 
     // Payroll Module
     {
       label: "Payroll",
       icon: <FiFileText />,
-      path: "/admin/payroll",
-      subItems: [
-        { label: "Payslips", path: "/admin/payroll/payslips" },
-      ]
+      path: "/admin/payroll/payslips",
     },
 
     { label: "Profile", icon: <FaRegUser />, path: "/admin/profile" },
@@ -362,7 +357,7 @@ useEffect(() => {
   const headerBorder = darkMode ? "border-gray-700" : "border-gray-200";
 
   return (
-    <div className={`flex h-screen transition-colors duration-300`}>
+    <div className={`admin-cursor-scope flex h-screen transition-colors duration-300`}>
       {/* SIDEBAR */}
       <aside className={`${sidebarCollapsed ? 'w-20' : 'w-64'} ${sidebarBg} ${sidebarText} flex flex-col transition-all duration-300 shadow-lg z-20 border-r ${sidebarBorder}`}>
 
@@ -377,16 +372,16 @@ useEffect(() => {
                 title="Go to Dashboard"
               >
                 <img
-                  src="/assets/logo.png"
-                  alt="LiteHR Logo"
-                  className="w-[100px] h-auto object-contain hover:opacity-80 transition-opacity"
+                  src={WFELogo}
+                  alt="WORKFORCEDGE Logo"
+                  className="w-[140px] h-auto object-contain hover:opacity-80 transition-opacity"
                   style={{
                     filter: darkMode ? 'invert(0)' : 'invert(58%) sepia(81%) saturate(2878%) hue-rotate(246deg) brightness(97%) contrast(94%)'
                   }}
                   onError={(e) => {
                     e.target.style.display = "none";
                     e.target.parentElement.innerHTML =
-                      `<div class="${darkMode ? 'text-white hover:text-purple-300' : 'text-purple-600 hover:text-purple-700 font-bold'} text-lg cursor-pointer transition-colors" title="Go to Dashboard">LiteHR</div>`;
+                      `<div class="${darkMode ? 'text-white hover:text-purple-300' : 'text-purple-600 hover:text-purple-700 font-bold'} text-lg cursor-pointer transition-colors" title="Go to Dashboard">WORKFORCEDGE</div>`;
                   }}
                 />
               </div>
@@ -400,9 +395,9 @@ useEffect(() => {
                 title="Go to Dashboard"
               >
                 <img
-                  src="/assets/logo.png"
-                  alt="LiteHR Logo"
-                  className="w-full h-auto object-contain hover:opacity-80 transition-opacity"
+                  src={WFELogo}
+                  alt="WORKFORCEDGE Logo"
+                  className="w-8 h-auto object-contain hover:opacity-80 transition-opacity"
                   style={{
                     filter: darkMode ? 'invert(0)' : 'invert(58%) sepia(81%) saturate(2878%) hue-rotate(246deg) brightness(97%) contrast(94%)'
                   }}
@@ -789,3 +784,4 @@ useEffect(() => {
 };
 
 export default AdminLayout;
+

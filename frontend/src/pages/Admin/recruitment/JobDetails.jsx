@@ -47,18 +47,23 @@ const JobDetails = () => {
     }
 
     // Theme helper functions
-    const getBgColor = () => darkMode ? "bg-gray-900" : "bg-white";
-    const getBorderColor = () => darkMode ? "border-gray-700" : "border-gray-200";
-    const getTextColor = () => darkMode ? "text-white" : "text-gray-800";
-    const getSecondaryTextColor = () => darkMode ? "text-gray-400" : "text-gray-600";
-    const getInputBg = () => darkMode ? "bg-gray-800" : "bg-gray-50";
-    const getCardBg = () => darkMode ? "bg-gray-800/50" : "bg-white";
-    const getHeaderBg = () => darkMode ? "from-gray-900 via-gray-800 to-gray-900" : "from-blue-50 via-indigo-50 to-purple-50";
+    const getBgColor = () => darkMode ? "bg-slate-950" : "bg-white";
+    const getBorderColor = () => darkMode ? "border-slate-700/70" : "border-slate-200";
+    const getTextColor = () => darkMode ? "text-slate-100" : "text-slate-800";
+    const getSecondaryTextColor = () => darkMode ? "text-slate-300" : "text-slate-600";
+    const getInputBg = () => darkMode ? "bg-slate-900/80" : "bg-slate-50";
+    const getCardBg = () => darkMode ? "bg-slate-900/75" : "bg-white/95";
+    const getHeaderBg = () =>
+        darkMode
+            ? "from-slate-950 via-indigo-950/20 to-emerald-950/20"
+            : "from-violet-100 via-indigo-50 to-emerald-100/70";
 
     return (
         <div className="w-full">
             {/* Header */}
             <div className={`relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-br ${getHeaderBg()} p-8 border ${getBorderColor()}`}>
+                <div className={`absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl ${darkMode ? "bg-violet-500/20" : "bg-violet-300/40"}`} />
+                <div className={`absolute -bottom-12 -left-10 w-44 h-44 rounded-full blur-3xl ${darkMode ? "bg-emerald-500/20" : "bg-emerald-300/40"}`} />
                 <div className={`absolute inset-0 ${darkMode ? 'opacity-20' : 'opacity-10'}`} style={{
                     backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='${darkMode ? '0.1' : '0.05'}'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
                 }}></div>
@@ -104,9 +109,9 @@ const JobDetails = () => {
 
                         <Link
                             to={`/admin/recruitment/edit-job/${job.id}`}
-                            className={`flex items-center gap-2 px-5 py-2.5 ${darkMode ? 'bg-gray-800' : 'bg-gray-900'} text-grey rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-800'} transition-colors duration-200 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm`}
+                            className={`flex items-center gap-2 px-5 py-2.5 ${darkMode ? 'bg-slate-800 hover:bg-slate-700 border border-slate-600/60' : 'bg-slate-900 hover:bg-slate-800'} text-white rounded-lg transition-colors duration-200 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm`}
                         >
-                            <FiEdit2 className="w-4 h-4 text-grey" />
+                            <FiEdit2 className="w-4 h-4 text-white" />
                             Edit Posting
                         </Link>
                     </div>

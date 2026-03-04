@@ -80,6 +80,34 @@ const getSafeDateStr = (date) => {
   return `${year}-${month}-${day}`;
 };
 
+const normalizeLeaveType = (type) => String(type || "").trim().toLowerCase();
+const normalizeLeaveStatus = (status) => String(status || "").trim().toLowerCase();
+
+const isCasualLeaveType = (type) => {
+  const leaveType = normalizeLeaveType(type);
+  return leaveType === "cl" || leaveType.includes("casual");
+};
+
+const isSickLeaveType = (type) => {
+  const leaveType = normalizeLeaveType(type);
+  return leaveType === "sl" || leaveType.includes("sick");
+};
+
+const isEarnedLeaveType = (type) => {
+  const leaveType = normalizeLeaveType(type);
+  return (
+    leaveType === "al" ||
+    leaveType === "el" ||
+    leaveType === "pl" ||
+    leaveType.includes("earned") ||
+    leaveType.includes("annual") ||
+    leaveType.includes("privilege") ||
+    leaveType.includes("paid")
+  );
+};
+
+const isApprovedLeave = (leave) => normalizeLeaveStatus(leave?.status) === "approved";
+
 const EmployeeDashboard = () => {
   // Theme state
   const location = useLocation();
@@ -190,9 +218,15 @@ const EmployeeDashboard = () => {
   // Derived Leave Stats - Moved here to access state
   // Calculate Used Leaves from approved leaves history
   const usedLeaves = {
-    casual: leaves.filter(l => (l.type === 'cl' || l.type?.toLowerCase().includes('casual')) && l.status === 'approved').reduce((sum, l) => sum + (l.days || 0), 0),
-    sick: leaves.filter(l => (l.type === 'sl' || l.type?.toLowerCase().includes('sick')) && l.status === 'approved').reduce((sum, l) => sum + (l.days || 0), 0),
-    earned: leaves.filter(l => (l.type === 'el' || l.type === 'pl' || l.type?.toLowerCase().includes('earned')) && l.status === 'approved').reduce((sum, l) => sum + (l.days || 0), 0)
+    casual: leaves
+      .filter((l) => isCasualLeaveType(l.type) && isApprovedLeave(l))
+      .reduce((sum, l) => sum + (Number(l.days) || 0), 0),
+    sick: leaves
+      .filter((l) => isSickLeaveType(l.type) && isApprovedLeave(l))
+      .reduce((sum, l) => sum + (Number(l.days) || 0), 0),
+    earned: leaves
+      .filter((l) => isEarnedLeaveType(l.type) && isApprovedLeave(l))
+      .reduce((sum, l) => sum + (Number(l.days) || 0), 0)
   };
 
   // Calculate Total Leaves = Used + Remaining
@@ -343,6 +377,7 @@ const EmployeeDashboard = () => {
         return {
           ...l,
           type: l.leaveType,
+          status: normalizeLeaveStatus(l.status),
           from: l.fromDate,
           to: l.toDate,
           days: isNaN(days) ? 0 : days
@@ -351,7 +386,7 @@ const EmployeeDashboard = () => {
       setWorklogs(worklogsList.map(w => ({
         ...w,
         task: w.taskName || w.task || "Work Log",
-        project: w.project || "Internal",
+        project: w.project || "",
         time: w.hoursWorked ? `${w.hoursWorked} hrs` : '--',
         status: "Completed"
       })));
@@ -454,22 +489,17 @@ const EmployeeDashboard = () => {
       const combinedTotal = tasksTotal + worklogsCount;
       const combinedCompleted = tasksCompleted + worklogsCount;
 
+      const weekLabel = `${startOfWeek.toLocaleDateString("en-US", { month: "short", day: "numeric" })}-${endOfWeek.toLocaleDateString("en-US", { day: "numeric" })}`;
+
       stats.push({
-        week: i === 0 ? "Current" : `Week -${i}`,
+        week: weekLabel,
         completed: combinedCompleted,
         total: combinedTotal || 5, // Ensure at least 5 for visual consistency
         color: colors[3 - i]
       });
     }
 
-    // stats is already Oldest -> Newest (i=3 to i=0)
-
-    const finalStats = stats.map((s, index) => ({
-      ...s,
-      week: `Week ${index + 1}`
-    }));
-
-    setTaskCompletionData(finalStats);
+    setTaskCompletionData(stats);
 
   }, [tasks, worklogs]);
 
@@ -905,10 +935,9 @@ const EmployeeDashboard = () => {
 
   // Get full leave type name
   const getFullLeaveTypeName = (type) => {
-    const typeLower = type?.toLowerCase() || "";
-    if (typeLower.includes('sick') || type === 'sl') return "Sick Leave";
-    if (typeLower.includes('casual') || type === 'cl') return "Casual Leave";
-    if (typeLower.includes('earned') || type === 'el' || type === 'pl') return "Earned Leave";
+    if (isSickLeaveType(type)) return "Sick Leave";
+    if (isCasualLeaveType(type)) return "Casual Leave";
+    if (isEarnedLeaveType(type)) return "Earned Leave";
     return type || "Leave";
   };
 
@@ -1885,7 +1914,7 @@ const EmployeeDashboard = () => {
                   )}
 
                   {/* Bar Container */}
-                  <div className="w-10 flex flex-col items-center relative h-40">
+                  <div className="w-10 flex flex-col items-center relative h-72">
                     {/* Total Bar (Background) */}
                     <div
                       className="absolute bottom-0 w-8 rounded-t-sm opacity-20"
@@ -3314,7 +3343,7 @@ const EmployeeDashboard = () => {
                     <span className="flex items-center">
                       <Briefcase size={12} className="mr-1" style={{ color: themeColors.info }} />
                       <span style={{ color: themeColors.textMuted }}>Project:</span>
-                      <span className="ml-1 font-medium" style={{ color: themeColors.textPrimary }}>{log.project}</span>
+                      <span className="ml-1 font-medium" style={{ color: themeColors.textPrimary }}>{log.project || "--"}</span>
                     </span>
                     <span className="flex items-center">
                       <Timer size={12} className="mr-1" style={{ color: themeColors.warning }} />
@@ -3338,17 +3367,22 @@ const EmployeeDashboard = () => {
 
   // Leave Management Section with working filters
   const renderLeaveManagement = () => {
-    // Calculate totals
-    const totalLeaves = {
-      casual: leaveBalance.casual + (leaves.filter(l => l.type === 'cl' || l.type?.toLowerCase().includes('casual')).reduce((sum, l) => sum + l.days, 0) || 0),
-      sick: leaveBalance.sick + (leaves.filter(l => l.type === 'sl' || l.type?.toLowerCase().includes('sick')).reduce((sum, l) => sum + l.days, 0) || 0),
-      earned: leaveBalance.earned + (leaves.filter(l => l.type === 'el' || l.type === 'pl' || l.type?.toLowerCase().includes('earned')).reduce((sum, l) => sum + l.days, 0) || 0)
+    const usedLeavesSummary = {
+      casual: leaves
+        .filter((l) => isCasualLeaveType(l.type) && isApprovedLeave(l))
+        .reduce((sum, l) => sum + (Number(l.days) || 0), 0),
+      sick: leaves
+        .filter((l) => isSickLeaveType(l.type) && isApprovedLeave(l))
+        .reduce((sum, l) => sum + (Number(l.days) || 0), 0),
+      earned: leaves
+        .filter((l) => isEarnedLeaveType(l.type) && isApprovedLeave(l))
+        .reduce((sum, l) => sum + (Number(l.days) || 0), 0)
     };
 
-    const usedLeaves = {
-      casual: leaves.filter(l => (l.type === 'cl' || l.type?.toLowerCase().includes('casual')) && l.status === 'approved').reduce((sum, l) => sum + l.days, 0) || 0,
-      sick: leaves.filter(l => (l.type === 'sl' || l.type?.toLowerCase().includes('sick')) && l.status === 'approved').reduce((sum, l) => sum + l.days, 0) || 0,
-      earned: leaves.filter(l => (l.type === 'el' || l.type === 'pl' || l.type?.toLowerCase().includes('earned')) && l.status === 'approved').reduce((sum, l) => sum + l.days, 0) || 0
+    const totalLeavesSummary = {
+      casual: usedLeavesSummary.casual + (leaveBalance.casual || 0),
+      sick: usedLeavesSummary.sick + (leaveBalance.sick || 0),
+      earned: usedLeavesSummary.earned + (leaveBalance.earned || 0)
     };
 
     return (
@@ -3388,24 +3422,24 @@ const EmployeeDashboard = () => {
           {[
             {
               type: "Casual Leave",
-              total: totalLeaves.casual,
-              used: usedLeaves.casual,
+              total: totalLeavesSummary.casual,
+              used: usedLeavesSummary.casual,
               remaining: leaveBalance.casual,
               color: themeColors.success,
               icon: CiCalendar,
             },
             {
               type: "Sick Leave",
-              total: totalLeaves.sick,
-              used: usedLeaves.sick,
+              total: totalLeavesSummary.sick,
+              used: usedLeavesSummary.sick,
               remaining: leaveBalance.sick,
               color: themeColors.info,
               icon: MdOutlineSick,
             },
             {
               type: "Earned Leave",
-              total: totalLeaves.earned,
-              used: usedLeaves.earned,
+              total: totalLeavesSummary.earned,
+              used: usedLeavesSummary.earned,
               remaining: leaveBalance.earned,
               color: themeColors.primary,
               icon: FaRegCalendarCheck,
@@ -3682,7 +3716,7 @@ const EmployeeDashboard = () => {
                         ];
 
                         const apiTypes = leaveTypes.map(type => ({
-                          name: type.name,
+                          name: getFullLeaveTypeName(type.name || type.code),
                           value: type.code || type.name
                         }));
 

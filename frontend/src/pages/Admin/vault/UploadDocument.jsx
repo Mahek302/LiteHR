@@ -172,10 +172,10 @@ const UploadDocument = () => {
 
   // Helper functions for theme classes
   const getBgColor = () => darkMode ? "bg-gray-800" : "bg-white";
-  const getBorderColor = () => darkMode ? "border-gray-700" : "border-gray-200";
+  const getBorderColor = () => darkMode ? "border-slate-700" : "border-gray-200";
   const getTextColor = () => darkMode ? "text-white" : "text-gray-800";
   const getSecondaryTextColor = () => darkMode ? "text-gray-400" : "text-gray-600";
-  const getInputBg = () => darkMode ? "bg-gray-900" : "bg-gray-50";
+  const getInputBg = () => darkMode ? "bg-slate-900" : "bg-violet-50";
   const getCardBg = () => darkMode ? "bg-gray-700/50" : "bg-gray-100";
 
   return (
@@ -184,7 +184,7 @@ const UploadDocument = () => {
       <div className="flex items-center gap-4 mb-8">
         <Link
           to="/admin/vault"
-          className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100'} ${getSecondaryTextColor()} hover:text-purple-600`}
+          className={`p-2 rounded-lg ${darkMode ? 'hover:bg-slate-700/50' : 'hover:bg-violet-100'} ${getSecondaryTextColor()} hover:text-purple-600`}
         >
           <FiArrowLeft className="w-5 h-5" />
         </Link>
@@ -385,7 +385,7 @@ const UploadDocument = () => {
                   </div>
                   <button
                     onClick={removeFile}
-                    className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100'} text-rose-400 hover:text-rose-300`}
+                    className={`p-2 rounded-lg ${darkMode ? 'hover:bg-slate-700/50' : 'hover:bg-violet-100'} text-rose-400 hover:text-rose-300`}
                   >
                     <FiX className="w-5 h-5" />
                   </button>
@@ -487,7 +487,7 @@ const UploadDocument = () => {
               </button>
               <Link
                 to="/admin/vault"
-                className={`w-full block px-4 py-3 border ${getBorderColor()} ${getSecondaryTextColor()} text-center rounded-lg ${darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100'} hover:text-purple-600 font-medium`}
+                className={`w-full block px-4 py-3 border ${getBorderColor()} ${getSecondaryTextColor()} text-center rounded-lg ${darkMode ? 'hover:bg-slate-700/50' : 'hover:bg-violet-100'} hover:text-purple-600 font-medium`}
               >
                 Cancel
               </Link>
@@ -523,3 +523,4 @@ const UploadDocument = () => {
 };
 
 export default UploadDocument;
+

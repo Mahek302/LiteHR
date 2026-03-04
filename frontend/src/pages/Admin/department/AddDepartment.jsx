@@ -100,11 +100,19 @@ const AddDepartment = () => {
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-4 mb-6">
+      <div
+        className={`mb-8 p-6 rounded-2xl border ${themeClasses.border.primary} relative overflow-hidden ${
+          darkMode
+            ? "bg-gradient-to-br from-slate-900/90 via-violet-900/20 to-emerald-900/20"
+            : "bg-gradient-to-br from-violet-100 via-indigo-50 to-emerald-100/70"
+        }`}
+      >
+        <div className={`absolute -top-8 -right-8 w-36 h-36 rounded-full blur-3xl ${darkMode ? "bg-violet-500/20" : "bg-violet-300/40"}`} />
+        <div className={`absolute -bottom-10 -left-10 w-40 h-40 rounded-full blur-3xl ${darkMode ? "bg-emerald-500/20" : "bg-emerald-300/40"}`} />
+        <div className="relative z-10 flex items-center gap-4 mb-1">
           <Link
             to="/admin/departments"
-            className={`p-3 rounded-lg ${themeClasses.bg.secondary} hover:${darkMode ? "bg-gray-700" : "bg-gray-300"} ${themeClasses.text.muted} hover:${themeClasses.text.primary} border ${themeClasses.border.primary} hover:border-purple-500 transition-colors`}
+            className={`p-3 rounded-lg ${themeClasses.bg.secondary} hover:${darkMode ? "bg-slate-700" : "bg-violet-100"} ${themeClasses.text.muted} border ${themeClasses.border.primary} hover:border-purple-500 transition-colors`}
           >
             <FiArrowLeft className="w-5 h-5" />
           </Link>
@@ -122,7 +130,7 @@ const AddDepartment = () => {
 
       {/* Form Container */}
       <div className={`rounded-xl border ${themeClasses.border.primary} ${themeClasses.bg.secondary} shadow-sm overflow-hidden mb-8`}>
-        <div className={`p-6 border-b ${themeClasses.border.primary} ${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"}`}>
+        <div className={`p-6 border-b ${themeClasses.border.primary} ${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"}`}>
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
               <HiOutlineOfficeBuilding className="w-8 h-8 text-white" />
@@ -338,7 +346,7 @@ const AddDepartment = () => {
           <h3 className={`text-xl font-bold ${themeClasses.text.primary}`}>Department Preview</h3>
         </div>
 
-        <div className={`rounded-lg p-6 border ${themeClasses.border.primary} ${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"}`}>
+        <div className={`rounded-lg p-6 border ${themeClasses.border.primary} ${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"}`}>
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
               <div className={`w-12 h-12 rounded-xl bg-blue-500 flex items-center justify-center text-white text-lg font-bold`}>
@@ -368,7 +376,7 @@ const AddDepartment = () => {
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className={`p-4 rounded-lg ${darkMode ? "bg-gray-900/50" : "bg-gray-100/50"} border ${themeClasses.border.primary}`}>
+            <div className={`p-4 rounded-lg ${darkMode ? "bg-slate-900/60" : "bg-violet-50/60"} border ${themeClasses.border.primary}`}>
               <p className={`text-sm ${themeClasses.text.muted} mb-1`}>Department Head</p>
               <div className="flex items-center gap-2">
                 <div>
