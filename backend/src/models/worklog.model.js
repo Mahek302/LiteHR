@@ -17,6 +17,14 @@ export const defineWorklogModel = (sequelize) => {
         type: DataTypes.DATEONLY,
         allowNull: false,
       },
+      taskName: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      project: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
       description: {
         type: DataTypes.TEXT,
         allowNull: false,
