@@ -1,8 +1,10 @@
-import { verifyToken } from "../utils/jwt.js";
 import { Employee } from "../models/index.js";
+import { verifyToken } from "../utils/jwt.js";
+import { parseTrialAccessFromEmployee } from "../utils/trialAccess.js";
+
+const TRIAL_ALLOWED_ROUTES = ["/api/auth/getUser"];
 
 export const authMiddleware = async (req, res, next) => {
-
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith("Bearer ")) {
@@ -13,30 +15,46 @@ export const authMiddleware = async (req, res, next) => {
 
   try {
     const decoded = verifyToken(token);
-    req.user = decoded; // { id, role, employeeId (maybe) }
+    if (!decoded) {
+      return res.status(401).json({ message: "Invalid or expired token" });
+    }
+    req.user = decoded || {};
 
-    // If employeeId is missing (stale token), fetch it from DB
-    if (!req.user.employeeId && req.user.id) {
-      try {
-
-        const emp = await Employee.findOne({ where: { userId: req.user.id } });
-
-        if (emp) {
-          req.user.employeeId = emp.id;
-        } else if (req.user.role !== "ADMIN") {
-          console.log("AuthMiddleware: Employee not found for userId:", req.user.id);
-        }
-      } catch (dbErr) {
-        console.error("Error fetching employee details in auth middleware:", dbErr);
+    let employee = null;
+    if (req.user.id) {
+      employee = await Employee.findOne({ where: { userId: req.user.id } });
+      if (employee) {
+        req.user.employeeId = employee.id;
       }
     }
 
-    next();
+    const trialMeta = parseTrialAccessFromEmployee(employee);
+    req.user.isTrial = Boolean(req.user.isTrial || trialMeta.isTrial);
+    req.user.trialAccessRoles =
+      req.user.trialAccessRoles && req.user.trialAccessRoles.length
+        ? req.user.trialAccessRoles
+        : trialMeta.trialAccessRoles;
+
+    if (
+      req.user.isTrial &&
+      !TRIAL_ALLOWED_ROUTES.some((allowedPath) =>
+        String(req.originalUrl || "").startsWith(allowedPath)
+      )
+    ) {
+      return res.status(403).json({
+        message:
+          "Trial account API access is restricted. Use static trial mode only.",
+        code: "TRIAL_STATIC_MODE_ONLY",
+      });
+    }
+
+    return next();
   } catch (err) {
     console.error("JWT verify error:", err.message);
     return res.status(401).json({ message: "Invalid or expired token" });
   }
 };
+
 export const authenticate = authMiddleware;
 
 export const authorize = (roles = []) => {
@@ -53,6 +71,6 @@ export const authorize = (roles = []) => {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    next();
+    return next();
   };
 };

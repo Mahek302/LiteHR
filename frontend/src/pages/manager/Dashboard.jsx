@@ -14,7 +14,7 @@ import {
   Download,
   Eye,
   Plus,
-  PieChart,
+  PieChart as PieChartIcon,
   LineChart,
   Activity,
   Target,
@@ -28,11 +28,39 @@ import {
   ArrowDownRight
 } from 'lucide-react';
 import { managerService } from '../../services/managerService';
+import { hasSeededTrialDemo } from '../../services/trialDemoService';
+
+const TRIAL_USER_CODE_PREFIX = 'TRL';
+
+const getStoredUser = () => {
+  try {
+    const raw = localStorage.getItem('user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const isTrialUserSession = () => {
+  const user = getStoredUser();
+  if (user?.isTrial) return true;
+  const employee = user?.employee || {};
+  const employeeCode = String(employee.employeeCode || '').toUpperCase();
+  const department = String(employee.department || '').toUpperCase();
+  const designation = String(employee.designation || '').toUpperCase();
+
+  return (
+    employeeCode.startsWith(TRIAL_USER_CODE_PREFIX) ||
+    department === 'TRIAL' ||
+    designation.startsWith('TRIAL ')
+  );
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [showExportOptions, setShowExportOptions] = useState(false);
   const { isDarkMode = true } = useOutletContext() || {};
+  const [isTrialMode] = useState(isTrialUserSession);
 
   // Get theme colors based on dark mode - matching homepage
   const themeColors = isDarkMode ? {
@@ -75,32 +103,58 @@ const Dashboard = () => {
   const [leaveDistribution, setLeaveDistribution] = useState([]);
   const [todayAttendance, setTodayAttendance] = useState([]);
   const [departmentPerformance, setDepartmentPerformance] = useState([]);
+  const [recentWorklogs, setRecentWorklogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hoveredSegment, setHoveredSegment] = useState(null);
 
   useEffect(() => {
+    let isCancelled = false;
+
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
+        if (isTrialMode && !hasSeededTrialDemo()) {
+          if (!isCancelled) {
+            setStatsData(prev => ({
+              ...prev,
+              error: 'Trial sample data is not initialized yet. Insert it once from Admin Dashboard.',
+            }));
+          }
+          return;
+        }
         const response = await managerService.getTeamStats();
         const data = response.data;
 
-        if (data) {
+        if (data && !isCancelled) {
           setStatsData(data.stats);
           setDepartmentPerformance(data.departmentPerf || []);
           setWeeklyAttendance(data.weeklyAtt || []);
           setLeaveDistribution(data.leaveDist || []);
           setTodayAttendance(data.todayAtt || []);
+          setRecentWorklogs(data.recentWorklogs || []);
         }
       } catch (error) {
         console.error("Failed to fetch dashboard data", error);
-        setStatsData(prev => ({ ...prev, error: error.message }));
+        if (!isCancelled) {
+          const trialRequired = error?.response?.data?.code === 'TRIAL_SAMPLE_DATA_REQUIRED';
+          setStatsData(prev => ({
+            ...prev,
+            error: trialRequired
+              ? 'Trial sample data is not initialized yet. Insert it once from Admin Dashboard.'
+              : error.message
+          }));
+        }
       } finally {
-        setLoading(false);
+        if (!isCancelled) setLoading(false);
       }
     };
 
     fetchDashboardData();
-  }, []);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isTrialMode]);
 
   if (statsData.error) {
     return (
@@ -134,8 +188,71 @@ const Dashboard = () => {
   // Calculate total leaves for pie chart
   const totalLeaves = leaveDistribution.reduce((sum, item) => sum + (item.count || 0), 0);
 
+  // Generate pie chart segments
+  const generatePieSegments = () => {
+    if (leaveDistribution.length === 0) return [];
+
+    let startAngle = 0;
+    const segments = [];
+
+    leaveDistribution.forEach((item, index) => {
+      const percentage = totalLeaves > 0 ? item.count / totalLeaves : 0;
+      const angle = percentage * 360;
+      
+      // Calculate end angle
+      const endAngle = startAngle + angle;
+      
+      // Convert to radians for SVG calculations
+      const startRad = (startAngle - 90) * Math.PI / 180;
+      const endRad = (endAngle - 90) * Math.PI / 180;
+      
+      // Calculate points for the arc
+      const radius = 80;
+      const centerX = 100;
+      const centerY = 100;
+      
+      const x1 = centerX + radius * Math.cos(startRad);
+      const y1 = centerY + radius * Math.sin(startRad);
+      const x2 = centerX + radius * Math.cos(endRad);
+      const y2 = centerY + radius * Math.sin(endRad);
+      
+      // Determine if the arc should be drawn as a large arc (>180 degrees)
+      const largeArcFlag = angle > 180 ? 1 : 0;
+      
+      // Create the SVG arc path
+      const pathData = [
+        `M ${centerX} ${centerY}`,
+        `L ${x1} ${y1}`,
+        `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+        `Z`
+      ].join(' ');
+      
+      segments.push({
+        ...item,
+        path: pathData,
+        startAngle,
+        endAngle,
+        percentage
+      });
+      
+      startAngle = endAngle;
+    });
+
+    return segments;
+  };
+
+  const pieSegments = generatePieSegments();
+
   return (
     <div className={`p-4 md:p-6 min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark' : ''}`} style={{ backgroundColor: themeColors.background }}>
+      {isTrialMode && (
+        <div className="mb-6 p-4 rounded-xl" style={{ backgroundColor: `${themeColors.primary}14`, border: `1px solid ${themeColors.primary}55` }}>
+          <p className="text-sm font-medium" style={{ color: themeColors.text }}>
+            Trial Mode: Shared demo data is used across all portals.
+          </p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold transition-colors duration-300" style={{ color: themeColors.text }}>Dashboard</h1>
@@ -440,7 +557,7 @@ const Dashboard = () => {
 
       {/* Leave Distribution & Today's Attendance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Leave Distribution Chart */}
+        {/* Leave Distribution Chart - Redesigned */}
         <div className="p-6 rounded-xl shadow-sm transition-colors duration-300" style={{
           backgroundColor: themeColors.card,
           border: `1px solid ${themeColors.border}`
@@ -460,112 +577,143 @@ const Dashboard = () => {
           </div>
 
           {leaveDistribution.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Legend */}
-              <div className="space-y-3">
-                {leaveDistribution.map((leave, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 rounded-lg transition-colors duration-300 hover:bg-opacity-80" style={{ backgroundColor: `${leave.color}10` }}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: leave.color, boxShadow: `0 0 8px ${leave.color}` }} />
-                      <span className="text-sm font-medium" style={{ color: themeColors.text }}>{leave.type}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-bold" style={{ color: themeColors.text }}>{leave.count}</span>
-                      <span className="text-xs" style={{ color: themeColors.muted }}>
-                        ({totalLeaves > 0 ? Math.round((leave.count / totalLeaves) * 100) : 0}%)
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Pie Chart */}
-              <div className="relative flex items-center justify-center">
-                <div className="relative w-40 h-40">
-                  {/* Outer border circle */}
-                  <div 
-                    className="absolute inset-0 rounded-full border-2 z-10" 
-                    style={{ 
-                      borderColor: themeColors.border,
-                      boxShadow: `0 0 0 1px ${themeColors.border}` 
-                    }}
+            <div className="flex flex-col md:flex-row items-center gap-8">
+              {/* Donut Chart */}
+              <div className="relative w-48 h-48 flex-shrink-0">
+                {/* SVG Donut Chart */}
+                <svg viewBox="0 0 200 200" className="w-full h-full transform -rotate-90">
+                  {/* Background circle */}
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="80"
+                    fill="none"
+                    stroke={themeColors.border}
+                    strokeWidth="30"
+                    strokeDasharray="502.4"
+                    strokeDashoffset="0"
                   />
                   
-                  {/* SVG for pie segments */}
-                  <svg className="absolute inset-0 w-full h-full transform -rotate-90">
-                    {/* Background circle */}
-                    <circle
-                      cx="80"
-                      cy="80"
-                      r="76"
-                      fill="none"
-                    />
+                  {/* Segments */}
+                  {pieSegments.map((segment, index) => {
+                    const circumference = 2 * Math.PI * 80; // 2πr
+                    const strokeDasharray = circumference;
+                    const strokeDashoffset = circumference * (1 - segment.percentage);
                     
-                    {/* Pie segments */}
-                    {leaveDistribution.reduce((acc, leave, index) => {
-                      const percentage = totalLeaves > 0 ? leave.count / totalLeaves : 0;
-                      const startAngle = acc.reduce((sum, l) => sum + l.percentage, 0) * 360;
-                      const angle = percentage * 360;
-                      
-                      const startRad = (startAngle) * Math.PI / 180;
-                      const endRad = (startAngle + angle) * Math.PI / 180;
-                      
-                      const x1 = 80 + 68 * Math.cos(startRad);
-                      const y1 = 80 + 68 * Math.sin(startRad);
-                      const x2 = 80 + 68 * Math.cos(endRad);
-                      const y2 = 80 + 68 * Math.sin(endRad);
-                      
-                      const largeArcFlag = angle > 180 ? 1 : 0;
-                      
-                      const pathData = [
-                        `M 80 80`,
-                        `L ${x1} ${y1}`,
-                        `A 68 68 0 ${largeArcFlag} 1 ${x2} ${y2}`,
-                        `Z`
-                      ].join(' ');
-                      
-                      acc.push({
-                        ...leave,
-                        percentage,
-                        path: pathData
-                      });
-                      
-                      return acc;
-                    }, []).map((segment, idx) => (
-                      <path
-                        key={idx}
-                        d={segment.path}
-                        fill={segment.color}
-                        stroke={themeColors.card}
-                        strokeWidth="1.5"
-                        className="transition-all duration-300 hover:opacity-90 cursor-pointer"
-                        style={{ filter: `drop-shadow(0 2px 4px rgba(0,0,0,0.1))` }}
+                    // Calculate rotation for each segment
+                    const rotation = (segment.startAngle) * 360 / 100;
+                    
+                    return (
+                      <circle
+                        key={index}
+                        cx="100"
+                        cy="100"
+                        r="80"
+                        fill="none"
+                        stroke={segment.color}
+                        strokeWidth="30"
+                        strokeDasharray={strokeDasharray}
+                        strokeDashoffset={strokeDashoffset}
+                        strokeLinecap="butt"
+                        className="transition-all duration-300 cursor-pointer hover:stroke-[32]"
+                        style={{
+                          transform: `rotate(${segment.startAngle}deg)`,
+                          transformOrigin: '100px 100px',
+                          filter: hoveredSegment === index ? 'brightness(1.1)' : 'none',
+                          opacity: hoveredSegment === null || hoveredSegment === index ? 1 : 0.6
+                        }}
+                        onMouseEnter={() => setHoveredSegment(index)}
+                        onMouseLeave={() => setHoveredSegment(null)}
                       >
                         <title>{`${segment.type}: ${segment.count} employees (${Math.round(segment.percentage * 100)}%)`}</title>
-                      </path>
-                    ))}
-                  </svg>
-                  
-                  {/* Inner circle for center text */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-16 h-16 rounded-full flex items-center justify-center" 
-                      style={{ 
-                        backgroundColor: themeColors.background,
-                        border: `2px solid ${themeColors.border}`
-                      }}
-                    >
-                      <div className="text-center">
-                        <p className="text-xl font-bold" style={{ color: themeColors.text }}>{totalLeaves}</p>
-                        <p className="text-[10px]" style={{ color: themeColors.muted }}>Total</p>
+                      </circle>
+                    );
+                  })}
+
+                  {/* Inner circle for center stats */}
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="55"
+                    fill={themeColors.card}
+                    stroke={themeColors.border}
+                    strokeWidth="2"
+                  />
+                </svg>
+
+                {/* Center text */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <span className="text-2xl font-bold" style={{ color: themeColors.text }}>{totalLeaves}</span>
+                  <span className="text-xs" style={{ color: themeColors.muted }}>Total Leaves</span>
+                </div>
+              </div>
+
+              {/* Legend with progress bars */}
+              <div className="flex-1 w-full">
+                <div className="space-y-4">
+                  {leaveDistribution.map((leave, index) => {
+                    const percentage = totalLeaves > 0 ? (leave.count / totalLeaves) * 100 : 0;
+                    const isHovered = hoveredSegment === index;
+                    
+                    return (
+                      <div
+                        key={index}
+                        className="space-y-2 transition-opacity duration-300 cursor-pointer"
+                        style={{ opacity: hoveredSegment === null || hoveredSegment === index ? 1 : 0.6 }}
+                        onMouseEnter={() => setHoveredSegment(index)}
+                        onMouseLeave={() => setHoveredSegment(null)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: leave.color }} />
+                            <span className="text-sm font-medium" style={{ color: themeColors.text }}>{leave.type}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold" style={{ color: themeColors.text }}>{leave.count}</span>
+                            <span className="text-xs" style={{ color: themeColors.muted }}>
+                              ({percentage.toFixed(1)}%)
+                            </span>
+                          </div>
+                        </div>
+                        <div className="relative h-2 rounded-full overflow-hidden" style={{ backgroundColor: `${leave.color}20` }}>
+                          <div
+                            className="absolute top-0 left-0 h-full rounded-full transition-all duration-300"
+                            style={{
+                              width: `${percentage}%`,
+                              backgroundColor: leave.color,
+                              boxShadow: isHovered ? `0 0 8px ${leave.color}` : 'none'
+                            }}
+                          />
+                        </div>
                       </div>
+                    );
+                  })}
+                </div>
+
+                {/* Summary stats */}
+                <div className="mt-6 pt-4 border-t" style={{ borderColor: themeColors.border }}>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs" style={{ color: themeColors.muted }}>Average Leave</p>
+                      <p className="text-lg font-bold" style={{ color: themeColors.text }}>
+                        {totalLeaves > 0 ? (totalLeaves / leaveDistribution.length).toFixed(1) : 0}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs" style={{ color: themeColors.muted }}>Most Common</p>
+                      <p className="text-lg font-bold" style={{ color: themeColors.text }}>
+                        {leaveDistribution.reduce((max, item) => item.count > max.count ? item : max, leaveDistribution[0])?.type || 'N/A'}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="text-center py-8" style={{ color: themeColors.muted }}>
-              No leave data available
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <PieChartIcon size={48} className="mb-4 opacity-50" style={{ color: themeColors.muted }} />
+              <p className="text-lg font-medium mb-2" style={{ color: themeColors.text }}>No Leave Data Available</p>
+              <p className="text-sm" style={{ color: themeColors.muted }}>Leave distribution will appear here once employees apply for leaves</p>
             </div>
           )}
         </div>
@@ -696,6 +844,62 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Recent Worklogs Glimpse */}
+      <div className="p-6 rounded-xl shadow-sm mb-6 transition-colors duration-300" style={{
+        backgroundColor: themeColors.card,
+        border: `1px solid ${themeColors.border}`
+      }}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold transition-colors duration-300" style={{ color: themeColors.text }}>Recent Worklogs</h3>
+            <p className="text-xs transition-colors duration-300 mt-1" style={{ color: themeColors.muted }}>Latest updates submitted by employees</p>
+          </div>
+          <button
+            onClick={() => handleNavigation('/manager/worklogs')}
+            className="text-sm font-medium transition-colors duration-300 hover:opacity-80 cursor-pointer"
+            style={{ color: themeColors.primary }}
+          >
+            View All →
+          </button>
+        </div>
+
+        {recentWorklogs.length > 0 ? (
+          <div className="space-y-3">
+            {recentWorklogs.slice(0, 5).map((log) => (
+              <div
+                key={log.id}
+                className="p-4 rounded-lg border transition-colors duration-300"
+                style={{ borderColor: themeColors.border, backgroundColor: `${themeColors.primary}08` }}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold transition-colors duration-300" style={{ color: themeColors.text }}>
+                      {log.employeeName || 'Unknown'}
+                    </p>
+                    <p className="text-xs transition-colors duration-300 mt-0.5" style={{ color: themeColors.muted }}>
+                      {log.employeeCode || 'N/A'} • {log.project || 'General'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold" style={{ color: themeColors.secondary }}>{Number(log.hoursWorked) || 0}h</p>
+                    <p className="text-xs" style={{ color: themeColors.muted }}>
+                      {log.date ? new Date(log.date).toLocaleDateString('en-GB') : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-sm mt-2 transition-colors duration-300" style={{ color: themeColors.muted }}>
+                  {log.description || 'No description'}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8" style={{ color: themeColors.muted }}>
+            No recent worklogs available
+          </div>
+        )}
       </div>
 
       {/* Quick Actions */}

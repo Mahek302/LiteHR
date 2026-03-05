@@ -168,6 +168,7 @@ const EmployeeDashboard = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [isSubmittingLeave, setIsSubmittingLeave] = useState(false);
   const [showWorklogModal, setShowWorklogModal] = useState(false);
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
@@ -799,6 +800,7 @@ const EmployeeDashboard = () => {
   // Handle leave application
   const handleApplyLeave = async (e) => {
     e.preventDefault();
+    if (isSubmittingLeave) return;
 
     // Validate Indian mobile number
     const mobileRegex = /^[6-9]\d{9}$/;
@@ -808,6 +810,7 @@ const EmployeeDashboard = () => {
     }
 
     try {
+      setIsSubmittingLeave(true);
       await employeeService.applyLeave({
         leaveType: newLeave.type, // Sending the value directly (code or name)
         fromDate: newLeave.from,
@@ -816,11 +819,15 @@ const EmployeeDashboard = () => {
         contactNumber: newLeave.contactNumber // Original number sent to backend
       });
 
+      toast.success("Leave request submitted");
       setShowLeaveModal(false);
       setNewLeave({ type: "casual", from: "", to: "", reason: "", contactNumber: "", showContactNumber: false });
       fetchAllData(); // Refresh list
     } catch (err) {
       console.error("Apply leave failed:", err);
+      toast.error(err.response?.data?.message || "Failed to submit leave request");
+    } finally {
+      setIsSubmittingLeave(false);
     }
   };
 
@@ -3870,13 +3877,14 @@ const EmployeeDashboard = () => {
                   </button>
                   <button
                     type="submit"
+                    disabled={isSubmittingLeave}
                     className="px-4 py-1.5 rounded text-sm font-medium hover:scale-105 transition-transform"
                     style={{
-                      backgroundColor: themeColors.primary,
+                      backgroundColor: isSubmittingLeave ? themeColors.textMuted : themeColors.primary,
                       color: "#FFFFFF",
                     }}
                   >
-                    Submit Application
+                    {isSubmittingLeave ? "Submitting..." : "Submit Application"}
                   </button>
                 </div>
               </form>

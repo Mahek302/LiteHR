@@ -1,4 +1,5 @@
 import axios from "axios";
+import { installTrialDemoInterceptor } from "./trialDemoService";
 
 // Create an axios instance
 const api = axios.create({
@@ -21,6 +22,8 @@ api.interceptors.request.use(
         return Promise.reject(error);
     }
 );
+
+installTrialDemoInterceptor(api);
 
 // Response interceptor to handle common errors (like 401)
 api.interceptors.response.use(

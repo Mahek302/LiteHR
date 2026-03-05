@@ -19,6 +19,50 @@ const calculateDays = (fromDate, toDate) => {
   return Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
 };
 
+const LEAVE_TYPE_ALIAS_TO_CODE = {
+  cl: ["CL"],
+  casual: ["CL"],
+  "casual leave": ["CL"],
+  sl: ["SL"],
+  sick: ["SL"],
+  "sick leave": ["SL"],
+  al: ["AL", "EL", "PL"],
+  annual: ["AL", "EL", "PL"],
+  "annual leave": ["AL", "EL", "PL"],
+  el: ["EL", "AL", "PL"],
+  earned: ["EL", "AL", "PL"],
+  "earned leave": ["EL", "AL", "PL"],
+  pl: ["PL", "EL", "AL"],
+  paid: ["PL", "EL", "AL"],
+  "paid leave": ["PL", "EL", "AL"],
+};
+
+const normalizeText = (value) => (value || "").toString().trim().toLowerCase();
+
+const resolveLeaveType = async (input) => {
+  const raw = (input || "").toString().trim();
+  if (!raw) return null;
+
+  const normalized = normalizeText(raw);
+  const candidateCodes = LEAVE_TYPE_ALIAS_TO_CODE[normalized] || [raw.toUpperCase()];
+
+  let type = await LeaveType.findOne({
+    where: {
+      [Op.or]: [{ code: { [Op.in]: candidateCodes } }, { name: raw }],
+    },
+  });
+
+  if (type) return type;
+
+  const allTypes = await LeaveType.findAll();
+  return (
+    allTypes.find((t) => candidateCodes.includes((t.code || "").toUpperCase())) ||
+    allTypes.find((t) => normalizeText(t.code) === normalized) ||
+    allTypes.find((t) => normalizeText(t.name) === normalized) ||
+    null
+  );
+};
+
 const autoRejectExpiredPendingLeaves = async () => {
   const thresholdDate = new Date(Date.now() - AUTO_DECISION_WINDOW_HOURS * 60 * 60 * 1000);
   const stalePendingLeaves = await LeaveRequest.findAll({
@@ -54,12 +98,15 @@ export const applyLeaveService = async (employeeId, data) => {
   if (!leaveType || !fromDate || !toDate) {
     throw new Error("leaveType, fromDate and toDate are required");
   }
+  if (new Date(fromDate) > new Date(toDate)) {
+    throw new Error("fromDate cannot be after toDate");
+  }
 
   const days = calculateDays(fromDate, toDate);
 
   // 1️⃣ Validate leave type
   // Accept either code or name for flexibility
-  const type = await LeaveType.findOne({ where: { [Op.or]: [{ code: leaveType }, { name: leaveType }] } });
+  const type = await resolveLeaveType(leaveType);
   if (!type) {
     throw new Error("Invalid leave type");
   }
@@ -109,10 +156,23 @@ export const applyLeaveService = async (employeeId, data) => {
   // If not actioned within 24 hours they are auto-rejected.
   const finalStatus = "PENDING";
 
+  const duplicate = await LeaveRequest.findOne({
+    where: {
+      employeeId,
+      fromDate,
+      toDate,
+      status: { [Op.in]: ["PENDING", "APPROVED"] },
+      leaveType: { [Op.in]: [type.code, type.name, leaveType] },
+    },
+  });
+  if (duplicate) {
+    throw new Error("A leave request for this period already exists");
+  }
+
   // 5️⃣ Create leave request
   const leave = await LeaveRequest.create({
     employeeId,
-    leaveType,
+    leaveType: type.code,
     fromDate,
     toDate,
     reason,
@@ -277,6 +337,9 @@ export const updateLeaveStatusService = async (user, leaveId, newStatus) => {
   if (!leave) {
     throw new Error("Leave request not found");
   }
+  if (!leave.employee) {
+    throw new Error("Employee profile not found for this leave request");
+  }
 
   if (leave.status !== "PENDING") {
     throw new Error("Leave already processed");
@@ -285,7 +348,7 @@ export const updateLeaveStatusService = async (user, leaveId, newStatus) => {
   // Manager department check
   if (user.role === "MANAGER") {
     const managerEmp = await Employee.findByPk(user.employeeId);
-    if (!managerEmp || managerEmp.department !== leave.employee.department) {
+    if (!managerEmp || !leave.employee || managerEmp.department !== leave.employee.department) {
       throw new Error("Not allowed to approve/reject this leave");
     }
   }
@@ -294,17 +357,30 @@ export const updateLeaveStatusService = async (user, leaveId, newStatus) => {
   if (newStatus === "APPROVED") {
     const days = calculateDays(leave.fromDate, leave.toDate);
 
-    const type = await LeaveType.findOne({
-      where: { code: leave.leaveType },
-    });
+    const type = await resolveLeaveType(leave.leaveType);
+    if (!type) {
+      throw new Error("Leave type not found for this request");
+    }
 
-    const balance = await EmployeeLeaveBalance.findOne({
+    let balance = await EmployeeLeaveBalance.findOne({
       where: {
         employeeId: leave.employeeId,
         leaveTypeId: type.id,
         year: CURRENT_YEAR,
       },
     });
+
+    // Auto-heal missing balance rows for the year
+    if (!balance) {
+      balance = await EmployeeLeaveBalance.create({
+        employeeId: leave.employeeId,
+        leaveTypeId: type.id,
+        year: CURRENT_YEAR,
+        total: type.yearlyLimit || 0,
+        used: 0,
+        remaining: type.yearlyLimit || 0,
+      });
+    }
 
     if (!balance || balance.remaining < days) {
       throw new Error("Insufficient leave balance");
@@ -319,22 +395,32 @@ export const updateLeaveStatusService = async (user, leaveId, newStatus) => {
   leave.approverId = user.employeeId || null;
   await leave.save();
 
-  // Notify employee
-  await createNotification({
-    userId: leave.employee.userId,
-    title: "Leave Status Updated",
-    message: `Your leave has been ${newStatus}`,
-    type: "LEAVE",
-  });
+  // Notify employee (non-blocking for approval status update)
+  if (leave.employee.userId) {
+    try {
+      await createNotification({
+        userId: leave.employee.userId,
+        title: "Leave Status Updated",
+        message: `Your leave has been ${newStatus}`,
+        type: "LEAVE",
+      });
+    } catch (notifyErr) {
+      console.error("Leave notification failed:", notifyErr.message);
+    }
+  }
 
   // Send email if employee user has an email
-  const empUser = await leave.employee.getUser();
-  if (empUser && empUser.email) {
-    await sendEmail({
-      to: empUser.email,
-      subject: "Leave Status Update",
-      text: `Your leave has been ${newStatus}.`,
-    });
+  try {
+    const empUser = await leave.employee.getUser();
+    if (empUser && empUser.email) {
+      await sendEmail({
+        to: empUser.email,
+        subject: "Leave Status Update",
+        text: `Your leave has been ${newStatus}.`,
+      });
+    }
+  } catch (mailErr) {
+    console.error("Leave status email failed:", mailErr.message);
   }
 
   return leave;

@@ -1,3 +1,4 @@
+// src/App.jsx
 import ClickSpark from "./components/ClickSpark";
 import ScrollToTop from "./ScrollToTop";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -5,6 +6,10 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Toaster } from "react-hot-toast";
+import {
+  getActivePortalRole,
+  setStoredPortalRole,
+} from "./utils/portalSwitch";
 
 /* Public */
 import Login from "./pages/Login";
@@ -29,6 +34,7 @@ import Dashboard from './pages/manager/Dashboard'; // Manager Dashboard
 
 /* Manager Pages */
 import EmployeeManagement from './pages/manager/EmployeeManagement';
+import Worklogs from './pages/manager/Worklogs'; // Import Worklogs component
 import AttendanceTracking from './pages/manager/AttendanceTracking';
 import LeaveApproval from './pages/manager/LeaveApproval';
 import Recruitment from './pages/manager/Recruitment';
@@ -93,6 +99,7 @@ import AdminProfile from "./pages/Admin/profile/AdminProfile";
 function App() {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const activeRole = getActivePortalRole(user, user?.role);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -107,8 +114,12 @@ function App() {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser(res.data);
+        localStorage.setItem("user", JSON.stringify(res.data || {}));
+        setStoredPortalRole(getActivePortalRole(res.data, res.data?.role));
       } catch {
         localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setStoredPortalRole(null);
       } finally {
         setIsLoading(false);
       }
@@ -137,8 +148,8 @@ function App() {
       return null; // or loader
     }
 
-    if (user.role !== "ADMIN") {
-      return <Navigate to={getRoleRedirect(user.role)} replace />;
+    if (activeRole !== "ADMIN") {
+      return <Navigate to={getRoleRedirect(activeRole)} replace />;
     }
 
     return children;
@@ -155,8 +166,8 @@ function App() {
       return null;
     }
 
-    if (user.role !== "MANAGER" && user.role !== "ADMIN") {
-      return <Navigate to={getRoleRedirect(user.role)} replace />;
+    if (activeRole !== "MANAGER" && activeRole !== "ADMIN") {
+      return <Navigate to={getRoleRedirect(activeRole)} replace />;
     }
 
     return children;
@@ -173,7 +184,7 @@ function App() {
       return null;
     }
 
-    if (!["EMPLOYEE", "MANAGER", "ADMIN"].includes(user.role)) {
+    if (!["EMPLOYEE", "MANAGER", "ADMIN"].includes(activeRole)) {
       return <Navigate to="/login" replace />;
     }
 
@@ -182,6 +193,8 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setStoredPortalRole(null);
     setUser(null);
   };
 
@@ -207,11 +220,11 @@ function App() {
           <Route path="/licensing/admin-setup" element={<LicensingAdminSetup />} />
           <Route
             path="/login"
-            element={localStorage.getItem("token") && user ? <Navigate to={getRoleRedirect(user.role)} /> : <Login setUser={setUser} />}
+            element={<Login setUser={setUser} />}
           />
           <Route
             path="/register"
-            element={localStorage.getItem("token") && user ? <Navigate to={getRoleRedirect(user.role)} /> : <Register setUser={setUser} />}
+            element={localStorage.getItem("token") && user ? <Navigate to={getRoleRedirect(activeRole)} /> : <Register setUser={setUser} />}
           />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
 
@@ -287,9 +300,9 @@ function App() {
             <Route index element={<Navigate to="/manager/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
 
-            {/* Employee Management */}
+            {/* Employee Management - with dropdown */}
             <Route path="employees" element={<EmployeeManagement />} />
-            {/* Employee Hierarchy route removed */}
+            <Route path="worklogs" element={<Worklogs />} /> {/* New Worklogs route */}
 
             {/* Departments */}
             <Route path="departments" element={<ManagerDepartmentList />} />
@@ -297,8 +310,6 @@ function App() {
 
             {/* Task Management */}
             <Route path="tasks" element={<TaskManagement />} />
-
-            {/* Roles & Permissions - REMOVED */}
 
             {/* Attendance Tracking */}
             <Route path="attendance" element={<AttendanceTracking />} />

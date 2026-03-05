@@ -33,17 +33,22 @@ import {
   TrendingUp,
   Activity,
   PieChart,
-  User
+  User,
+  ClipboardList,
+  UserCheck
 } from 'lucide-react';
 import { notificationService } from '../../services/notificationService';
+import PortalSwitcher from '../../components/PortalSwitcher';
 
-// Import logo
-import WFELogo from '../../images/WFE_logo.png';
+// Import your actual logo file
+import LiteHRLogo from '../../images/WFE_logo.png';
 
 export default function MainLayout({ logout }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [darkMode, setDarkMode] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [showSeconds, setShowSeconds] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     employees: false,
     departments: false,
@@ -75,6 +80,14 @@ export default function MainLayout({ logout }) {
     });
   }, [location.pathname]);
 
+  // Auto-expand Employee section if on employee list or worklogs
+  useEffect(() => {
+    if (location.pathname.includes('/manager/employees') || 
+        location.pathname.includes('/manager/worklogs')) {
+      setExpandedSections(prev => ({ ...prev, employees: true }));
+    }
+  }, [location.pathname]);
+
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -100,6 +113,15 @@ export default function MainLayout({ logout }) {
     // Poll every minute
     const interval = setInterval(fetchNotifications, 60000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Keep header clock in sync (same behavior as admin portal).
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
   }, []);
 
   const handleMarkRead = async (id) => {
@@ -213,16 +235,25 @@ export default function MainLayout({ logout }) {
     },
     {
       id: 'employees',
-      title: 'Employee List',
-      hasDropdown: false,
+      title: 'Employee Management',
+      hasDropdown: true,
       icon: <Users size={20} />,
       items: [
         {
           id: 'employee-list',
           label: 'Employee List',
-          icon: <Users size={20} />,
-          path: '/manager/employees'
+          icon: <UserCheck size={16} />,
+          path: '/manager/employees',
+          description: 'View and manage employees'
         },
+        {
+          id: 'employee-worklogs',
+          label: 'Worklogs',
+          icon: <ClipboardList size={16} />,
+          path: '/manager/worklogs',
+          description: 'Track employee worklogs',
+        
+        }
       ]
     },
     {
@@ -242,7 +273,7 @@ export default function MainLayout({ logout }) {
     {
       id: 'attendance',
       title: 'Attendance Tracking',
-      hasDropdown: false,
+      hasDropdown: true,
       icon: <Calendar size={20} />,
       items: [
         {
@@ -250,6 +281,12 @@ export default function MainLayout({ logout }) {
           label: 'Monthly Attendance',
           icon: <Calendar size={16} />,
           path: '/manager/attendance'
+        },
+        {
+          id: 'attendance-calendar',
+          label: 'Attendance Calendar',
+          icon: <Calendar size={16} />,
+          path: '/manager/attendance/calendar'
         },
       ]
     },
@@ -514,11 +551,11 @@ export default function MainLayout({ logout }) {
               onClick={handleLogoClick}
               className="flex items-center gap-3 cursor-pointer group"
             >
-              <div className="w-[190px] h-auto flex items-center justify-start">
+              <div className="w-[140px] h-auto flex items-center justify-start">
                 <img
-                  src={WFELogo}
-                  alt="WORKFORCEDGE Logo"
-                  className="w-[150px] h-auto object-contain hover:opacity-80 transition-opacity"
+                  src={LiteHRLogo}
+                  alt="LiteHR Logo"
+                  className="w-[100px] h-auto object-contain hover:opacity-80 transition-opacity"
                   style={{
                     filter: darkMode
                       ? 'invert(0)'  // Keep original logo colors in dark mode
@@ -543,25 +580,26 @@ export default function MainLayout({ logout }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* <form onSubmit={handleSearch} className="relative hidden md:block">
-              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-500' : 'text-slate-400'
-                }`} size={18} />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search employees, departments..."
-                className={`pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-48 lg:w-64 transition-all ${darkMode
-                  ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400'
-                  : 'bg-white border-slate-300 text-slate-700 placeholder-slate-400'
-                  }`}
-              />
-            </form> */}
+	          <div className="flex items-center gap-3">
+	            <div
+	              onClick={() => setShowSeconds((prev) => !prev)}
+	              className={`px-3 py-2 rounded-lg text-sm font-medium border cursor-pointer transition-colors ${
+	                darkMode
+	                  ? 'bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600'
+	                  : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
+	              }`}
+	              title={showSeconds ? 'Click to hide seconds' : 'Click to show seconds'}
+	            >
+	              {currentTime.toLocaleTimeString([], {
+	                hour: '2-digit',
+	                minute: '2-digit',
+	                ...(showSeconds && { second: '2-digit' })
+	              })}
+	            </div>
 
-            {/* Dark Mode Toggle Button */}
-            <button
-              onClick={toggleDarkMode}
+	            {/* Dark Mode Toggle Button */}
+	            <button
+	              onClick={toggleDarkMode}
               className={`p-2 rounded-lg transition-colors cursor-pointer ${darkMode
                 ? 'text-yellow-400 hover:text-yellow-300 hover:bg-gray-700'
                 : 'text-indigo-600 hover:text-indigo-700 hover:bg-slate-100'
@@ -710,32 +748,46 @@ export default function MainLayout({ logout }) {
           <div className="p-4 flex-1 overflow-y-auto sidebar-scrollbar">
             {navigationSections.map((section) => (
               <div key={section.id} className="mb-2">
-                {/* Direct link sections (Attendance, Settings) */}
-                {!section.hasDropdown && section.id !== 'main' ? (
-                  <button
-                    onClick={() => handleDirectLink(section.items[0].path)}
-                    className={`
-                      w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer
-                      ${isChildActive(section.items[0].path)
-                        ? (darkMode
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-blue-600 text-white')
-                        : (darkMode
-                          ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                          : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900')
-                      }
-                    `}
-                  >
-                    {section.icon}
-                    <span>{section.title}</span>
-                  </button>
-                ) : section.hasDropdown ? (
+                {/* Main section (Dashboard) */}
+                {section.id === 'main' && (
+                  <div>
+                    <h3 className={`text-xs font-semibold uppercase tracking-wider mb-2 px-3 ${darkMode ? 'text-gray-500' : 'text-slate-500'
+                      }`}>
+                      {section.title}
+                    </h3>
+                    <div className="space-y-1">
+                      {section.items.map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => handleNavigation(item.path)}
+                          className={`
+                            w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer
+                            ${isChildActive(item.path)
+                              ? (darkMode
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-blue-600 text-white')
+                              : (darkMode
+                                ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                                : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900')
+                            }
+                          `}
+                        >
+                          {item.icon}
+                          <span>{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Dropdown sections */}
+                {section.hasDropdown && (
                   <>
                     {/* Dropdown Section Header */}
                     <button
                       onClick={() => toggleSection(section.id)}
                       className={`
-                        w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer
+                        w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left text-sm font-medium transition-all cursor-pointer
                         ${isItemActive(section)
                           ? (darkMode
                             ? 'bg-gray-700 text-blue-400'
@@ -768,7 +820,7 @@ export default function MainLayout({ logout }) {
                             key={item.id}
                             onClick={() => handleNavigation(item.path)}
                             className={`
-                              w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer
+                              w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-left text-sm font-medium transition-all cursor-pointer
                               ${isChildActive(item.path)
                                 ? (darkMode
                                   ? 'bg-blue-600 text-white'
@@ -779,43 +831,41 @@ export default function MainLayout({ logout }) {
                               }
                             `}
                           >
-                            {item.icon}
-                            <span>{item.label}</span>
+                            <div className="flex items-center gap-3">
+                              {item.icon}
+                              <span>{item.label}</span>
+                            </div>
+                            {item.badge && (
+                              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-purple-500 text-white">
+                                {item.badge}
+                              </span>
+                            )}
                           </button>
                         ))}
                       </div>
                     </div>
                   </>
-                ) : (
-                  /* Main Section */
-                  <div>
-                    <h3 className={`text-xs font-semibold uppercase tracking-wider mb-2 px-3 ${darkMode ? 'text-gray-500' : 'text-slate-500'
-                      }`}>
-                      {section.title}
-                    </h3>
-                    <div className="space-y-1">
-                      {section.items.map((item) => (
-                        <button
-                          key={item.id}
-                          onClick={() => handleNavigation(item.path)}
-                          className={`
-                            w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer
-                            ${isChildActive(item.path)
-                              ? (darkMode
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-blue-600 text-white')
-                              : (darkMode
-                                ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                                : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900')
-                            }
-                          `}
-                        >
-                          {item.icon}
-                          <span>{item.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                )}
+
+                {/* Direct link sections (Attendance, Settings) */}
+                {!section.hasDropdown && section.id !== 'main' && (
+                  <button
+                    onClick={() => handleDirectLink(section.items[0].path)}
+                    className={`
+                      w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer
+                      ${isChildActive(section.items[0].path)
+                        ? (darkMode
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-blue-600 text-white')
+                        : (darkMode
+                          ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                          : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900')
+                      }
+                    `}
+                  >
+                    {section.icon}
+                    <span>{section.title}</span>
+                  </button>
                 )}
               </div>
             ))}
@@ -828,7 +878,7 @@ export default function MainLayout({ logout }) {
               <div>
                 <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-slate-800'
                   }`}>
-                  WORKFORCEDGE v1.0.0
+                  LiteHR v1.0.0
                 </p>
                 <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-slate-500'
                   }`}>
@@ -847,6 +897,7 @@ export default function MainLayout({ logout }) {
                 <span className="text-xs hidden lg:inline">Logout</span>
               </button>
             </div>
+            <PortalSwitcher user={user} currentRole="MANAGER" darkMode={darkMode} />
           </div>
         </aside>
 
@@ -876,7 +927,7 @@ export default function MainLayout({ logout }) {
               <div>
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-slate-500'
                   }`}>
-                  © 2024 WORKFORCEDGE Manager Portal
+                  © 2024 LiteHR Manager Portal
                 </p>
                 <p className={`text-xs ${darkMode ? 'text-gray-600' : 'text-slate-400'
                   }`}>

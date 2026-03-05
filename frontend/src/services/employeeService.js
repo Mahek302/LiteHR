@@ -1,5 +1,11 @@
 import api from "./api";
 
+const toArray = (payload) => {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data)) return payload.data;
+    return [];
+};
+
 const employeeService = {
     // Dashboard
     getDashboardStats: async () => {
@@ -10,12 +16,12 @@ const employeeService = {
     // Attendance
     getAttendance: async () => {
         const response = await api.get("/attendance/getAttendance");
-        return response.data;
+        return toArray(response.data);
     },
 
     getAllAttendance: async () => {
         const response = await api.get("/attendance/all");
-        return response.data;
+        return toArray(response.data);
     },
 
     markClockIn: async () => {
@@ -36,7 +42,7 @@ const employeeService = {
 
     getTasks: async () => {
         const response = await api.get("/tasks/my");
-        return response.data;
+        return toArray(response.data);
     },
 
     updateTaskStatus: async (taskId, status) => {
@@ -47,7 +53,7 @@ const employeeService = {
     // Leaves
     getLeaves: async () => {
         const response = await api.get("/leave/my");
-        return response.data;
+        return toArray(response.data);
     },
 
     getLeaveBalance: async () => {
@@ -68,7 +74,7 @@ const employeeService = {
     // Worklogs
     getWorklogs: async () => {
         const response = await api.get("/worklogs/my");
-        return response.data;
+        return toArray(response.data);
     },
 
     addWorklog: async (worklogData) => {
@@ -79,13 +85,13 @@ const employeeService = {
     // Holidays
     getHolidays: async () => {
         const response = await api.get("/holidays");
-        return response.data;
+        return toArray(response.data);
     },
 
     // Payslips
     getPayslips: async () => {
         const response = await api.get("/payslips/my");
-        return response.data;
+        return toArray(response.data);
     },
 
     // Documents

@@ -34,6 +34,7 @@ export const approveDemoRequestController = async (req, res) => {
       demoRequestId: req.params.id,
       adminUserId: req.user.id,
       trialAccessRole: req.body?.trialAccessRole,
+      trialAccessRoles: req.body?.trialAccessRoles,
     });
     res.json({
       message: "Demo approved and 15-day trial activated",

@@ -47,7 +47,12 @@ const DepartmentList = () => {
         try {
             setLoading(true);
             const data = await managerService.getDepartments();
-            setDepartments(data);
+            const normalizedDepartments = Array.isArray(data)
+                ? data
+                : Array.isArray(data?.data)
+                    ? data.data
+                    : [];
+            setDepartments(normalizedDepartments);
             setError(null);
         } catch (err) {
             console.error("Failed to fetch departments", err);
@@ -57,9 +62,9 @@ const DepartmentList = () => {
         }
     };
 
-    const filteredDepartments = departments.filter(
+    const filteredDepartments = (Array.isArray(departments) ? departments : []).filter(
         (dept) =>
-            dept.name.toLowerCase().includes(search.toLowerCase()) ||
+            String(dept?.name || "").toLowerCase().includes(search.toLowerCase()) ||
             (dept.head?.fullName &&
                 dept.head.fullName.toLowerCase().includes(search.toLowerCase()))
     );

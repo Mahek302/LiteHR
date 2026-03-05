@@ -6,6 +6,11 @@ import { createNotification } from "./notification.service.js";
 import { sendEmail } from "../utils/email.js";
 import { hashPassword } from "../utils/password.js";
 import { signToken } from "../utils/jwt.js";
+import {
+  getPrimaryRoleFromTrialAccess,
+  normalizeTrialAccessRoles,
+  serializeTrialAccessInDesignation,
+} from "../utils/trialAccess.js";
 
 const formatDateTime = (value) => {
   return new Date(value).toLocaleString("en-US", {
@@ -49,17 +54,13 @@ const getNextTrialEmployeeCode = async () => {
   return `TRL${String(maxCodeNumber + 1).padStart(3, "0")}`;
 };
 
-const normalizeTrialRole = (trialAccessRole) => {
-  const value = String(trialAccessRole || "EMPLOYEE").toUpperCase();
-  const allowed = ["EMPLOYEE", "MANAGER", "ADMIN"];
-  if (!allowed.includes(value)) {
-    throw new Error("Invalid trial access role");
-  }
-  return value;
-};
-
-const ensureTrialUserAndProfile = async (request, trialAccessRole = "EMPLOYEE") => {
-  const targetRole = normalizeTrialRole(trialAccessRole);
+const ensureTrialUserAndProfile = async (
+  request,
+  trialAccessRoles = ["EMPLOYEE"]
+) => {
+  const normalizedAccess = normalizeTrialAccessRoles(trialAccessRoles);
+  const targetRole = getPrimaryRoleFromTrialAccess(normalizedAccess);
+  const designation = serializeTrialAccessInDesignation(normalizedAccess);
   const normalizedEmail = String(request.email || "").trim().toLowerCase();
   let user = await User.findOne({
     where: sqWhere(fn("LOWER", col("email")), normalizedEmail),
@@ -94,15 +95,15 @@ const ensureTrialUserAndProfile = async (request, trialAccessRole = "EMPLOYEE") 
       employeeCode,
       fullName: request.fullName || "Trial User",
       department: "Trial",
-      designation: `Trial ${targetRole}`,
+      designation,
       dateOfJoining: new Date(),
       personalEmail: normalizedEmail,
       status: "Active",
     });
   } else {
     await existingProfile.update({
-      designation: existingProfile.designation || `Trial ${targetRole}`,
-      department: existingProfile.department || "Trial",
+      designation,
+      department: "Trial",
       status: existingProfile.status || "Active",
     });
   }
@@ -110,13 +111,22 @@ const ensureTrialUserAndProfile = async (request, trialAccessRole = "EMPLOYEE") 
   return user;
 };
 
-const sendTrialActivationEmail = async ({ request, user, now, trialEnd }) => {
+const sendTrialActivationEmail = async ({
+  request,
+  user,
+  now,
+  trialEnd,
+  trialAccessRoles = ["EMPLOYEE"],
+}) => {
+  const normalizedAccess = normalizeTrialAccessRoles(trialAccessRoles);
+  const accessText = normalizedAccess.join(", ");
   const activationToken = signToken(
     {
       id: user.id,
       type: "reset",
       purpose: "trial-activation",
       demoRequestId: request.id,
+      trialAccessRoles: normalizedAccess,
     },
     "24h"
   );
@@ -127,7 +137,7 @@ const sendTrialActivationEmail = async ({ request, user, now, trialEnd }) => {
     subject: "Activate Your LiteHR 15-Day Trial",
     text: `Hi ${request.fullName}, your LiteHR trial has been approved. Activate your account using this secure link (valid 24 hours): ${activationLink}\nTrial Start: ${formatDateTime(
       now
-    )}\nTrial End: ${formatDateTime(trialEnd)}\nAccess Role: ${user.role}`,
+    )}\nTrial End: ${formatDateTime(trialEnd)}\nAccess: ${accessText}`,
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.5;">
         <h2 style="background:#4f46e5;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;>Your LiteHR Trial Is Approved</h2>
@@ -135,7 +145,7 @@ const sendTrialActivationEmail = async ({ request, user, now, trialEnd }) => {
         <p>Your demo request has been approved by our admin team.</p>
         <p><strong>Trial Start:</strong> ${formatDateTime(now)}</p>
         <p><strong>Trial End:</strong> ${formatDateTime(trialEnd)}</p>
-        <p><strong>Access Role:</strong> ${user.role}</p>
+        <p><strong>Access:</strong> ${accessText}</p>
         <p style="margin: 16px 0;">
           <a href="${activationLink}" style="background:#4f46e5;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
             Activate Trial Account
@@ -147,7 +157,11 @@ const sendTrialActivationEmail = async ({ request, user, now, trialEnd }) => {
   });
 };
 
-const buildAdminMessage = (request, status = "PENDING", trialAccessRole = null) => {
+const buildAdminMessage = (
+  request,
+  status = "PENDING",
+  trialAccessRoles = null
+) => {
   const trim = (value, max = 45) => {
     const text = String(value || "");
     if (text.length <= max) return text;
@@ -155,7 +169,9 @@ const buildAdminMessage = (request, status = "PENDING", trialAccessRole = null) 
   };
   const interests = (request.interests || []).join(", ") || "N/A";
   const trialAccess =
-    status === "APPROVED" ? trialAccessRole || "EMPLOYEE" : "N/A";
+    status === "APPROVED"
+      ? normalizeTrialAccessRoles(trialAccessRoles).join(", ")
+      : "N/A";
   let message = [
     `ID: #${request.id}`,
     `Name: ${trim(request.fullName, 35)}`,
@@ -306,8 +322,11 @@ export const approveDemoRequestService = async ({
   demoRequestId,
   adminUserId,
   trialAccessRole = "EMPLOYEE",
+  trialAccessRoles = null,
 }) => {
-  const targetRole = normalizeTrialRole(trialAccessRole);
+  const normalizedAccess = normalizeTrialAccessRoles(
+    Array.isArray(trialAccessRoles) ? trialAccessRoles : [trialAccessRole]
+  );
   const request = await DemoRequest.findByPk(demoRequestId);
   if (!request) {
     throw new Error("Demo request not found");
@@ -327,7 +346,7 @@ export const approveDemoRequestService = async ({
   }
 
   if (request.status === "APPROVED") {
-    const trialUser = await ensureTrialUserAndProfile(request, targetRole);
+    const trialUser = await ensureTrialUserAndProfile(request, normalizedAccess);
     const trialStart = request.trialStartsAt || new Date();
     const trialEnd =
       request.trialEndsAt ||
@@ -341,12 +360,13 @@ export const approveDemoRequestService = async ({
       user: trialUser,
       now: new Date(trialStart),
       trialEnd: new Date(trialEnd),
+      trialAccessRoles: normalizedAccess,
     });
 
     const approvedMessage = buildAdminMessage(
       request,
       "APPROVED",
-      targetRole
+      normalizedAccess
     );
     await Notification.update(
       { message: approvedMessage },
@@ -363,7 +383,7 @@ export const approveDemoRequestService = async ({
   const now = new Date();
   const trialEnd = new Date(now);
   trialEnd.setDate(trialEnd.getDate() + 15);
-  const trialUser = await ensureTrialUserAndProfile(request, targetRole);
+  const trialUser = await ensureTrialUserAndProfile(request, normalizedAccess);
 
   await request.update({
     status: "APPROVED",
@@ -373,7 +393,11 @@ export const approveDemoRequestService = async ({
     trialEndsAt: trialEnd,
   });
 
-  const approvedMessage = buildAdminMessage(request, "APPROVED", targetRole);
+  const approvedMessage = buildAdminMessage(
+    request,
+    "APPROVED",
+    normalizedAccess
+  );
   await Notification.update(
     { message: approvedMessage },
     {
@@ -384,7 +408,13 @@ export const approveDemoRequestService = async ({
     }
   );
 
-  await sendTrialActivationEmail({ request, user: trialUser, now, trialEnd });
+  await sendTrialActivationEmail({
+    request,
+    user: trialUser,
+    now,
+    trialEnd,
+    trialAccessRoles: normalizedAccess,
+  });
 
   return request;
 };

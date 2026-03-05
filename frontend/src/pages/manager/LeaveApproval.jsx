@@ -291,7 +291,11 @@ const LeaveApproval = () => {
       fetchRequests();
     } catch (err) {
       console.error("Action failed", err);
-      alert("Failed to process request: " + (err.response?.data?.message || err.message));
+      const backendMessage =
+        err.response?.data?.message ||
+        (typeof err.response?.data === 'string' ? err.response.data : '') ||
+        err.message;
+      alert("Failed to process request: " + backendMessage);
     }
 
     setShowActionModal(false);

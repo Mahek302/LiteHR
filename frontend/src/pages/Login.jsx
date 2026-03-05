@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import WFELogo from "../images/WFE_logo.png";
 import {
@@ -11,6 +11,7 @@ import {
   FiCalendar,
   FiShield
 } from "react-icons/fi";
+import { setStoredPortalRole } from "../utils/portalSwitch";
 
 const Login = ({ setUser }) => {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -19,6 +20,18 @@ const Login = ({ setUser }) => {
   const [info, setInfo] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Always start a fresh login session so another demo user can sign in
+    // even if the previous user did not explicitly log out.
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("activePortalRole");
+    localStorage.removeItem("employeeId");
+    if (typeof setUser === "function") {
+      setUser(null);
+    }
+  }, [setUser]);
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -32,6 +45,7 @@ const Login = ({ setUser }) => {
     try {
       const res = await axios.post("/api/auth/login", formData);
       localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user || {}));
       // Persist employeeId for profile loading (if available)
       if (res.data.user?.employee?.id) {
         localStorage.setItem('employeeId', res.data.user.employee.id);
@@ -40,6 +54,7 @@ const Login = ({ setUser }) => {
 
       // Redirect based on role
       const role = res.data.user?.role;
+      setStoredPortalRole(role);
       if (role === "ADMIN") {
         navigate("/admin/dashboard");
       } else if (role === "MANAGER") {

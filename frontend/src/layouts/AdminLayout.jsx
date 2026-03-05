@@ -30,7 +30,7 @@ import { HiOutlineOfficeBuilding } from "react-icons/hi";
 import { AiOutlineAudit } from "react-icons/ai";
 import { notificationService } from '../services/notificationService';
 import demoRequestService from "../services/demoRequestService";
-import WFELogo from "../images/WFE_logo.png";
+import PortalSwitcher from "../components/PortalSwitcher";
 
 const AdminLayout = ({ children, logout }) => {
   const location = useLocation();
@@ -217,13 +217,19 @@ useEffect(() => {
       label: "Analytics",
       icon: <VscGraph />,
       path: "/admin/analytics",
+      subItems: [
+        { label: "Dashboard", path: "/admin/analytics" },
+      ]
     },
 
     // Payroll Module
     {
       label: "Payroll",
       icon: <FiFileText />,
-      path: "/admin/payroll/payslips",
+      path: "/admin/payroll",
+      subItems: [
+        { label: "Payslips", path: "/admin/payroll/payslips" },
+      ]
     },
 
     { label: "Profile", icon: <FaRegUser />, path: "/admin/profile" },
@@ -253,9 +259,21 @@ useEffect(() => {
 
   const getApprovedTrialRole = (notification) => {
     const match = String(notification?.message || "").match(
-      /trial access:\s*(employee|manager|admin)/i
+      /trial access:\s*([^\n\r]+)/i
     );
-    return (match?.[1] || "employee").toLowerCase();
+    return match?.[1] || "EMPLOYEE";
+  };
+
+  const toggleTrialRole = (notificationId, role) => {
+    setTrialRolesByNotificationId((prev) => {
+      const current = Array.isArray(prev[notificationId]) ? prev[notificationId] : ["EMPLOYEE"];
+      const exists = current.includes(role);
+      const next = exists ? current.filter((r) => r !== role) : [...current, role];
+      return {
+        ...prev,
+        [notificationId]: next.length ? next : ["EMPLOYEE"],
+      };
+    });
   };
 
   const fetchNotifications = async () => {
@@ -317,7 +335,7 @@ useEffect(() => {
     const requestId = extractDemoRequestId(notification.title);
     if (!requestId) return;
     const selectedRole =
-      trialRolesByNotificationId[notification.id] || "EMPLOYEE";
+      trialRolesByNotificationId[notification.id] || ["EMPLOYEE"];
 
     try {
       setApprovingIds((prev) => [...prev, notification.id]);
@@ -357,7 +375,7 @@ useEffect(() => {
   const headerBorder = darkMode ? "border-gray-700" : "border-gray-200";
 
   return (
-    <div className={`admin-cursor-scope flex h-screen transition-colors duration-300`}>
+    <div className={`flex h-screen transition-colors duration-300`}>
       {/* SIDEBAR */}
       <aside className={`${sidebarCollapsed ? 'w-20' : 'w-64'} ${sidebarBg} ${sidebarText} flex flex-col transition-all duration-300 shadow-lg z-20 border-r ${sidebarBorder}`}>
 
@@ -372,16 +390,16 @@ useEffect(() => {
                 title="Go to Dashboard"
               >
                 <img
-                  src={WFELogo}
-                  alt="WORKFORCEDGE Logo"
-                  className="w-[140px] h-auto object-contain hover:opacity-80 transition-opacity"
+                  src="/assets/logo.png"
+                  alt="LiteHR Logo"
+                  className="w-[100px] h-auto object-contain hover:opacity-80 transition-opacity"
                   style={{
                     filter: darkMode ? 'invert(0)' : 'invert(58%) sepia(81%) saturate(2878%) hue-rotate(246deg) brightness(97%) contrast(94%)'
                   }}
                   onError={(e) => {
                     e.target.style.display = "none";
                     e.target.parentElement.innerHTML =
-                      `<div class="${darkMode ? 'text-white hover:text-purple-300' : 'text-purple-600 hover:text-purple-700 font-bold'} text-lg cursor-pointer transition-colors" title="Go to Dashboard">WORKFORCEDGE</div>`;
+                      `<div class="${darkMode ? 'text-white hover:text-purple-300' : 'text-purple-600 hover:text-purple-700 font-bold'} text-lg cursor-pointer transition-colors" title="Go to Dashboard">LiteHR</div>`;
                   }}
                 />
               </div>
@@ -395,9 +413,9 @@ useEffect(() => {
                 title="Go to Dashboard"
               >
                 <img
-                  src={WFELogo}
-                  alt="WORKFORCEDGE Logo"
-                  className="w-8 h-auto object-contain hover:opacity-80 transition-opacity"
+                  src="/assets/logo.png"
+                  alt="LiteHR Logo"
+                  className="w-full h-auto object-contain hover:opacity-80 transition-opacity"
                   style={{
                     filter: darkMode ? 'invert(0)' : 'invert(58%) sepia(81%) saturate(2878%) hue-rotate(246deg) brightness(97%) contrast(94%)'
                   }}
@@ -563,6 +581,7 @@ useEffect(() => {
                 <FiLogOut />
                 Logout
               </button>
+              <PortalSwitcher user={user} currentRole="ADMIN" darkMode={darkMode} />
             </>
           ) : (
             <div className="flex flex-col items-center gap-2">
@@ -662,20 +681,21 @@ useEffect(() => {
                           </p>
                           {extractDemoRequestId(notif.title) && !isDemoTrialApproved(notif) && (
                             <div className="mt-2 flex items-center gap-2">
-                              <select
-                                value={trialRolesByNotificationId[notif.id] || "EMPLOYEE"}
-                                onChange={(e) =>
-                                  setTrialRolesByNotificationId((prev) => ({
-                                    ...prev,
-                                    [notif.id]: e.target.value,
-                                  }))
-                                }
-                                className={`px-2 py-1 text-xs rounded-md border ${darkMode ? "bg-gray-700 border-gray-600 text-gray-100" : "bg-white border-gray-300 text-gray-800"}`}
-                              >
-                                <option value="EMPLOYEE">EMPLOYEE</option>
-                                <option value="MANAGER">MANAGER</option>
-                                <option value="ADMIN">ADMIN</option>
-                              </select>
+                              <div className="flex items-center gap-2">
+                                {["EMPLOYEE", "MANAGER", "ADMIN"].map((role) => {
+                                  const selected = (trialRolesByNotificationId[notif.id] || ["EMPLOYEE"]).includes(role);
+                                  return (
+                                    <label key={role} className={`text-[11px] flex items-center gap-1 ${darkMode ? "text-gray-200" : "text-gray-700"}`}>
+                                      <input
+                                        type="checkbox"
+                                        checked={selected}
+                                        onChange={() => toggleTrialRole(notif.id, role)}
+                                      />
+                                      {role}
+                                    </label>
+                                  );
+                                })}
+                              </div>
                               <button
                                 onClick={() => handleApproveDemoFromDropdown(notif)}
                                 disabled={approvingIds.includes(notif.id)}
@@ -784,4 +804,3 @@ useEffect(() => {
 };
 
 export default AdminLayout;
-

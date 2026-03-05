@@ -2,6 +2,10 @@
 import { loginService, forgotPasswordService, resetPasswordService } from "../services/auth.service.js";
 import { User, Employee } from "../models/index.js";
 import { Op } from "sequelize";
+import {
+  getPrimaryRoleFromTrialAccess,
+  parseTrialAccessFromEmployee,
+} from "../utils/trialAccess.js";
 
 
 export const loginController = async (req, res) => {
@@ -42,12 +46,20 @@ export const meController = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const username = user.username || user.email.split("@")[0];
+    const { isTrial, trialAccessRoles } = parseTrialAccessFromEmployee(
+      user.employeeProfile
+    );
+    const effectiveRole = isTrial
+      ? getPrimaryRoleFromTrialAccess(trialAccessRoles)
+      : user.role;
 
     res.json({
       id: user.id,
       email: user.email,
       username: username,
-      role: user.role,
+      role: effectiveRole,
+      isTrial,
+      trialAccessRoles,
       employee: user.employeeProfile
         ? {
           id: user.employeeProfile.id,
