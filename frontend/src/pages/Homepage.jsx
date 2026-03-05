@@ -535,6 +535,13 @@ const DemoModal = ({ isOpen, onClose, currentTheme, isDarkTheme }) => {
                 ].map((interest) => {
                   const Icon = interest.icon;
                   const isSelected = formData.interests.includes(interest.value);
+                  const colorHex = interest.color === 'purple'
+                    ? '#8B5CF6'
+                    : interest.color === 'green'
+                      ? '#10B981'
+                      : interest.color === 'blue'
+                        ? '#3B82F6'
+                        : '#F97316';
                   return (
                     <motion.button
                       key={interest.value}
@@ -544,13 +551,13 @@ const DemoModal = ({ isOpen, onClose, currentTheme, isDarkTheme }) => {
                         isSelected ? `border-${interest.color}-500 bg-${interest.color}-500/10` : ''
                       }`}
                       style={{
-                        borderColor: isSelected ? `#${interest.color === 'purple' ? '8B5CF6' : interest.color === 'green' ? '10B981' : interest.color === 'blue' ? '3B82F6' : 'F97316'}` : currentTheme.border,
+                        borderColor: isSelected ? colorHex : currentTheme.border,
                         backgroundColor: isSelected ? (isDarkTheme ? '#1E293B' : '#F8FAFC') : 'transparent'
                       }}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <Icon size={24} className={isSelected ? `text-${interest.color}-500` : ''} />
+                      <Icon size={24} style={{ color: isSelected ? colorHex : (isDarkTheme ? '#E2E8F0' : currentTheme.text.primary) }} />
                       <span className="text-sm" style={{ color: currentTheme.text.primary }}>{interest.label}</span>
                     </motion.button>
                   );

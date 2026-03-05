@@ -25,9 +25,21 @@ const Notifications = () => {
 
   const getApprovedTrialRole = (notification) => {
     const match = String(notification?.message || "").match(
-      /trial access:\s*(employee|manager|admin)/i
+      /trial access:\s*([^\n\r]+)/i
     );
-    return (match?.[1] || "employee").toLowerCase();
+    return match?.[1] || "EMPLOYEE";
+  };
+
+  const toggleTrialRole = (notificationId, role) => {
+    setTrialRolesByNotificationId((prev) => {
+      const current = Array.isArray(prev[notificationId]) ? prev[notificationId] : ["EMPLOYEE"];
+      const exists = current.includes(role);
+      const next = exists ? current.filter((r) => r !== role) : [...current, role];
+      return {
+        ...prev,
+        [notificationId]: next.length ? next : ["EMPLOYEE"],
+      };
+    });
   };
 
   const mapType = (t, msg) => {
@@ -127,12 +139,12 @@ const Notifications = () => {
   const handleApproveDemo = async (notification) => {
     const demoRequestId = extractDemoRequestId(notification.title);
     if (!demoRequestId) return;
-    const selectedRole =
-      trialRolesByNotificationId[notification.id] || "EMPLOYEE";
+    const selectedRoles =
+      trialRolesByNotificationId[notification.id] || ["EMPLOYEE"];
 
     try {
       setApprovingIds((prev) => [...prev, notification.id]);
-      await demoRequestService.approve(demoRequestId, selectedRole);
+      await demoRequestService.approve(demoRequestId, selectedRoles);
       await loadNotifications();
     } catch (err) {
       const errorMessage =
@@ -342,20 +354,24 @@ const Notifications = () => {
                     <div className="flex gap-2">
                       {extractDemoRequestId(notification.title) && !isDemoTrialApproved(notification) && (
                         <>
-                          <select
-                            value={trialRolesByNotificationId[notification.id] || "EMPLOYEE"}
-                            onChange={(e) =>
-                              setTrialRolesByNotificationId((prev) => ({
-                                ...prev,
-                                [notification.id]: e.target.value,
-                              }))
-                            }
-                            className={`px-2 py-1.5 text-sm rounded-lg border ${darkMode ? "bg-gray-700 border-gray-600 text-gray-100" : "bg-white border-gray-300 text-gray-800"}`}
-                          >
-                            <option value="EMPLOYEE">EMPLOYEE</option>
-                            <option value="MANAGER">MANAGER</option>
-                            <option value="ADMIN">ADMIN</option>
-                          </select>
+                          <div className="flex items-center gap-3">
+                            {["EMPLOYEE", "MANAGER", "ADMIN"].map((role) => {
+                              const selected = (trialRolesByNotificationId[notification.id] || ["EMPLOYEE"]).includes(role);
+                              return (
+                                <label
+                                  key={role}
+                                  className={`text-xs flex items-center gap-1 ${darkMode ? "text-gray-200" : "text-gray-700"}`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={selected}
+                                    onChange={() => toggleTrialRole(notification.id, role)}
+                                  />
+                                  {role}
+                                </label>
+                              );
+                            })}
+                          </div>
                           <button
                             onClick={() => handleApproveDemo(notification)}
                             disabled={approvingIds.includes(notification.id)}

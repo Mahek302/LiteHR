@@ -140,7 +140,7 @@ const sendTrialActivationEmail = async ({
     )}\nTrial End: ${formatDateTime(trialEnd)}\nAccess: ${accessText}`,
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-        <h2 style="background:#4f46e5;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;>Your LiteHR Trial Is Approved</h2>
+        <h2 style="background:#4f46e5;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">Your LiteHR Trial Is Approved</h2>
         <p>Hi ${request.fullName},</p>
         <p>Your demo request has been approved by our admin team.</p>
         <p><strong>Trial Start:</strong> ${formatDateTime(now)}</p>

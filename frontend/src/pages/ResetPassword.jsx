@@ -6,6 +6,10 @@ import { HiLockClosed, HiEye, HiEyeOff, HiCheckCircle } from "react-icons/hi";
 const ResetPassword = () => {
   const { token } = useParams();
   const navigate = useNavigate();
+  const normalizedToken = String(token || "")
+    .trim()
+    .replace(/^["']+|["']+$/g, "")
+    .replace(/[^A-Za-z0-9._-]/g, "");
 
   const decodeJwtPayload = (jwtToken) => {
     try {
@@ -18,7 +22,7 @@ const ResetPassword = () => {
       return null;
     }
   };
-  const tokenPayload = decodeJwtPayload(token);
+  const tokenPayload = decodeJwtPayload(normalizedToken);
   const isTrialActivation = tokenPayload?.purpose === "trial-activation";
 
   const [password, setPassword] = useState("");
@@ -47,7 +51,7 @@ const ResetPassword = () => {
 
     setIsLoading(true);
     try {
-      await axios.post(`/api/reset-password/${token}`, { password });
+      await axios.post(`/api/reset-password/${normalizedToken}`, { password });
       setMessage(
         isTrialActivation
           ? "Trial password created successfully! Redirecting to login..."

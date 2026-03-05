@@ -121,7 +121,11 @@ export const forgotPasswordService = async (email) => {
 };
 
 export const resetPasswordService = async (token, newPassword) => {
-  const decoded = verifyToken(token);
+  const normalizedToken = String(token || "")
+    .trim()
+    .replace(/^["']+|["']+$/g, "")
+    .replace(/[^A-Za-z0-9._-]/g, "");
+  const decoded = verifyToken(normalizedToken);
 
   if (!decoded || decoded.type !== "reset") {
     throw new Error("Invalid or expired reset token.");
